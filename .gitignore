@@ -7,3 +7,8 @@ fixtures_live/
 __pycache__/
 .venv/
 .DS_Store
+
+# Local-only: personal config and preferences
+config.yaml
+taste-profile.md
+annual-anchors.yaml
