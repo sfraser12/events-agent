@@ -1,0 +1,21 @@
+# Recurring fixtures worth watching for a programme announcement.
+# Copy to annual-anchors.yaml and edit. Hand-maintained, no fetcher.
+- name: Celtic Connections
+  typical_month: january
+  programme_announced: october
+  watch_url: ""
+
+- name: Glasgow Film Festival
+  typical_month: february
+  programme_announced: january
+  watch_url: ""
+
+- name: Edinburgh Festival Fringe
+  typical_month: august
+  programme_announced: june
+  watch_url: ""
+
+- name: Panto season
+  typical_month: december
+  programme_announced: august
+  watch_url: ""

@@ -1,0 +1,26 @@
+# Copy to config.yaml and fill in real values. config.yaml is gitignored.
+home:
+  latitude: 0.0
+  longitude: 0.0
+  label: ""
+
+search:
+  radius_miles: 25
+  horizons:
+    near_days: 7
+    month_days: 31
+    long_days: 270
+
+constraints:
+  max_drive_minutes: 60
+  price_ceiling: 0
+  blackout_dates: []
+
+scoring:
+  digest_threshold: 60
+  alert_threshold: 45
+
+delivery:
+  digest_day: sunday
+  digest_hour: 8
+  email_to: ""
