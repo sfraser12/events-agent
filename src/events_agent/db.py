@@ -1,9 +1,14 @@
-"""SQLite schema and connection helper. Plain sqlite3 — no ORM."""
+"""SQLite schema, connection helper, and upsert logic. Plain sqlite3 — no ORM."""
 
 from __future__ import annotations
 
+import json
 import sqlite3
+from datetime import UTC, datetime
 from pathlib import Path
+
+from events_agent.models import RawEvent
+from events_agent.normalise import fingerprint, normalise_text
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS venue (
@@ -109,3 +114,156 @@ def init_db(db_path: Path) -> None:
         conn.commit()
     finally:
         conn.close()
+
+
+def upsert_venue(
+    conn: sqlite3.Connection,
+    name: str,
+    city: str | None,
+    postcode: str | None,
+    latitude: float | None,
+    longitude: float | None,
+) -> int:
+    name_normalised = normalise_text(name)
+    row = conn.execute(
+        "SELECT id FROM venue WHERE name_normalised = ?", (name_normalised,)
+    ).fetchone()
+    if row:
+        venue_id = row[0]
+        conn.execute(
+            "UPDATE venue SET name = ?, city = ?, postcode = ?, latitude = ?, longitude = ? WHERE id = ?",
+            (name, city, postcode, latitude, longitude, venue_id),
+        )
+        return venue_id
+
+    cur = conn.execute(
+        "INSERT INTO venue (name, name_normalised, city, postcode, latitude, longitude) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (name, name_normalised, city, postcode, latitude, longitude),
+    )
+    return cur.lastrowid
+
+
+def upsert_raw_event(conn: sqlite3.Connection, raw: RawEvent) -> tuple[int, bool]:
+    """Insert or update the event/venue/event_source rows for one RawEvent.
+
+    Returns (event_id, created) — created is False when an existing event with
+    the same fingerprint was updated instead of a new row being inserted.
+    """
+    now = datetime.now(UTC).isoformat()
+
+    venue_id = upsert_venue(
+        conn,
+        raw.venue_name,
+        raw.venue_city,
+        raw.venue_postcode,
+        raw.venue_latitude,
+        raw.venue_longitude,
+    )
+
+    title_normalised = normalise_text(raw.title)
+    fp = fingerprint(raw.title, raw.venue_name, raw.event_date)
+
+    row = conn.execute("SELECT id FROM event WHERE fingerprint = ?", (fp,)).fetchone()
+    if row:
+        event_id = row[0]
+        created = False
+        conn.execute(
+            """
+            UPDATE event SET
+                title = ?, title_normalised = ?, category = ?, venue_id = ?,
+                event_date = ?, event_date_end = ?, status = ?,
+                price_min = ?, price_max = ?, currency = ?, url = ?, blurb = ?,
+                last_seen = ?
+            WHERE id = ?
+            """,
+            (
+                raw.title,
+                title_normalised,
+                raw.category,
+                venue_id,
+                _iso_or_none(raw.event_date),
+                _iso_or_none(raw.event_date_end),
+                raw.status,
+                raw.price_min,
+                raw.price_max,
+                raw.currency,
+                raw.url,
+                raw.blurb,
+                now,
+                event_id,
+            ),
+        )
+    else:
+        created = True
+        cur = conn.execute(
+            """
+            INSERT INTO event (
+                fingerprint, title, title_normalised, category, venue_id,
+                event_date, event_date_end, status,
+                price_min, price_max, currency, url, blurb,
+                first_seen, last_seen
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                fp,
+                raw.title,
+                title_normalised,
+                raw.category,
+                venue_id,
+                _iso_or_none(raw.event_date),
+                _iso_or_none(raw.event_date_end),
+                raw.status,
+                raw.price_min,
+                raw.price_max,
+                raw.currency,
+                raw.url,
+                raw.blurb,
+                now,
+                now,
+            ),
+        )
+        event_id = cur.lastrowid
+
+    conn.execute(
+        """
+        INSERT INTO event_source (event_id, source_name, source_event_id, source_url, raw_json)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(source_name, source_event_id) DO UPDATE SET
+            event_id = excluded.event_id,
+            source_url = excluded.source_url,
+            raw_json = excluded.raw_json
+        """,
+        (event_id, raw.source_name, raw.source_event_id, raw.url, _to_json(raw.raw)),
+    )
+
+    return event_id, created
+
+
+def start_source_run(conn: sqlite3.Connection, source_name: str) -> int:
+    cur = conn.execute(
+        "INSERT INTO source_run (source_name, started_at, status) VALUES (?, ?, ?)",
+        (source_name, datetime.now(UTC).isoformat(), "running"),
+    )
+    return cur.lastrowid
+
+
+def finish_source_run(
+    conn: sqlite3.Connection,
+    run_id: int,
+    status: str,
+    rows_fetched: int,
+    error: str | None = None,
+) -> None:
+    conn.execute(
+        "UPDATE source_run SET finished_at = ?, status = ?, rows_fetched = ?, error = ? WHERE id = ?",
+        (datetime.now(UTC).isoformat(), status, rows_fetched, error, run_id),
+    )
+
+
+def _iso_or_none(value) -> str | None:
+    return value.isoformat() if value else None
+
+
+def _to_json(value: dict) -> str:
+    return json.dumps(value)

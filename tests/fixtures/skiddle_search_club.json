@@ -1,0 +1,810 @@
+{
+  "error": 0,
+  "totalcount": "243",
+  "pagecount": 10,
+  "results": [
+    {
+      "id": "42495127",
+      "listingid": "2282934",
+      "isSBT": false,
+      "uniquelistingidentifier": "Rwwuzujlx2",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "CLUB",
+      "eventname": "MXTAPE Fridays",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 89435,
+        "name": "Revolution Mitchell Street",
+        "address": "84 Mitchell Street",
+        "town": "Glasgow",
+        "postcode_lookup": "Glasgow",
+        "postcode": "G1 3NA",
+        "region": "Scotland",
+        "country": "GB",
+        "phone": "0141 471 8279",
+        "latitude": 55.860072,
+        "longitude": -4.255561,
+        "type": "bar",
+        "rating": 4,
+        "reviewCount": 244
+      },
+      "imageurl": "https://d1plawd8huk6hh.cloudfront.net/assets/default400.png",
+      "largeimageurl": "https://d1plawd8huk6hh.cloudfront.net/assets/default400.png",
+      "xlargeimageurl": "https://d1plawd8huk6hh.cloudfront.net/assets/default400.png",
+      "xlargeimageurlWebP": false,
+      "link": "https://www.skiddle.com/whats-on/Glasgow/Revolution-Mitchell-Street/MXTAPE-Fridays/42495127/",
+      "date": "2026-08-21",
+      "startdate": "2026-08-21T20:00:00+00:00",
+      "enddate": "2026-08-22T03:00:00+00:00",
+      "description": "MXTAPE FRIDAYS X SOUNDS BY FRAISE\nRevolution presents MXTAPE with FRAISE bringing you RNB, HIPHOP, AFROBEATS & DANCEHALL.\n\nEVERY FRIDAY| FREE ENTRY",
+      "openingtimes": {
+        "doorsopen": "20:00",
+        "doorsclose": "03:00",
+        "lastentry": "01:00"
+      },
+      "minage": "18",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 0,
+        "maxPrice": 0
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "",
+      "currency": "GBP",
+      "artists": [],
+      "genres": [
+        {
+          "genreid": "4",
+          "name": "R&B"
+        },
+        {
+          "genreid": "24",
+          "name": "Dancehall"
+        },
+        {
+          "genreid": "36",
+          "name": "Rap"
+        },
+        {
+          "genreid": "39",
+          "name": "Hip Hop"
+        },
+        {
+          "genreid": "95",
+          "name": "Afrobeat"
+        }
+      ],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42532892",
+      "listingid": "2292827",
+      "isSBT": false,
+      "uniquelistingidentifier": "2292827",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "CLUB",
+      "eventname": "TRAGIK Presents: IKKHI / MADMIZE / SMR",
+      "cancelled": "1",
+      "cancellationDate": "2026-07-26 20:16:10",
+      "cancellationType": "cancelled",
+      "cancellationReason": "Automatic cancellation: All future dates in the event series have been cancelled",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 99769,
+        "name": "Classic Grand Lounge",
+        "address": "18 Jamaica Street",
+        "town": "Glasgow",
+        "postcode_lookup": "Glasgow",
+        "postcode": "G1 4QD",
+        "region": "Scotland",
+        "country": "GB",
+        "phone": "0141 847 0820",
+        "latitude": 55.8580068,
+        "longitude": -4.2573009,
+        "type": "Nightclub",
+        "rating": 4,
+        "reviewCount": 224
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/1/b/0/2292827_16a55b19_tragik-presents-ikkhi-madmize-smr_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/1/b/0/2292827_16a55b19_tragik-presents-ikkhi-madmize-smr.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/1/b/0/2292827_16a55b19_tragik-presents-ikkhi-madmize-smr_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/1/b/0/2292827_16a55b19_tragik-presents-ikkhi-madmize-smr_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Glasgow/Classic-Grand-Lounge/TRAGIK-Presents-IKKHI--MADMIZE--SMR/42532892/",
+      "date": "2026-08-21",
+      "startdate": "2026-08-21T21:00:00+00:00",
+      "enddate": "2026-08-22T03:00:00+00:00",
+      "description": "Glasgow we are back and this time we are bringing you IKKHI & MADMIZE, alongside Scotlands favourite SMR",
+      "openingtimes": {
+        "doorsopen": "21:00",
+        "doorsclose": "03:00",
+        "lastentry": "23:00"
+      },
+      "minage": "18",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": false,
+      "ticketpricing": {
+        "minPrice": 4,
+        "maxPrice": 15
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#080808",
+      "currency": "GBP",
+      "artists": [
+        {
+          "artistid": "123612745",
+          "name": "Madmize",
+          "image": "https://d1plawd8huk6hh.cloudfront.net/assets/default400.png",
+          "spotifyartisturl": "spotify:artist:5teSCHoGlAzVoJC1SWwZPM"
+        }
+      ],
+      "genres": [
+        {
+          "genreid": "9",
+          "name": "Techno"
+        },
+        {
+          "genreid": "18",
+          "name": "Hardcore/Hardstyle"
+        }
+      ],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42670785",
+      "listingid": "2324686",
+      "isSBT": false,
+      "uniquelistingidentifier": "2324686",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "CLUB",
+      "eventname": "HUSH (invite only)",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 136264,
+        "name": "Radio Glasgow",
+        "address": "373 Sauchiehall Street",
+        "town": "Glasgow",
+        "postcode_lookup": "Glasgow",
+        "postcode": "G2 3HU",
+        "region": "Scotland",
+        "country": "GB",
+        "phone": "",
+        "latitude": 55.8657385,
+        "longitude": -4.2672051,
+        "type": "bar",
+        "rating": 4,
+        "reviewCount": 13
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/9/1/3/2324686_38915544_HUSH--invite-only-_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/9/1/3/2324686_38915544_HUSH--invite-only-.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/9/1/3/2324686_38915544_HUSH--invite-only-_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/9/1/3/2324686_38915544_HUSH--invite-only-_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Glasgow/Radio-Glasgow/HUSH-invite-only/42670785/",
+      "date": "2026-08-21",
+      "startdate": "2026-08-21T21:00:00+00:00",
+      "enddate": "2026-08-22T03:00:00+00:00",
+      "description": "All U Need & Bounce in Motion Presents: HUSH\n\nEvent held in the basement room \"Velvet Rooms\" of Radio on 373 Sauchiehall St. First come, first serve",
+      "openingtimes": {
+        "doorsopen": "21:00",
+        "doorsclose": "03:00",
+        "lastentry": "02:45"
+      },
+      "minage": "18",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 0,
+        "maxPrice": 0
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#180828",
+      "currency": "GBP",
+      "artists": [],
+      "genres": [
+        {
+          "genreid": "1",
+          "name": "House"
+        },
+        {
+          "genreid": "3",
+          "name": "UK Garage"
+        },
+        {
+          "genreid": "14",
+          "name": "Tech House"
+        }
+      ],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42621871",
+      "listingid": "2313646",
+      "isSBT": false,
+      "uniquelistingidentifier": "2313646",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "CLUB",
+      "eventname": "Freaky AfroPiano Fridays!!!",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 114280,
+        "name": "142B Lounge Glasgow",
+        "address": "142B St. Vincent Street",
+        "town": "Glasgow",
+        "postcode_lookup": "Glasgow",
+        "postcode": "G2 5LQ",
+        "region": "Scotland",
+        "country": "GB",
+        "phone": "",
+        "latitude": 55.861822,
+        "longitude": -4.25863,
+        "type": "Nightclub",
+        "rating": 3,
+        "reviewCount": 32
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/2/d/4/2313646_0d429d9b_freaky-afropiano-fridays-_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/2/d/4/2313646_0d429d9b_freaky-afropiano-fridays-.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/2/d/4/2313646_0d429d9b_freaky-afropiano-fridays-_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/2/d/4/2313646_0d429d9b_freaky-afropiano-fridays-_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Glasgow/142B-Lounge-Glasgow/Freaky-AfroPiano-Fridays/42621871/",
+      "date": "2026-08-21",
+      "startdate": "2026-08-21T21:00:00+00:00",
+      "enddate": "2026-08-22T03:00:00+00:00",
+      "description": "This is a REGULARS' Shutdown! No work. No stress. Just pure vibes all night. Miss this and it`s long for you !",
+      "openingtimes": {
+        "doorsopen": "21:00",
+        "doorsclose": "03:00",
+        "lastentry": "02:30"
+      },
+      "minage": "18",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 7.5,
+        "maxPrice": 12.5
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#080808",
+      "currency": "GBP",
+      "artists": [
+        {
+          "artistid": "123610910",
+          "name": "DJ Flex the Official",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/0/123610910_4bad956e_1024.jpg",
+          "spotifyartisturl": null
+        }
+      ],
+      "genres": [
+        {
+          "genreid": "95",
+          "name": "Afrobeat"
+        },
+        {
+          "genreid": "110",
+          "name": "Amapiano"
+        }
+      ],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42665232",
+      "listingid": "2322679",
+      "isSBT": false,
+      "uniquelistingidentifier": "2322679",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "CLUB",
+      "eventname": "Plugged In Fridays",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 132230,
+        "name": "Enish Glasgow",
+        "address": "186 Bath Street",
+        "town": "Glasgow",
+        "postcode_lookup": "Glasgow",
+        "postcode": "G2 4HG",
+        "region": "Scotland",
+        "country": "GB",
+        "phone": "",
+        "latitude": 55.8646535,
+        "longitude": -4.2623128,
+        "type": "bar",
+        "rating": 4,
+        "reviewCount": 3
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/1/7/6/2322679_4e667701_plugged-in-fridays_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/1/7/6/2322679_4e667701_plugged-in-fridays.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/1/7/6/2322679_4e667701_plugged-in-fridays_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/1/7/6/2322679_4e667701_plugged-in-fridays_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Glasgow/Enish-Glasgow/Plugged-In-Fridays/42665232/",
+      "date": "2026-08-21",
+      "startdate": "2026-08-21T22:00:00+00:00",
+      "enddate": "2026-08-22T03:00:00+00:00",
+      "description": "Every Friday, we turn up the energy with the ultimate mix of Afrobeats, Amapiano, Hip Hop, RnB & Dancehall. Come vibe, dance, and enjoy great music.",
+      "openingtimes": {
+        "doorsopen": "22:00",
+        "doorsclose": "03:00",
+        "lastentry": "02:00"
+      },
+      "minage": "18",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 10,
+        "maxPrice": 12.5
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#080808",
+      "currency": "GBP",
+      "artists": [],
+      "genres": [
+        {
+          "genreid": "4",
+          "name": "R&B"
+        },
+        {
+          "genreid": "24",
+          "name": "Dancehall"
+        },
+        {
+          "genreid": "39",
+          "name": "Hip Hop"
+        },
+        {
+          "genreid": "95",
+          "name": "Afrobeat"
+        },
+        {
+          "genreid": "110",
+          "name": "Amapiano"
+        }
+      ],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42659119",
+      "listingid": "2321698",
+      "isSBT": false,
+      "uniquelistingidentifier": "2321698",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "CLUB",
+      "eventname": "Showtime Friday",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 47364,
+        "name": "Fubar",
+        "address": "6 Maxwell Place, Stirling",
+        "town": "Stirling",
+        "postcode_lookup": "Stirling",
+        "postcode": "FK8 1JU",
+        "region": "Central",
+        "country": "GB",
+        "phone": "01786 472619",
+        "latitude": 56.120125,
+        "longitude": -3.93755,
+        "type": "Nightclub",
+        "rating": 3,
+        "reviewCount": 1707
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/4/b/c/2321698_54033486_Showtime-Friday--21st-august-2026_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/4/b/c/2321698_54033486_Showtime-Friday--21st-august-2026.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/4/b/c/2321698_54033486_Showtime-Friday--21st-august-2026_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/4/b/c/2321698_54033486_Showtime-Friday--21st-august-2026_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Stirling/Fubar/Showtime-Friday/42659119/",
+      "date": "2026-08-21",
+      "startdate": "2026-08-21T22:00:00+00:00",
+      "enddate": "2026-08-22T03:00:00+00:00",
+      "description": "Live music and tunes from DJ Toast",
+      "openingtimes": {
+        "doorsopen": "22:00",
+        "doorsclose": "03:00",
+        "lastentry": "01:30"
+      },
+      "minage": "18",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 5,
+        "maxPrice": 5
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#181818",
+      "currency": "GBP",
+      "artists": [],
+      "genres": [],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42594268",
+      "listingid": "2304832",
+      "isSBT": false,
+      "uniquelistingidentifier": "dgsyRU71D6",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "CLUB",
+      "eventname": "Fiver Fridays",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 127773,
+        "name": "Vienna's Nightclub",
+        "address": "20 New Street",
+        "town": "Paisley",
+        "postcode_lookup": "Paisley",
+        "postcode": "PA1 1YB",
+        "region": "Strathclyde",
+        "country": "GB",
+        "phone": "0141 887 3691",
+        "latitude": 55.8440036,
+        "longitude": -4.4260587,
+        "type": "Nightclub",
+        "rating": 0,
+        "reviewCount": 0
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/9/b/0/2304826_0b626689_fiver-fridays_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/9/b/0/2304826_0b626689_fiver-fridays.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/9/b/0/2304826_0b626689_fiver-fridays_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/9/b/0/2304826_0b626689_fiver-fridays_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Paisley/Vienna%27s-Nightclub/Fiver-Fridays/42594268/",
+      "date": "2026-08-21",
+      "startdate": "2026-08-21T22:00:00+00:00",
+      "enddate": "2026-08-22T03:00:00+00:00",
+      "description": "Join us at the all new Vienna's Friday night. Top offers, top Music. Top Vibes",
+      "openingtimes": {
+        "doorsopen": "22:00",
+        "doorsclose": "03:00",
+        "lastentry": "01:30"
+      },
+      "minage": "18",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 0,
+        "maxPrice": 60
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "",
+      "currency": "GBP",
+      "artists": [],
+      "genres": [],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42647162",
+      "listingid": "2319625",
+      "isSBT": false,
+      "uniquelistingidentifier": "2319625",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "CLUB",
+      "eventname": "iNTRA: Ikkhi x Apollo + Support",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 17696,
+        "name": "The Classic Grand",
+        "address": "18 Jamaica Street",
+        "town": "Glasgow",
+        "postcode_lookup": "Glasgow",
+        "postcode": "G1 4QD",
+        "region": "Scotland",
+        "country": "GB",
+        "phone": "0141 847 0820",
+        "latitude": 55.857612,
+        "longitude": -4.257319,
+        "type": "live",
+        "rating": 4,
+        "reviewCount": 5836
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/1/b/8/2319625_728f4330_intra-ikkhi-support_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/1/b/8/2319625_728f4330_intra-ikkhi-support.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/1/b/8/2319625_728f4330_intra-ikkhi-support_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/1/b/8/2319625_728f4330_intra-ikkhi-support_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Glasgow/The-Classic-Grand/iNTRA-Ikkhi-x-Apollo--Support/42647162/",
+      "date": "2026-08-21",
+      "startdate": "2026-08-21T22:00:00+00:00",
+      "enddate": "2026-08-22T03:00:00+00:00",
+      "description": "Intra bring ikkhi to glasgow for a night of chaos",
+      "openingtimes": {
+        "doorsopen": "22:00",
+        "doorsclose": "03:00",
+        "lastentry": "00:00"
+      },
+      "minage": "18",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "68",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 5,
+        "maxPrice": 5
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": true,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#080808",
+      "currency": "GBP",
+      "artists": [],
+      "genres": [
+        {
+          "genreid": "18",
+          "name": "Hardcore/Hardstyle"
+        },
+        {
+          "genreid": "81",
+          "name": "Hard Dance"
+        }
+      ],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42641753",
+      "listingid": "2317404",
+      "isSBT": false,
+      "uniquelistingidentifier": "2317404",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "CLUB",
+      "eventname": "Vibes Glasgow presents Trackspotting",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 134783,
+        "name": "Vibes Glasgow",
+        "address": "239 Sauchiehall Street",
+        "town": "Glasgow",
+        "postcode_lookup": "Glasgow",
+        "postcode": "G2 3EZ",
+        "region": "Scotland",
+        "country": "GB",
+        "phone": "",
+        "latitude": 55.8651254,
+        "longitude": -4.2621993,
+        "type": "Nightclub",
+        "rating": 4,
+        "reviewCount": 20
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/c/b/2/2317404_13ca5f89_vibes-glasgow-presents-trackspotting_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/c/b/2/2317404_13ca5f89_vibes-glasgow-presents-trackspotting.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/c/b/2/2317404_13ca5f89_vibes-glasgow-presents-trackspotting_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/c/b/2/2317404_13ca5f89_vibes-glasgow-presents-trackspotting_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Glasgow/Vibes-Glasgow/Vibes-Glasgow-presents-Trackspotting/42641753/",
+      "date": "2026-08-21",
+      "startdate": "2026-08-21T22:00:00+00:00",
+      "enddate": "2026-08-22T03:00:00+00:00",
+      "description": "A new platform for local artist to showcase their own tracks in front of local audience\nNo mainstream Tracks, only made Scotland Winner gets £200 cash",
+      "openingtimes": {
+        "doorsopen": "22:00",
+        "doorsclose": "03:00",
+        "lastentry": "02:00"
+      },
+      "minage": "",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 5,
+        "maxPrice": 5
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#f8f8f8",
+      "currency": "GBP",
+      "artists": [
+        {
+          "artistid": "123557281",
+          "name": "Mikey Motion (DJ)",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/1/123557281_2_1024.jpg",
+          "spotifyartisturl": "spotify:artist:26EI7OFplaqcLsVLXAbqAG"
+        },
+        {
+          "artistid": "123627476",
+          "name": "DJ Gary MC",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/6/123627476_8cdd29c2_1024.jpg",
+          "spotifyartisturl": "spotify:artist:3jST6ZxEKXvngy6Mq8L7tN"
+        }
+      ],
+      "genres": [
+        {
+          "genreid": "2",
+          "name": "Trance"
+        },
+        {
+          "genreid": "16",
+          "name": "Hard House"
+        },
+        {
+          "genreid": "18",
+          "name": "Hardcore/Hardstyle"
+        },
+        {
+          "genreid": "81",
+          "name": "Hard Dance"
+        },
+        {
+          "genreid": "114",
+          "name": "Bounce"
+        }
+      ],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42627846",
+      "listingid": "2315065",
+      "isSBT": false,
+      "uniquelistingidentifier": "2315065",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "CLUB",
+      "eventname": "Cell Events Presents: Swanny",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 6489,
+        "name": "Club 69",
+        "address": "40 New Sneddon Street",
+        "town": "Paisley",
+        "postcode_lookup": "Paisley",
+        "postcode": "PA3 2AZ",
+        "region": "Strathclyde",
+        "country": "GB",
+        "phone": "",
+        "latitude": 55.850184,
+        "longitude": -4.42323,
+        "type": "Nightclub",
+        "rating": 4,
+        "reviewCount": 776
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/f/6/7/2315065_f522c1ff_cell-events-presents-swanny_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/f/6/7/2315065_f522c1ff_cell-events-presents-swanny.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/f/6/7/2315065_f522c1ff_cell-events-presents-swanny_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/f/6/7/2315065_f522c1ff_cell-events-presents-swanny_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Paisley/Club-69/Cell-Events-Presents-Swanny/42627846/",
+      "date": "2026-08-21",
+      "startdate": "2026-08-21T22:30:00+00:00",
+      "enddate": "2026-08-22T03:00:00+00:00",
+      "description": "Cell Events presents Swanny at Club 69. A night of hard techno featuring competition winners and emerging talent. Tickets on sale now.",
+      "openingtimes": {
+        "doorsopen": "22:30",
+        "doorsclose": "03:00",
+        "lastentry": ""
+      },
+      "minage": "18",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 3.75,
+        "maxPrice": 10
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#080808",
+      "currency": "GBP",
+      "artists": [],
+      "genres": [
+        {
+          "genreid": "9",
+          "name": "Techno"
+        },
+        {
+          "genreid": "18",
+          "name": "Hardcore/Hardstyle"
+        }
+      ],
+      "healthAndSafety": []
+    }
+  ],
+  "elastic": {
+    "timing": 68
+  },
+  "requestId": "api_6a886a2251af86.11016506"
+}

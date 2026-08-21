@@ -1,0 +1,794 @@
+{
+  "error": 0,
+  "totalcount": "249",
+  "pagecount": 10,
+  "results": [
+    {
+      "id": "42514564",
+      "listingid": "2289106",
+      "isSBT": false,
+      "uniquelistingidentifier": "2289106",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "LIVE",
+      "eventname": "Trad Friday Sessions @ Blackfriars",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 114382,
+        "name": "Blackfriars Of Bell Street",
+        "address": "36 Bell Street",
+        "town": "Glasgow",
+        "postcode_lookup": "Glasgow",
+        "postcode": "G1 1LG",
+        "region": "Scotland",
+        "country": "GB",
+        "phone": "",
+        "latitude": 55.8579628,
+        "longitude": -4.244689,
+        "type": "Nightclub",
+        "rating": 4,
+        "reviewCount": 78
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/0/2/2/2289096_e8bdac47_trad-friday-sessions-blackfriars_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/0/2/2/2289096_e8bdac47_trad-friday-sessions-blackfriars.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/0/2/2/2289096_e8bdac47_trad-friday-sessions-blackfriars_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/0/2/2/2289096_e8bdac47_trad-friday-sessions-blackfriars_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Glasgow/Blackfriars-Of-Bell-Street/Trad-Friday-Sessions--Blackfriars/42514564/",
+      "date": "2026-08-21",
+      "startdate": "2026-08-21T16:00:00+00:00",
+      "enddate": "2026-08-21T19:00:00+00:00",
+      "description": "Start your Friday night off right with Blackfriars trad live sessions!",
+      "openingtimes": {
+        "doorsopen": "16:00",
+        "doorsclose": "19:00",
+        "lastentry": ""
+      },
+      "minage": "18",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 0,
+        "maxPrice": 0
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "",
+      "currency": "GBP",
+      "artists": [],
+      "genres": [
+        {
+          "genreid": "37",
+          "name": "Classical"
+        },
+        {
+          "genreid": "42",
+          "name": "Acoustic"
+        }
+      ],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42601519",
+      "listingid": "2306854",
+      "isSBT": false,
+      "uniquelistingidentifier": "2306854",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "LIVE",
+      "eventname": "Discovery, The Local, The Goodtrips, Haircut Overdose",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 59559,
+        "name": "Drygate",
+        "address": "85 Drygate",
+        "town": "Glasgow",
+        "postcode_lookup": "Glasgow",
+        "postcode": "G4 0UT",
+        "region": "Scotland",
+        "country": "GB",
+        "phone": "0141 212 8815",
+        "latitude": 55.860144,
+        "longitude": -4.233189,
+        "type": "bar",
+        "rating": 4,
+        "reviewCount": 239
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/7/4/0/2306854_52ecdd01_discovery-the-local-the-goodtrips-haircut-overdose_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/7/4/0/2306854_52ecdd01_discovery-the-local-the-goodtrips-haircut-overdose.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/7/4/0/2306854_52ecdd01_discovery-the-local-the-goodtrips-haircut-overdose_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/7/4/0/2306854_52ecdd01_discovery-the-local-the-goodtrips-haircut-overdose_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Glasgow/Drygate/Discovery-The-Local-The-Goodtrips-Haircut-Overdose/42601519/",
+      "date": "2026-08-21",
+      "startdate": "2026-08-21T18:30:00+00:00",
+      "enddate": "2026-08-21T22:00:00+00:00",
+      "description": "RCMS presents...... Discovery plus supports like at Drygate Glasgow. Fri 21st Aug 2026, over 14s, u16s w/ adult",
+      "openingtimes": {
+        "doorsopen": "18:30",
+        "doorsclose": "22:00",
+        "lastentry": ""
+      },
+      "minage": "14",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 13,
+        "maxPrice": 13
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": true,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#282828",
+      "currency": "GBP",
+      "artists": [],
+      "genres": [
+        {
+          "genreid": "5",
+          "name": "Rock"
+        },
+        {
+          "genreid": "26",
+          "name": "Indie"
+        }
+      ],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42406342",
+      "listingid": "2259803",
+      "isSBT": false,
+      "uniquelistingidentifier": "2259803",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "LIVE",
+      "eventname": "U2 Tribute W2",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 39418,
+        "name": "The Bungalow Bar",
+        "address": "15 Shuttle Street",
+        "town": "Paisley",
+        "postcode_lookup": "Paisley",
+        "postcode": "PA1 1YD",
+        "region": "Strathclyde",
+        "country": "GB",
+        "phone": "07432 347301",
+        "latitude": 55.843102,
+        "longitude": -4.425363,
+        "type": "live",
+        "rating": 4,
+        "reviewCount": 2439
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/a/7/7/2259803_99a71322_u2-tribute-w2_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/a/7/7/2259803_99a71322_u2-tribute-w2.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/a/7/7/2259803_99a71322_u2-tribute-w2_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/a/7/7/2259803_99a71322_u2-tribute-w2_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Paisley/The-Bungalow-Bar/U2-Tribute-W2/42406342/",
+      "date": "2026-08-21",
+      "startdate": "2026-08-21T19:00:00+00:00",
+      "enddate": "2026-08-21T23:45:00+00:00",
+      "description": "W2, are a Scottish based U2 Tribute Band, playing songs from the Irish legends",
+      "openingtimes": {
+        "doorsopen": "19:00",
+        "doorsclose": "23:45",
+        "lastentry": ""
+      },
+      "minage": "18",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 10,
+        "maxPrice": 10
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": true,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#080808",
+      "currency": "GBP",
+      "artists": [],
+      "genres": [],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42449873",
+      "listingid": "2270495",
+      "isSBT": false,
+      "uniquelistingidentifier": "2270495",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "LIVE",
+      "eventname": "STALLION 'Gig 2'",
+      "cancelled": "1",
+      "cancellationDate": "2026-07-22 10:54:33",
+      "cancellationType": "cancelled",
+      "cancellationReason": "Automatic cancellation: All future dates in the event series have been cancelled",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 29132,
+        "name": "Audio",
+        "address": "14 Midland Street",
+        "town": "Glasgow",
+        "postcode_lookup": "Glasgow",
+        "postcode": "G1 4PP",
+        "region": "Scotland",
+        "country": "GB",
+        "phone": "0141 444 4545",
+        "latitude": 55.857568,
+        "longitude": -4.257959,
+        "type": "live",
+        "rating": 4,
+        "reviewCount": 319
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/b/6/9/2270495_53bd3ead_stallion-gig-2-_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/b/6/9/2270495_53bd3ead_stallion-gig-2-.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/b/6/9/2270495_53bd3ead_stallion-gig-2-_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/b/6/9/2270495_53bd3ead_stallion-gig-2-_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Glasgow/Audio/STALLION-Gig-2/42449873/",
+      "date": "2026-08-21",
+      "startdate": "2026-08-21T19:00:00+00:00",
+      "enddate": "2026-08-21T22:00:00+00:00",
+      "description": "STALLION put on their second gig in Scotland's music capital, Glasgow.",
+      "openingtimes": {
+        "doorsopen": "19:00",
+        "doorsclose": "22:00",
+        "lastentry": "20:00"
+      },
+      "minage": "16",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": false,
+      "ticketpricing": {
+        "minPrice": 20,
+        "maxPrice": 20
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#080808",
+      "currency": "GBP",
+      "artists": [],
+      "genres": [
+        {
+          "genreid": "5",
+          "name": "Rock"
+        },
+        {
+          "genreid": "42",
+          "name": "Acoustic"
+        },
+        {
+          "genreid": "71",
+          "name": "Country/Americana"
+        }
+      ],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42486147",
+      "listingid": "2280326",
+      "isSBT": false,
+      "uniquelistingidentifier": "2280326",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "LIVE",
+      "eventname": "R2 Presents...See them First no.2",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 94867,
+        "name": "Room2",
+        "address": " 69 Nelson Mandela Place Glasgow, G2",
+        "town": "Glasgow",
+        "postcode_lookup": "Glasgow",
+        "postcode": "G2 1QY",
+        "region": "Scotland",
+        "country": "GB",
+        "phone": "",
+        "latitude": 55.862133,
+        "longitude": -4.254397,
+        "type": "live",
+        "rating": 4,
+        "reviewCount": 474
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/a/9/e/2280326_16547355_R2-Presents---See-them-First-no-2_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/a/9/e/2280326_16547355_R2-Presents---See-them-First-no-2.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/a/9/e/2280326_16547355_R2-Presents---See-them-First-no-2_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/a/9/e/2280326_16547355_R2-Presents---See-them-First-no-2_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Glasgow/Room2/R2-PresentsSee-them-First-no2/42486147/",
+      "date": "2026-08-21",
+      "startdate": "2026-08-21T19:00:00+00:00",
+      "enddate": "2026-08-21T22:00:00+00:00",
+      "description": "Room 2 returns with a follow up showcase, providing a solid platform for up and coming artists ready to show the world!",
+      "openingtimes": {
+        "doorsopen": "19:00",
+        "doorsclose": "22:00",
+        "lastentry": "19:00"
+      },
+      "minage": "14",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 8,
+        "maxPrice": 8
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#080808",
+      "currency": "GBP",
+      "artists": [],
+      "genres": [],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42614050",
+      "listingid": "2311056",
+      "isSBT": false,
+      "uniquelistingidentifier": "2311056",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "LIVE",
+      "eventname": "The Hate Eighties (Acoustic) + Benjamin Finney + Kait",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 7769,
+        "name": "Nice N Sleazy",
+        "address": "421 Sauchiehall Street",
+        "town": "Glasgow",
+        "postcode_lookup": "Glasgow",
+        "postcode": "G2 3LG",
+        "region": "Scotland",
+        "country": "GB",
+        "phone": "0141 333 0900",
+        "latitude": 55.865976,
+        "longitude": -4.26934099,
+        "type": "live",
+        "rating": 4,
+        "reviewCount": 625
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/5/f/c/2311056_d8a9d26f_the-hate-eighties-acoustic-benjamin-finney-kait_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/5/f/c/2311056_d8a9d26f_the-hate-eighties-acoustic-benjamin-finney-kait.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/5/f/c/2311056_d8a9d26f_the-hate-eighties-acoustic-benjamin-finney-kait_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/5/f/c/2311056_d8a9d26f_the-hate-eighties-acoustic-benjamin-finney-kait_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Glasgow/Nice-N-Sleazy/The-Hate-Eighties-Acoustic--Benjamin-Finney--Kait/42614050/",
+      "date": "2026-08-21",
+      "startdate": "2026-08-21T19:30:00+00:00",
+      "enddate": "2026-08-21T23:45:00+00:00",
+      "description": "A night of acoustic-led music from these renowned Glasgow-based artists.",
+      "openingtimes": {
+        "doorsopen": "19:30",
+        "doorsclose": "23:45",
+        "lastentry": ""
+      },
+      "minage": "18",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 7,
+        "maxPrice": 7
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#080808",
+      "currency": "GBP",
+      "artists": [
+        {
+          "artistid": "123577203",
+          "name": "Benjamin Finney",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/3/123577203_1_1024.jpg",
+          "spotifyartisturl": "spotify:artist:7mirKzhz82o6GpjxW7Zxnl"
+        },
+        {
+          "artistid": "123627645",
+          "name": "The Hatie Eighties",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/5/123627645_764c1ebe_1024.jpg",
+          "spotifyartisturl": "spotify:artist:3kJUNZlwblKZoagsbqfh93"
+        },
+        {
+          "artistid": "123627646",
+          "name": "Kait",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/6/123627646_7e2628ea_1024.jpg",
+          "spotifyartisturl": "spotify:artist:0W8SMiAGLTB4nyuOhLfTo5"
+        }
+      ],
+      "genres": [
+        {
+          "genreid": "5",
+          "name": "Rock"
+        },
+        {
+          "genreid": "20",
+          "name": "Pop"
+        },
+        {
+          "genreid": "42",
+          "name": "Acoustic"
+        },
+        {
+          "genreid": "46",
+          "name": "Alternative"
+        },
+        {
+          "genreid": "89",
+          "name": "Post Rock"
+        }
+      ],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42419889",
+      "listingid": "2263428",
+      "isSBT": false,
+      "uniquelistingidentifier": "2263428",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "LIVE",
+      "eventname": "The Figiro Quartet",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 8548,
+        "name": "Blue Dog",
+        "address": "151 WEst George Street",
+        "town": "Glasgow",
+        "postcode_lookup": "Glasgow",
+        "postcode": "G1 2JJ",
+        "region": "Scotland",
+        "country": "GB",
+        "phone": "0141 229 0707",
+        "latitude": 55.860728,
+        "longitude": -4.250792,
+        "type": "bar",
+        "rating": 5,
+        "reviewCount": 1
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/1/f/5/2263424_17911914_The-Figiro-Quartet_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/1/f/5/2263424_17911914_The-Figiro-Quartet.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/1/f/5/2263424_17911914_The-Figiro-Quartet_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/1/f/5/2263424_17911914_The-Figiro-Quartet_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Glasgow/Blue-Dog/The-Figiro-Quartet/42419889/",
+      "date": "2026-08-21",
+      "startdate": "2026-08-21T20:00:00+00:00",
+      "enddate": "2026-08-21T23:00:00+00:00",
+      "description": "Light Jazz and Swing",
+      "openingtimes": {
+        "doorsopen": "20:00",
+        "doorsclose": "23:00",
+        "lastentry": ""
+      },
+      "minage": "18",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": false,
+      "ticketpricing": {
+        "minPrice": 7,
+        "maxPrice": 7
+      },
+      "entryprice": "free",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "",
+      "currency": "GBP",
+      "artists": [],
+      "genres": [
+        {
+          "genreid": "25",
+          "name": "Jazz"
+        },
+        {
+          "genreid": "58",
+          "name": "Swing"
+        }
+      ],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42400749",
+      "listingid": "2258388",
+      "isSBT": false,
+      "uniquelistingidentifier": "2258388",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "LIVE",
+      "eventname": "The Gerry Cinna-Man Experience",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 12238,
+        "name": "The Ferry",
+        "address": "25 Anderson Quay",
+        "town": "Glasgow",
+        "postcode_lookup": "Glasgow",
+        "postcode": "G3 8BX",
+        "region": "Scotland",
+        "country": "GB",
+        "phone": "01698 360085",
+        "latitude": 55.856271,
+        "longitude": -4.268533,
+        "type": "live",
+        "rating": 4,
+        "reviewCount": 768
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/b/c/e/2258388_1a4d87fb_the-gerry-cinna-man-experience_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/b/c/e/2258388_1a4d87fb_the-gerry-cinna-man-experience.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/b/c/e/2258388_1a4d87fb_the-gerry-cinna-man-experience_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/b/c/e/2258388_1a4d87fb_the-gerry-cinna-man-experience_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Glasgow/The-Ferry/The-Gerry-Cinna-Man-Experience/42400749/",
+      "date": "2026-08-21",
+      "startdate": "2026-08-21T20:30:00+00:00",
+      "enddate": "2026-08-21T23:45:00+00:00",
+      "description": "Get ready for an unforgettable night as The Gerry Cinna-Man Experience makes its highly anticipated debut at The Ferry!",
+      "openingtimes": {
+        "doorsopen": "20:30",
+        "doorsclose": "23:45",
+        "lastentry": ""
+      },
+      "minage": "18",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 15,
+        "maxPrice": 32.45
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#181818",
+      "currency": "GBP",
+      "artists": [],
+      "genres": [
+        {
+          "genreid": "48",
+          "name": "Covers Band/Tribute Act"
+        }
+      ],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42420207",
+      "listingid": "2263458",
+      "isSBT": false,
+      "uniquelistingidentifier": "2263458",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "LIVE",
+      "eventname": "Pablo Jones",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 115322,
+        "name": "Bluedog",
+        "address": "151 West George Street",
+        "town": "Glasgow",
+        "postcode_lookup": "Glasgow",
+        "postcode": "g2 2jj",
+        "region": "Scotland",
+        "country": "GB",
+        "phone": "0141 229 1712",
+        "latitude": 55.8623534,
+        "longitude": -4.2574755,
+        "type": "bar",
+        "rating": 4,
+        "reviewCount": 6
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/f/e/3/2263445_44949969_Pablo-Jones_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/f/e/3/2263445_44949969_Pablo-Jones.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/f/e/3/2263445_44949969_Pablo-Jones_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/f/e/3/2263445_44949969_Pablo-Jones_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Glasgow/Bluedog/Pablo-Jones/42420207/",
+      "date": "2026-08-21",
+      "startdate": "2026-08-21T23:30:00+00:00",
+      "enddate": "2026-08-22T02:30:00+00:00",
+      "description": "Guitarist & singer Pablo Jones",
+      "openingtimes": {
+        "doorsopen": "23:30",
+        "doorsclose": "02:30",
+        "lastentry": ""
+      },
+      "minage": "18",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": false,
+      "ticketpricing": {
+        "minPrice": 15,
+        "maxPrice": 32.45
+      },
+      "entryprice": "free",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "",
+      "currency": "GBP",
+      "artists": [],
+      "genres": [
+        {
+          "genreid": "43",
+          "name": "Soul"
+        },
+        {
+          "genreid": "45",
+          "name": "Funk"
+        },
+        {
+          "genreid": "60",
+          "name": "Rock & Roll / 1950s"
+        },
+        {
+          "genreid": "62",
+          "name": "1980s"
+        },
+        {
+          "genreid": "64",
+          "name": "1970s"
+        }
+      ],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42570498",
+      "listingid": "2298941",
+      "isSBT": false,
+      "uniquelistingidentifier": "40SgJugzEf",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "LIVE",
+      "eventname": "Ivy Chizi live @ Blackfriars",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 114382,
+        "name": "Blackfriars Of Bell Street",
+        "address": "36 Bell Street",
+        "town": "Glasgow",
+        "postcode_lookup": "Glasgow",
+        "postcode": "G1 1LG",
+        "region": "Scotland",
+        "country": "GB",
+        "phone": "",
+        "latitude": 55.8579628,
+        "longitude": -4.244689,
+        "type": "Nightclub",
+        "rating": 4,
+        "reviewCount": 78
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/9/1/9/2298936_52e2205e_ivy-chizi-live-blackfriars_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/9/1/9/2298936_52e2205e_ivy-chizi-live-blackfriars.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/9/1/9/2298936_52e2205e_ivy-chizi-live-blackfriars_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/9/1/9/2298936_52e2205e_ivy-chizi-live-blackfriars_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Glasgow/Blackfriars-Of-Bell-Street/Ivy-Chizi-live--Blackfriars/42570498/",
+      "date": "2026-08-22",
+      "startdate": "2026-08-22T17:00:00+00:00",
+      "enddate": "2026-08-22T19:00:00+00:00",
+      "description": "Come along and listen to the fantastic Ivy Chizi live performing all the pub classics to pop hits to liven up your weekend!",
+      "openingtimes": {
+        "doorsopen": "17:00",
+        "doorsclose": "19:00",
+        "lastentry": ""
+      },
+      "minage": "18",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 0,
+        "maxPrice": 0
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "",
+      "currency": "GBP",
+      "artists": [],
+      "genres": [
+        {
+          "genreid": "20",
+          "name": "Pop"
+        },
+        {
+          "genreid": "26",
+          "name": "Indie"
+        },
+        {
+          "genreid": "42",
+          "name": "Acoustic"
+        },
+        {
+          "genreid": "98",
+          "name": "Indie Pop"
+        }
+      ],
+      "healthAndSafety": []
+    }
+  ],
+  "elastic": {
+    "timing": 5
+  },
+  "requestId": "api_6a886a21c97bf9.87291186"
+}

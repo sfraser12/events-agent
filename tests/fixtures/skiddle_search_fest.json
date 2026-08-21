@@ -1,0 +1,904 @@
+{
+  "error": 0,
+  "totalcount": "8",
+  "pagecount": 8,
+  "results": [
+    {
+      "id": "42267769",
+      "listingid": "2231505",
+      "isSBT": false,
+      "uniquelistingidentifier": "2231505",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "FEST",
+      "eventname": "Paisley Music and Arts Street Festival",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 138321,
+        "name": "Shuttle Street, Paisley",
+        "address": "15 Shuttle Street",
+        "town": "Paisley",
+        "postcode_lookup": "Paisley",
+        "postcode": "PA1 1YD",
+        "region": "Strathclyde",
+        "country": "GB",
+        "phone": "07790718162",
+        "latitude": 55.8430312,
+        "longitude": -4.4252126,
+        "type": "Outdoors",
+        "rating": 0,
+        "reviewCount": 0
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/b/5/8/2231505_d1253f9c_paisley-music-and-arts-street-festival_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/b/5/8/2231505_d1253f9c_paisley-music-and-arts-street-festival.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/b/5/8/2231505_d1253f9c_paisley-music-and-arts-street-festival_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/b/5/8/2231505_d1253f9c_paisley-music-and-arts-street-festival_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Paisley/Shuttle-Street%2C-Paisley/Paisley-Music-and-Arts-Street-Festival/42267769/",
+      "date": "2026-08-22",
+      "startdate": "2026-08-22T12:00:00+00:00",
+      "enddate": "2026-08-22T21:00:00+00:00",
+      "description": "A family friendly music and arts festival at Shuttle Street and Browns Lane in Paisley",
+      "openingtimes": {
+        "doorsopen": "12:00",
+        "doorsclose": "21:00",
+        "lastentry": ""
+      },
+      "minage": "",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 15,
+        "maxPrice": 18
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": true,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#080808",
+      "currency": "GBP",
+      "artists": [],
+      "genres": [],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42603128",
+      "listingid": "2307293",
+      "isSBT": false,
+      "uniquelistingidentifier": "2307293",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "FEST",
+      "eventname": "BBC Radio 2 In The Park",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 85561,
+        "name": "The City Park ",
+        "address": "Dumbarton Road",
+        "town": "Stirling",
+        "postcode_lookup": "Stirling",
+        "postcode": "FK8 3AB",
+        "region": "Central",
+        "country": "GB",
+        "phone": "",
+        "latitude": 56.1162112,
+        "longitude": -3.9720002,
+        "type": "Outdoors",
+        "rating": 4,
+        "reviewCount": 2
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/0/1/9/2307293_97610946_BBC-Radio-2-In-The-Park_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/0/1/9/2307293_97610946_BBC-Radio-2-In-The-Park.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/0/1/9/2307293_97610946_BBC-Radio-2-In-The-Park_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/0/1/9/2307293_97610946_BBC-Radio-2-In-The-Park_1024.webp",
+      "link": "https://www.skiddle.com/festivals/bbc-radio-2-in-the-park/",
+      "date": "2026-09-11",
+      "startdate": "2026-09-11T11:00:00+00:00",
+      "enddate": "2026-09-13T23:00:00+00:00",
+      "description": "BBC Radio 2 In The Park.",
+      "openingtimes": {
+        "doorsopen": "11:00",
+        "doorsclose": "23:00",
+        "lastentry": ""
+      },
+      "minage": "",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": false,
+      "ticketpricing": {
+        "minPrice": 15,
+        "maxPrice": 18
+      },
+      "entryprice": "0",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "festivalId": 2674,
+      "festival": {
+        "id": 2674,
+        "name": "BBC Radio 2 In The Park Festival",
+        "earliestStartDate": null
+      },
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#f88818",
+      "currency": "GBP",
+      "artists": [
+        {
+          "artistid": "123510654",
+          "name": "The Script",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/4/123510654_267.jpg",
+          "spotifyartisturl": "spotify:artist:3AQRLZ9PuTAozP28Skbq8V"
+        },
+        {
+          "artistid": "123483746",
+          "name": "James Blunt",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/6/123483746_267.jpg",
+          "spotifyartisturl": "spotify:artist:7KMqksf0UMdyA0UCf4R3ux"
+        },
+        {
+          "artistid": "123512106",
+          "name": "Simple Minds",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/6/123512106_267.jpg",
+          "spotifyartisturl": "spotify:artist:6hN9F0iuULZYWXppob22Aj"
+        },
+        {
+          "artistid": "123511116",
+          "name": "Emeli Sande",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/6/123511116_1_1024.jpg",
+          "spotifyartisturl": "spotify:artist:7sfgqEdoeBTjd8lQsPT3Cy"
+        },
+        {
+          "artistid": "123537697",
+          "name": "Chaka Khan",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/7/123537697_267.jpg",
+          "spotifyartisturl": "spotify:artist:6mQfAAqZGBzIfrmlZCeaYT"
+        },
+        {
+          "artistid": "123494328",
+          "name": "Blue",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/8/123494328_267.jpg",
+          "spotifyartisturl": "spotify:artist:2yEkZBBjhzKzt6LF5XMaFi"
+        },
+        {
+          "artistid": "735504",
+          "name": "Level 42",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/4/735504_267.jpg",
+          "spotifyartisturl": "spotify:artist:0L9xkvBPcEp1nrhDrodxc5"
+        },
+        {
+          "artistid": "123465703",
+          "name": "Texas",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/3/123465703_267.jpg",
+          "spotifyartisturl": "spotify:artist:5JsdVATHNPE0XdMFMRoSuf"
+        },
+        {
+          "artistid": "123527658",
+          "name": "ABC",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/8/123527658_2_1024.jpg",
+          "spotifyartisturl": "spotify:artist:2s79xe5F6eUQkjwjww27Fh"
+        },
+        {
+          "artistid": "123485220",
+          "name": "Cast",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/0/123485220_2_1024.jpg",
+          "spotifyartisturl": "spotify:artist:0vBDEQ1aLZpe4zgn2fPH6Z"
+        },
+        {
+          "artistid": "123506718",
+          "name": "Jack Savoretti",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/8/123506718_267.jpg",
+          "spotifyartisturl": "spotify:artist:7nC05zmJukRGYObQeRgg3x"
+        },
+        {
+          "artistid": "933389",
+          "name": "Deacon Blue",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/9/933389_267.jpg",
+          "spotifyartisturl": "spotify:artist:5jqKIZLB5WA5KquEihB3ND"
+        },
+        {
+          "artistid": "123542180",
+          "name": "Lulu",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/0/123542180_2_1024.jpg",
+          "spotifyartisturl": "spotify:artist:0jYKX08u1XxmHrl5TdM2QZ"
+        },
+        {
+          "artistid": "123531500",
+          "name": "Michelle Visage",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/0/123531500_1_1024.jpg",
+          "spotifyartisturl": "spotify:artist:3ZL8HZ3aYkOluy6TX9xAgK"
+        },
+        {
+          "artistid": "123534854",
+          "name": "DJ Spoony",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/4/123534854_2_1024.jpg",
+          "spotifyartisturl": "spotify:artist:6tDESlsE9MXHHGHASpXukv"
+        },
+        {
+          "artistid": "123516074",
+          "name": "Rylan Clark",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/4/123516074_267.jpg",
+          "spotifyartisturl": null
+        },
+        {
+          "artistid": "123559731",
+          "name": "Sara Cox",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/1/123559731_1_1024.jpg",
+          "spotifyartisturl": "spotify:artist:0bSJOGh1jJ51A1yzoKMXjE"
+        },
+        {
+          "artistid": "123599146",
+          "name": "Gary Davies",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/6/123599146_a395cd2f_1024.jpg",
+          "spotifyartisturl": "spotify:artist:2KZEUj6DmJeSKvUkcQEcTx"
+        },
+        {
+          "artistid": "123613191",
+          "name": "Appleton",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/1/123613191_1_1024.jpg",
+          "spotifyartisturl": "spotify:artist:7DfLZTzpQJl5Ni7WhTtAIY"
+        }
+      ],
+      "genres": [
+        {
+          "genreid": "4",
+          "name": "R&B"
+        },
+        {
+          "genreid": "20",
+          "name": "Pop"
+        },
+        {
+          "genreid": "98",
+          "name": "Indie Pop"
+        },
+        {
+          "genreid": "107",
+          "name": "Pop Rock"
+        }
+      ],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42603279",
+      "listingid": "2307438",
+      "isSBT": false,
+      "uniquelistingidentifier": "2307438",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "FEST",
+      "eventname": "Glasgow Cathedral Festival",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 29700,
+        "name": "Glasgow Cathedral",
+        "address": "Cathedral Square, Castle Street",
+        "town": "Glasgow",
+        "postcode_lookup": "Glasgow",
+        "postcode": "G4 0QZ",
+        "region": "Scotland",
+        "country": "GB",
+        "phone": "0141 552 8198",
+        "latitude": 55.8630606,
+        "longitude": -4.2345819,
+        "type": "live",
+        "rating": 3,
+        "reviewCount": 10
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/c/d/7/2307438_5cebfaf7_glasgow-cathedral-festival_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/c/d/7/2307438_5cebfaf7_glasgow-cathedral-festival.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/c/d/7/2307438_5cebfaf7_glasgow-cathedral-festival_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/c/d/7/2307438_5cebfaf7_glasgow-cathedral-festival_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Glasgow/Glasgow-Cathedral/Glasgow-Cathedral-Festival/42603279/",
+      "date": "2026-09-17",
+      "startdate": "2026-09-17T20:00:00+00:00",
+      "enddate": "2026-09-20T20:30:00+00:00",
+      "description": "Glasgow Cathedral Festival returns from 17-20 September 2026 with a special 10th anniversary programme in Glasgow's oldest building.",
+      "openingtimes": {
+        "doorsopen": "20:00",
+        "doorsclose": "20:30",
+        "lastentry": ""
+      },
+      "minage": "",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": false,
+      "ticketpricing": {
+        "minPrice": 15,
+        "maxPrice": 18
+      },
+      "entryprice": "10",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#686858",
+      "currency": "GBP",
+      "artists": [],
+      "genres": [
+        {
+          "genreid": "37",
+          "name": "Classical"
+        },
+        {
+          "genreid": "51",
+          "name": "Choral"
+        },
+        {
+          "genreid": "91",
+          "name": "Experimental"
+        },
+        {
+          "genreid": "100",
+          "name": "Orchestral"
+        }
+      ],
+      "healthAndSafety": []
+    },
+    {
+      "id": "41970865",
+      "listingid": "2192476",
+      "isSBT": false,
+      "uniquelistingidentifier": "2192476",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "FEST",
+      "eventname": "Complete Stone Roses Live In The Big Top",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 125376,
+        "name": "Queens Park Recreation",
+        "address": "Queens Drive",
+        "town": "Glasgow",
+        "postcode_lookup": "Glasgow",
+        "postcode": "G42 8QR",
+        "region": "Scotland",
+        "country": "GB",
+        "phone": "0890543521",
+        "latitude": 55.8298752,
+        "longitude": -4.259955,
+        "type": "Nightclub",
+        "rating": 4,
+        "reviewCount": 112
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/1/3/4/2192476_d4df328b_complete-stone-roses-love-in-the-big-top_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/1/3/4/2192476_d4df328b_complete-stone-roses-love-in-the-big-top.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/1/3/4/2192476_d4df328b_complete-stone-roses-love-in-the-big-top_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/1/3/4/2192476_d4df328b_complete-stone-roses-love-in-the-big-top_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Glasgow/Queens-Park-Recreation/Complete-Stone-Roses-Live-In-The-Big-Top/41970865/",
+      "date": "2026-09-19",
+      "startdate": "2026-09-19T13:00:00+00:00",
+      "enddate": "2026-09-19T23:00:00+00:00",
+      "description": "We return and bigger and better on Saturday 19th September!\n\nTickets go on sale tomorrow morning at 8am.\n\nWe expect this to sell very fast!",
+      "openingtimes": {
+        "doorsopen": "13:00",
+        "doorsclose": "23:00",
+        "lastentry": "21:00"
+      },
+      "minage": "18",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 21.5,
+        "maxPrice": 27.9
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#f8f8f8",
+      "currency": "GBP",
+      "artists": [
+        {
+          "artistid": "123489022",
+          "name": "The Complete Stone Roses",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/2/123489022_1_1024.jpg",
+          "spotifyartisturl": "spotify:artist:0Lv1HLd06Vvi4Ng5HMFMbU"
+        },
+        {
+          "artistid": "123543455",
+          "name": "Definitely Oasis",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/5/123543455_5_1024.jpg",
+          "spotifyartisturl": null
+        },
+        {
+          "artistid": "123565415",
+          "name": "Laid - James Tribute Band",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/5/123565415_1_1024.jpg",
+          "spotifyartisturl": null
+        },
+        {
+          "artistid": "123575237",
+          "name": "'Appy Mundays",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/7/123575237_247c6cb1_1024.jpg",
+          "spotifyartisturl": null
+        },
+        {
+          "artistid": "123594375",
+          "name": "The All Weller Band",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/5/123594375_da853d31_1024.jpg",
+          "spotifyartisturl": null
+        }
+      ],
+      "genres": [
+        {
+          "genreid": "5",
+          "name": "Rock"
+        },
+        {
+          "genreid": "26",
+          "name": "Indie"
+        },
+        {
+          "genreid": "93",
+          "name": "Brit Pop"
+        },
+        {
+          "genreid": "98",
+          "name": "Indie Pop"
+        }
+      ],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42645772",
+      "listingid": "2319047",
+      "isSBT": false,
+      "uniquelistingidentifier": "2319047",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "FEST",
+      "eventname": "Soul Journey Weekender",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 139757,
+        "name": "Charlie's Loft 14/16 Stewart Street, Milngavie. G62 6BY",
+        "address": "14/16 Stewart Street",
+        "town": "Milngavie",
+        "postcode_lookup": "Glasgow",
+        "postcode": "G62 6BY",
+        "region": "Scotland",
+        "country": "GB",
+        "phone": "",
+        "latitude": 55.9402533,
+        "longitude": -4.3188658,
+        "type": "live",
+        "rating": 4,
+        "reviewCount": 3
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/9/7/c/2319047_782ea38a_soul-journey-weekender_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/9/7/c/2319047_782ea38a_soul-journey-weekender.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/9/7/c/2319047_782ea38a_soul-journey-weekender_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/9/7/c/2319047_782ea38a_soul-journey-weekender_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Glasgow/Charlie%27s-Loft-14%2F16-Stewart-Street%2C-Milngavie.-G62-6BY/Soul-Journey-Weekender/42645772/",
+      "date": "2026-09-25",
+      "startdate": "2026-09-25T19:00:00+00:00",
+      "enddate": "2026-09-27T02:00:00+00:00",
+      "description": "We’re excited to announce Soul Journey Weekender 2026, taking place on 25th & 26th September 2026 across multiple venues in sunny Milngavie.",
+      "openingtimes": {
+        "doorsopen": "19:00",
+        "doorsclose": "02:00",
+        "lastentry": ""
+      },
+      "minage": "",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 6.13,
+        "maxPrice": 54.88
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#f8e8c8",
+      "currency": "GBP",
+      "artists": [
+        {
+          "artistid": "123495886",
+          "name": "Crazy P",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/6/123495886_2_1024.jpg",
+          "spotifyartisturl": "spotify:artist:6jOz2B9qeID4dLP1o8bFGf"
+        },
+        {
+          "artistid": "123457107",
+          "name": "Greg Wilson",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/7/123457107_4_1024.jpg",
+          "spotifyartisturl": "spotify:artist:0MHrWmXWoxrVGUiEiz8Qw7"
+        },
+        {
+          "artistid": "123482020",
+          "name": "Bill Brewster",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/0/123482020_1_1024.jpg",
+          "spotifyartisturl": "spotify:artist:01Hj5EQGynnrJncV7vhAyA"
+        },
+        {
+          "artistid": "123483684",
+          "name": "Al Kent",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/4/123483684_267.jpg",
+          "spotifyartisturl": "spotify:artist:2JpeL8UPpvsTSaocrKi1Z0"
+        },
+        {
+          "artistid": "123493362",
+          "name": "Aroop Roy",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/2/123493362_267.jpg",
+          "spotifyartisturl": "spotify:artist:13ZcbaFfAsWtq989FqCXVQ"
+        },
+        {
+          "artistid": "123508770",
+          "name": "Marcel Vogel",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/0/123508770_1_1024.jpg",
+          "spotifyartisturl": "spotify:artist:58cSkLlJKQgbPGKph5569D"
+        },
+        {
+          "artistid": "123523124",
+          "name": "Auntie Flo",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/4/123523124_267.jpg",
+          "spotifyartisturl": "spotify:artist:6XYOjW5wxf5V9hwAR58o4d"
+        },
+        {
+          "artistid": "123569197",
+          "name": "Bob Jeffries",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/7/123569197_1_1024.jpg",
+          "spotifyartisturl": null
+        },
+        {
+          "artistid": "123583766",
+          "name": "Buthothewarrior",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/6/123583766_1_1024.jpg",
+          "spotifyartisturl": null
+        }
+      ],
+      "genres": [
+        {
+          "genreid": "43",
+          "name": "Soul"
+        },
+        {
+          "genreid": "108",
+          "name": "Soulful House"
+        }
+      ],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42560897",
+      "listingid": "2296305",
+      "isSBT": false,
+      "uniquelistingidentifier": "2296305",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "FEST",
+      "eventname": "Oktoberfest | SWG3, Glasgow",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 17243,
+        "name": "SWG3",
+        "address": "Studio Warehouse, 100 Eastvale Place",
+        "town": "Glasgow",
+        "postcode_lookup": "Glasgow",
+        "postcode": "G3 8QG",
+        "region": "Scotland",
+        "country": "GB",
+        "phone": "0141 337 1731",
+        "latitude": 55.86462,
+        "longitude": -4.299838,
+        "type": "Nightclub",
+        "rating": 4,
+        "reviewCount": 7424
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/c/d/7/2296305_c9385422_oktoberfest-swg3-glasgow_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/c/d/7/2296305_c9385422_oktoberfest-swg3-glasgow.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/c/d/7/2296305_c9385422_oktoberfest-swg3-glasgow_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/c/d/7/2296305_c9385422_oktoberfest-swg3-glasgow_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Glasgow/SWG3/Oktoberfest--SWG3-Glasgow/42560897/",
+      "date": "2026-09-26",
+      "startdate": "2026-09-26T12:00:00+00:00",
+      "enddate": "2026-09-26T22:30:00+00:00",
+      "description": "Germany's biggest celebration is coming to Glasgow! Expect legendary beer, live music, and an unforgettable atmosphere.",
+      "openingtimes": {
+        "doorsopen": "12:00",
+        "doorsclose": "22:30",
+        "lastentry": ""
+      },
+      "minage": "18",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 16,
+        "maxPrice": 34
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": true,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#f8f8f8",
+      "currency": "GBP",
+      "artists": [],
+      "genres": [
+        {
+          "genreid": "44",
+          "name": "Folk"
+        },
+        {
+          "genreid": "48",
+          "name": "Covers Band/Tribute Act"
+        }
+      ],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42453627",
+      "listingid": "2270908",
+      "isSBT": false,
+      "uniquelistingidentifier": "2270908",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "FEST",
+      "eventname": "Paisleyradio.com presents, Party down the Lane",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 139613,
+        "name": "Brown Lane Paisley",
+        "address": "Browns Lane paisley",
+        "town": "PAISLEY",
+        "postcode_lookup": "Paisley",
+        "postcode": "PA1 2JH",
+        "region": "Strathclyde",
+        "country": "GB",
+        "phone": "07915025908",
+        "latitude": 55.8428973,
+        "longitude": -4.4248969,
+        "type": "Outdoors",
+        "rating": 0,
+        "reviewCount": 0
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/4/7/b/2270908_091bbb11_paisleyradio-com-presents-party-down-the-lane_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/4/7/b/2270908_091bbb11_paisleyradio-com-presents-party-down-the-lane.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/4/7/b/2270908_091bbb11_paisleyradio-com-presents-party-down-the-lane_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/4/7/b/2270908_091bbb11_paisleyradio-com-presents-party-down-the-lane_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Paisley/Brown-Lane-Paisley/Paisleyradiocom-presents-Party-down-the-Lane/42453627/",
+      "date": "2026-09-27",
+      "startdate": "2026-09-27T12:00:00+00:00",
+      "enddate": "2026-09-27T16:00:00+00:00",
+      "description": "Let's enjoy the summer in style with a music festival from the best of paisleys music scene, Paisley radio hosts live acts at browns Lane.",
+      "openingtimes": {
+        "doorsopen": "12:00",
+        "doorsclose": "16:00",
+        "lastentry": "15:00"
+      },
+      "minage": "",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 15,
+        "maxPrice": 15
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#080808",
+      "currency": "GBP",
+      "artists": [],
+      "genres": [
+        {
+          "genreid": "26",
+          "name": "Indie"
+        },
+        {
+          "genreid": "42",
+          "name": "Acoustic"
+        },
+        {
+          "genreid": "113",
+          "name": "Pop Punk"
+        },
+        {
+          "genreid": "126",
+          "name": "Alternative Pop"
+        }
+      ],
+      "healthAndSafety": []
+    },
+    {
+      "id": "42573082",
+      "listingid": "2299609",
+      "isSBT": false,
+      "uniquelistingidentifier": "2299609",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "FEST",
+      "eventname": "The Big One",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 135964,
+        "name": "Dumbarton Football Club",
+        "address": "Marbill Coaches Stadium",
+        "town": "Dumbarton",
+        "postcode_lookup": "Glasgow",
+        "postcode": "G82 1JJ",
+        "region": "Scotland",
+        "country": "GB",
+        "phone": "01389 762569",
+        "latitude": 55.9384198,
+        "longitude": -4.5616506,
+        "type": "live",
+        "rating": 4,
+        "reviewCount": 33
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/a/2/0/2299609_784cd6a3_the-big-one_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/a/2/0/2299609_784cd6a3_the-big-one.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/a/2/0/2299609_784cd6a3_the-big-one_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/a/2/0/2299609_784cd6a3_the-big-one_1024.webp",
+      "link": "https://www.skiddle.com/festivals/dumbarton-rocks-festival/",
+      "date": "2026-09-27",
+      "startdate": "2026-09-27T12:00:00+00:00",
+      "enddate": "2026-09-27T22:00:00+00:00",
+      "description": "Dumbarton Rocks is back and bigger than ever!\nGet your tickets for Dumbartons biggest live music event supported by local businesses and DFC.",
+      "openingtimes": {
+        "doorsopen": "12:00",
+        "doorsclose": "22:00",
+        "lastentry": "20:00"
+      },
+      "minage": "",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 8,
+        "maxPrice": 50
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "festivalId": 3207,
+      "festival": {
+        "id": 3207,
+        "name": "Dumbarton Rocks Festival",
+        "earliestStartDate": null
+      },
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#7888a8",
+      "currency": "GBP",
+      "artists": [
+        {
+          "artistid": "123557332",
+          "name": "DJ Rankin",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/2/123557332_1_1024.jpg",
+          "spotifyartisturl": "spotify:artist:3qmNvfj1RIoMrfqmjZpwXi"
+        },
+        {
+          "artistid": "123550832",
+          "name": "Colonel Mustard & The Dijon 5",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/2/123550832_1_1024.jpg",
+          "spotifyartisturl": "spotify:artist:21oTPMdqBn2YbixMQ21vBR"
+        },
+        {
+          "artistid": "123551203",
+          "name": "Kyle Falconer (The View)",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/3/123551203_1_1024.jpg",
+          "spotifyartisturl": null
+        },
+        {
+          "artistid": "123551468",
+          "name": "Stephen Kirkwood",
+          "image": "https://d1plawd8huk6hh.cloudfront.net/assets/default400.png",
+          "spotifyartisturl": "spotify:artist:2B3Vmzyhy4QFnY02UKyMi5"
+        },
+        {
+          "artistid": "123557281",
+          "name": "Mikey Motion (DJ)",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/1/123557281_2_1024.jpg",
+          "spotifyartisturl": "spotify:artist:26EI7OFplaqcLsVLXAbqAG"
+        },
+        {
+          "artistid": "123597520",
+          "name": "BEN WALKER",
+          "image": "https://d1plawd8huk6hh.cloudfront.net/assets/default400.png",
+          "spotifyartisturl": "spotify:artist:6M5nTM4FiScPKeu8sO3RS4"
+        },
+        {
+          "artistid": "123608954",
+          "name": "Leah Muir",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/4/123608954_1_1024.jpg",
+          "spotifyartisturl": "spotify:artist:0eAvJOpyRpNhyMR6OarXLZ"
+        },
+        {
+          "artistid": "123614849",
+          "name": "Levengrove",
+          "image": "https://d1mdxzfl9p8pzo.cloudfront.net/9/123614849_1_1024.jpg",
+          "spotifyartisturl": "spotify:artist:5UQtrx4qan0z0A4PGptWFL"
+        }
+      ],
+      "genres": [
+        {
+          "genreid": "5",
+          "name": "Rock"
+        },
+        {
+          "genreid": "20",
+          "name": "Pop"
+        },
+        {
+          "genreid": "98",
+          "name": "Indie Pop"
+        },
+        {
+          "genreid": "107",
+          "name": "Pop Rock"
+        }
+      ],
+      "healthAndSafety": []
+    }
+  ],
+  "elastic": {
+    "timing": 82
+  },
+  "requestId": "api_6a886a2209d457.27946601"
+}

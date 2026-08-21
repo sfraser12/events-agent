@@ -1,0 +1,77 @@
+{
+  "error": 0,
+  "totalcount": "11",
+  "pagecount": 1,
+  "results": [
+    {
+      "id": "42483349",
+      "listingid": "2279209",
+      "isSBT": false,
+      "uniquelistingidentifier": "2279209",
+      "hascollapsedresults": false,
+      "countcollapsedresults": 0,
+      "EventCode": "THEATRE",
+      "eventname": "Evening of Mediumship, Scotland",
+      "cancelled": "0",
+      "cancellationDate": "",
+      "cancellationType": "",
+      "cancellationReason": "",
+      "rescheduledDate": "",
+      "venue": {
+        "id": 118453,
+        "name": "The Normandy Hotel ",
+        "address": "Inchinnan Road",
+        "town": "Renfrew",
+        "postcode_lookup": "Paisley",
+        "postcode": "PA4 9EJ",
+        "region": "Strathclyde",
+        "country": "GB",
+        "phone": "",
+        "latitude": 55.8804267,
+        "longitude": -4.4073975,
+        "type": "Nightclub",
+        "rating": 4,
+        "reviewCount": 66
+      },
+      "imageurl": "https://d31fr2pwly4c4s.cloudfront.net/1/2/9/2279209_26724577_Evening-of-Mediumship--Scotland_th.jpg",
+      "largeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/1/2/9/2279209_26724577_Evening-of-Mediumship--Scotland.jpg",
+      "xlargeimageurl": "https://d31fr2pwly4c4s.cloudfront.net/1/2/9/2279209_26724577_Evening-of-Mediumship--Scotland_1024.jpg",
+      "xlargeimageurlWebP": "https://d31fr2pwly4c4s.cloudfront.net/1/2/9/2279209_26724577_Evening-of-Mediumship--Scotland_1024.webp",
+      "link": "https://www.skiddle.com/whats-on/Paisley/The-Normandy-Hotel-/Evening-of-Mediumship-Scotland/42483349/",
+      "date": "2026-11-05",
+      "startdate": "2026-11-05T20:00:00+00:00",
+      "enddate": "2026-11-05T22:00:00+00:00",
+      "description": "Experience an unforgettable evening of connecting with departed loved ones as you join Angela Dunlop, a gifted psychic medium. Secure your spot today!",
+      "openingtimes": {
+        "doorsopen": "20:00",
+        "doorsclose": "22:00",
+        "lastentry": "20:00"
+      },
+      "minage": "",
+      "imgoing": null,
+      "goingtos": 0,
+      "goingtocount": "0",
+      "tickets": true,
+      "ticketpricing": {
+        "minPrice": 20,
+        "maxPrice": 20
+      },
+      "entryprice": "",
+      "eventvisibility": "public",
+      "ticketUrl": "",
+      "hotSeller": false,
+      "rep": {
+        "enabled": false
+      },
+      "headerHex": "#182848",
+      "currency": "GBP",
+      "artists": [],
+      "genres": [],
+      "healthAndSafety": []
+    }
+  ],
+  "elastic": {
+    "timing": 7
+  },
+  "requestId": "api_6a886a2342e3c5.65392572"
+}
