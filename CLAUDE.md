@@ -373,3 +373,5 @@ Wider: Usher Hall and Festival Theatre (Edinburgh) if the radius is widened.
 Runs on a Mac mini via `launchd`. Two jobs: a daily alert run and a weekly digest run.
 
 The known failure mode is the Mac sleeping through the scheduled time. `launchd` does not fire missed jobs by default in the way you might expect. Check `pmset -g` and either keep the machine awake, or set `StartCalendarInterval` alongside a `RunAtLoad` catch-up check that compares against the last `source_run` timestamp and runs if the last successful run is more than 36 hours old.
+
+Build order change: Skiddle is the Phase 1 adapter. Ticketmaster moves to Phase 2 pending API key access.
