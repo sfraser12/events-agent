@@ -109,11 +109,12 @@ The LLM also adjudicates the `duplicate_candidate` pairs in a separate, smaller 
 
 ### Stage 4 — Deliver
 
-Three outputs:
+Four outputs:
 
-- **Weekly digest** — Sunday morning email. Grouped by horizon (this week / this month / on sale soon / announced for later). Only events with `score >= threshold` and `verdict IS NULL`. Include a one-line reason per event and a direct booking link.
+- **Weekly digest** — Sunday morning email. Grouped by horizon (this week / this month / on sale soon / announced for later). Only events with `score >= digest_threshold` and `verdict IS NULL`. Include a one-line reason per event and a direct booking link. Re-sends the full standing shortlist every run, not a delta — an event keeps reappearing until a verdict is set on it, re-bucketing into a nearer horizon as its date approaches.
+- **Fortnight look-ahead** — a separate weekly email (own accent color, distinct from both the digest and the alert), covering events in the next 14 days scoring between `alert_threshold` and `digest_threshold`. Exists because the digest's score bar is permanent regardless of how soon the event is — without this, a moderate match could expire completely unseen just because its event date crept up while it stayed under the digest bar. Kept as its own email rather than a digest section specifically so it doesn't clutter the digest.
 - **Urgent alert** — runs daily. Fires only for anything with an `on_sale_date` in the next 48 hours, or a status flip to `low_availability`. This is the highest-value output in the whole system; it should be short and hard to ignore.
-- **ICS export** — shortlisted events written as an `.ics` file (or pushed to a shared Google Calendar) so both people in the household can plan around them. Provisional entries clearly marked as such.
+- **ICS export** — shortlisted (`verdict` = `interested`/`booked`) events written as a plain `.ics` file via `events-agent calendar`, not a Google Calendar push — either household member imports it into whatever calendar app they use, with no OAuth flow to set up or maintain in a cron job. Provisional (`interested`) entries marked `STATUS:TENTATIVE`.
 
 ---
 
