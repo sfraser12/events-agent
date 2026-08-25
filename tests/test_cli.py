@@ -204,6 +204,13 @@ def test_alert_requires_a_household(wired_cli, capsys):
     assert "No household configured" in capsys.readouterr().err
 
 
+def test_fortnight_requires_a_household(wired_cli, capsys):
+    exit_code = cli.cmd_fortnight(argparse_namespace())
+
+    assert exit_code == 1
+    assert "No household configured" in capsys.readouterr().err
+
+
 def test_score_fails_loudly_without_api_key(wired_cli, monkeypatch, capsys):
     monkeypatch.setattr(cli, "load_secrets", lambda: Secrets(skiddle_api_key="test-key", anthropic_api_key=""))
 

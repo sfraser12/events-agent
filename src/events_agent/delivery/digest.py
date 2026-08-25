@@ -11,7 +11,18 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
-from events_agent.delivery.email_design import ACCENT, ACCENT_BG, BORDER, INK, MUTED, SERIF, empty_row, cta_cell, shell
+from events_agent.delivery.email_design import (
+    ACCENT,
+    ACCENT_BG,
+    BORDER,
+    INK,
+    MUTED,
+    SERIF,
+    cta_cell,
+    empty_row,
+    format_price,
+    shell,
+)
 
 HORIZONS = ("on sale soon", "this week", "this month", "announced for later")
 
@@ -120,7 +131,7 @@ letter-spacing:0.06em; color:{ACCENT}; border-bottom:2px solid {ACCENT}; padding
 
 
 def _event_card_html(event: DigestEvent) -> str:
-    price = _format_price(event.price_min, event.price_max, event.currency)
+    price = format_price(event.price_min, event.price_max, event.currency)
     date_str = _format_event_date(event.event_date)
     venue = html.escape(event.venue_name) if event.venue_name else "venue TBC"
     title = html.escape(event.title)
@@ -162,7 +173,7 @@ def build_digest_plain(household: dict[str, Any], horizons: dict[str, list[Diges
         any_events = True
         lines.append(horizon.upper())
         for event in events:
-            price = _format_price(event.price_min, event.price_max, event.currency)
+            price = format_price(event.price_min, event.price_max, event.currency)
             date_str = event.event_date[:10] if event.event_date else "TBC"
             lines.append(
                 f"- {date_str}  {event.title} @ {event.venue_name or '?'}  {price}  "
@@ -177,10 +188,3 @@ def build_digest_plain(household: dict[str, Any], horizons: dict[str, list[Diges
         lines.append("Nothing new this week.")
     return "\n".join(lines)
 
-
-def _format_price(price_min: float | None, price_max: float | None, currency: str) -> str:
-    if price_min is None and price_max is None:
-        return "price TBC"
-    if price_min == price_max:
-        return f"{currency} {price_min:.2f}"
-    return f"{currency} {price_min:.2f}-{price_max:.2f}"

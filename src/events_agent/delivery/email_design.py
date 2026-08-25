@@ -24,6 +24,8 @@ WARN = "#B5730E"
 WARN_BG = "#F7ECD9"
 URGENT = "#B4423A"
 URGENT_BG = "#F6E4E2"
+LOOKAHEAD = "#3D5A80"
+LOOKAHEAD_BG = "#E6EBF3"
 SERIF = "Georgia,'Times New Roman',serif"
 SANS = "Helvetica,Arial,sans-serif"
 
@@ -59,6 +61,14 @@ style="width:600px; max-width:100%; margin:0 auto; background:{CARD}; border-rad
     </tr>
   </table>
 </div>"""
+
+
+def format_price(price_min: float | None, price_max: float | None, currency: str) -> str:
+    if price_min is None and price_max is None:
+        return "price TBC"
+    if price_min == price_max:
+        return f"{currency} {price_min:.2f}"
+    return f"{currency} {price_min:.2f}-{price_max:.2f}"
 
 
 def empty_row(message: str) -> str:

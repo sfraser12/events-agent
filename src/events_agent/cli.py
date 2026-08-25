@@ -24,6 +24,7 @@ from events_agent.delivery.alert import build_alert_html, build_alert_plain, fin
 from events_agent.delivery.digest import build_digest, build_digest_html, build_digest_plain
 from events_agent.delivery.email import send_email
 from events_agent.delivery.ics import build_ics, select_calendar_events
+from events_agent.delivery.lookahead import build_lookahead_html, build_lookahead_plain, select_lookahead_events
 from events_agent.scoring import AnthropicLLMClient, run_scoring
 from events_agent.sources.skiddle import SkiddleAdapter
 from events_agent.sources.ticketmaster import TicketmasterAdapter
@@ -306,6 +307,51 @@ def cmd_digest(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_fortnight(args: argparse.Namespace) -> int:
+    secrets = load_secrets()
+    conn = get_connection(DEFAULT_DB_PATH)
+    try:
+        households = list_households_as_dicts(conn)
+        if not households:
+            print("No household configured — run 'events-agent init' first.", file=sys.stderr)
+            return 1
+
+        for household in households:
+            events = select_lookahead_events(conn, household)
+            if not events:
+                print(f"{household['label']}: nothing new for the fortnight check.")
+                continue
+
+            html_body = build_lookahead_html(household, events)
+            plain_body = build_lookahead_plain(household, events)
+            plural = "" if len(events) == 1 else "s"
+            subject = f"Marquee — {len(events)} thing{plural} in the next fortnight worth a second look"
+            sent = send_email(
+                smtp_host=secrets.smtp_host,
+                smtp_port=secrets.smtp_port,
+                smtp_user=secrets.smtp_user,
+                smtp_password=secrets.smtp_password,
+                from_email=secrets.smtp_user,
+                to_email=household["email_to"],
+                subject=subject,
+                html_body=html_body,
+                plain_body=plain_body,
+            )
+            if sent:
+                event_ids = [e.event_id for e in events]
+                mark_surfaced(conn, household["id"], event_ids, datetime.now(UTC).isoformat())
+                conn.commit()
+                print(f"{household['label']}: fortnight check sent to {household['email_to']} ({len(events)} events).")
+            else:
+                print(
+                    f"{household['label']}: fortnight check NOT sent ({len(events)} events ready — see error above).",
+                    file=sys.stderr,
+                )
+    finally:
+        conn.close()
+    return 0
+
+
 def cmd_calendar(args: argparse.Namespace) -> int:
     conn = get_connection(DEFAULT_DB_PATH)
     try:
@@ -363,6 +409,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     digest_parser = subparsers.add_parser("digest", help="Email the weekly digest of scored events.")
     digest_parser.set_defaults(func=cmd_digest)
+
+    fortnight_parser = subparsers.add_parser(
+        "fortnight", help="Email near-term events (next 14 days) that scored below the digest bar."
+    )
+    fortnight_parser.set_defaults(func=cmd_fortnight)
 
     calendar_parser = subparsers.add_parser(
         "calendar", help="Write shortlisted events (verdict interested/booked) to an .ics file."
