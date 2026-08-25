@@ -1,8 +1,8 @@
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 import pytest
 
-from events_agent.db import get_connection, init_db, upsert_raw_event, upsert_venue
+from events_agent.db import get_connection, init_db, mark_past_events, upsert_raw_event, upsert_venue
 from events_agent.models import RawEvent
 
 
@@ -153,3 +153,121 @@ def test_upsert_venue_type_is_not_erased_by_a_source_that_lacks_it(conn):
 
     venue_type = conn.execute("SELECT type FROM venue WHERE id = ?", (venue_id,)).fetchone()[0]
     assert venue_type == "arena"
+
+
+def test_upsert_raw_event_logs_no_change_on_first_insert(conn):
+    upsert_raw_event(conn, make_raw_event())
+
+    count = conn.execute("SELECT COUNT(*) FROM event_change").fetchone()[0]
+    assert count == 0
+
+
+def test_upsert_raw_event_logs_status_change(conn):
+    event_id, _ = upsert_raw_event(conn, make_raw_event(status="on_sale"))
+    upsert_raw_event(conn, make_raw_event(status="low_availability"))
+
+    row = conn.execute(
+        "SELECT field, old_value, new_value, notified_at FROM event_change WHERE event_id = ? AND field = 'status'",
+        (event_id,),
+    ).fetchone()
+    assert row == ("status", "on_sale", "low_availability", None)
+
+
+def test_upsert_raw_event_does_not_log_unchanged_status_on_rerun(conn):
+    event_id, _ = upsert_raw_event(conn, make_raw_event(status="on_sale"))
+    upsert_raw_event(conn, make_raw_event(status="on_sale"))
+
+    count = conn.execute(
+        "SELECT COUNT(*) FROM event_change WHERE event_id = ? AND field = 'status'", (event_id,)
+    ).fetchone()[0]
+    assert count == 0
+
+
+def test_upsert_raw_event_logs_price_range_change(conn):
+    event_id, _ = upsert_raw_event(conn, make_raw_event(price_min=17.0, price_max=17.0))
+    upsert_raw_event(conn, make_raw_event(price_min=20.0, price_max=25.0))
+
+    row = conn.execute(
+        "SELECT old_value, new_value FROM event_change WHERE event_id = ? AND field = 'price_range'",
+        (event_id,),
+    ).fetchone()
+    assert row == ("17.0-17.0", "20.0-25.0")
+
+
+def test_upsert_raw_event_does_not_log_price_change_for_int_vs_float_same_value(conn):
+    # SQLite round-trips a REAL column as float (15.0); fresh JSON can hand
+    # back a whole-number price as int (15). Same price, must not diff.
+    event_id, _ = upsert_raw_event(conn, make_raw_event(price_min=15.0, price_max=15.0))
+    upsert_raw_event(conn, make_raw_event(price_min=15, price_max=15))
+
+    count = conn.execute(
+        "SELECT COUNT(*) FROM event_change WHERE event_id = ? AND field = 'price_range'", (event_id,)
+    ).fetchone()[0]
+    assert count == 0
+
+
+def test_upsert_raw_event_logs_on_sale_date_change(conn):
+    event_id, _ = upsert_raw_event(conn, make_raw_event(on_sale_date=None))
+    on_sale = datetime(2026, 8, 1, 9, 0, tzinfo=UTC)
+    upsert_raw_event(conn, make_raw_event(on_sale_date=on_sale))
+
+    row = conn.execute(
+        "SELECT old_value, new_value FROM event_change WHERE event_id = ? AND field = 'on_sale_date'",
+        (event_id,),
+    ).fetchone()
+    assert row == (None, on_sale.isoformat())
+
+
+def test_mark_past_events_flips_status_for_elapsed_dates(conn):
+    event_id, _ = upsert_raw_event(
+        conn, make_raw_event(event_date=datetime(2026, 8, 22, 19, 30, tzinfo=UTC), status="on_sale")
+    )
+
+    marked = mark_past_events(conn, today=date(2026, 8, 24))
+
+    assert marked == 1
+    status = conn.execute("SELECT status FROM event WHERE id = ?", (event_id,)).fetchone()[0]
+    assert status == "past"
+
+
+def test_mark_past_events_logs_an_event_change(conn):
+    event_id, _ = upsert_raw_event(
+        conn, make_raw_event(event_date=datetime(2026, 8, 22, 19, 30, tzinfo=UTC), status="on_sale")
+    )
+
+    mark_past_events(conn, today=date(2026, 8, 24))
+
+    row = conn.execute(
+        "SELECT old_value, new_value FROM event_change WHERE event_id = ? AND field = 'status'", (event_id,)
+    ).fetchone()
+    assert row == ("on_sale", "past")
+
+
+def test_mark_past_events_ignores_future_events(conn):
+    upsert_raw_event(conn, make_raw_event(event_date=datetime(2026, 9, 1, 19, 30, tzinfo=UTC), status="on_sale"))
+
+    marked = mark_past_events(conn, today=date(2026, 8, 24))
+
+    assert marked == 0
+    status = conn.execute("SELECT status FROM event").fetchone()[0]
+    assert status == "on_sale"
+
+
+def test_mark_past_events_does_not_overwrite_cancelled(conn):
+    upsert_raw_event(
+        conn, make_raw_event(event_date=datetime(2026, 8, 22, 19, 30, tzinfo=UTC), status="cancelled")
+    )
+
+    marked = mark_past_events(conn, today=date(2026, 8, 24))
+
+    assert marked == 0
+    status = conn.execute("SELECT status FROM event").fetchone()[0]
+    assert status == "cancelled"
+
+
+def test_mark_past_events_ignores_undated_events(conn):
+    upsert_raw_event(conn, make_raw_event(event_date=None, status="on_sale"))
+
+    marked = mark_past_events(conn, today=date(2026, 8, 24))
+
+    assert marked == 0

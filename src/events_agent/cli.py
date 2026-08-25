@@ -4,13 +4,22 @@ from __future__ import annotations
 
 import argparse
 import sys
+from datetime import UTC, datetime
 
 from events_agent.config import DEFAULT_DB_PATH, REPO_ROOT, load_config, load_secrets
-from events_agent.db import finish_source_run, get_connection, init_db, start_source_run, upsert_raw_event
+from events_agent.db import (
+    finish_source_run,
+    get_connection,
+    init_db,
+    mark_past_events,
+    start_source_run,
+    upsert_raw_event,
+)
+from events_agent.delivery.alert import find_alertable_changes, mark_notified
 from events_agent.sources.skiddle import SkiddleAdapter
 from events_agent.sources.ticketmaster import TicketmasterAdapter
 
-STUB_COMMANDS = ("score", "digest", "alert", "run")
+STUB_COMMANDS = ("score", "digest", "run")
 
 
 def cmd_init(args: argparse.Namespace) -> int:
@@ -83,6 +92,9 @@ def cmd_harvest(args: argparse.Namespace) -> int:
                 finish_source_run(conn, run_id, status="failed", rows_fetched=0, error=str(exc))
                 conn.commit()
                 summaries.append((adapter.name, 0, 0, str(exc)))
+
+        past_count = mark_past_events(conn, datetime.now(UTC).date())
+        conn.commit()
     finally:
         conn.close()
 
@@ -93,6 +105,8 @@ def cmd_harvest(args: argparse.Namespace) -> int:
             print(f"{name}: FAILED — {error}", file=sys.stderr)
         else:
             print(f"{name}: {new_count + updated_count} events ({new_count} new, {updated_count} updated)")
+    if past_count:
+        print(f"{past_count} event(s) marked past.")
 
     if all(error for _, _, _, error in summaries):
         return 1
@@ -131,6 +145,27 @@ def _format_price(price_min: float | None, price_max: float | None, currency: st
     return f"{currency} {price_min:.2f}-{price_max:.2f}"
 
 
+def cmd_alert(args: argparse.Namespace) -> int:
+    conn = get_connection(DEFAULT_DB_PATH)
+    try:
+        now = datetime.now(UTC)
+        items = find_alertable_changes(conn, now)
+        if not items:
+            print("No urgent alerts.")
+        else:
+            print(f"URGENT — {len(items)} event(s) need attention:\n")
+            for item in items:
+                venue = f" @ {item.venue_name}" if item.venue_name else ""
+                print(f"- {item.title}{venue}: {item.reason}")
+                if item.url:
+                    print(f"  {item.url}")
+            mark_notified(conn, [item.change_id for item in items], now)
+        conn.commit()
+    finally:
+        conn.close()
+    return 0
+
+
 def cmd_stub(name: str):
     def handler(args: argparse.Namespace) -> int:
         print(f"'{name}' is not implemented yet.")
@@ -150,6 +185,9 @@ def build_parser() -> argparse.ArgumentParser:
         "harvest", help="Fetch events from all configured sources and upsert to the database."
     )
     harvest_parser.set_defaults(func=cmd_harvest)
+
+    alert_parser = subparsers.add_parser("alert", help="Print urgent alerts: imminent on-sale dates and low availability.")
+    alert_parser.set_defaults(func=cmd_alert)
 
     for name in STUB_COMMANDS:
         stub_parser = subparsers.add_parser(name, help=f"({name} — not implemented yet)")

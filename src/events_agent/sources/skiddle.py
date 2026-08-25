@@ -161,6 +161,9 @@ class SkiddleAdapter:
             price_min=price_min,
             price_max=price_max,
             currency=raw.get("currency") or "GBP",
+            # Skiddle's API has no on-sale-date field anywhere in the payload —
+            # this stays NULL ("unknown") until a source that provides one is added.
+            on_sale_date=None,
             min_age=_parse_min_age(raw.get("minage")),
             doors_open=opening_times.get("doorsopen") or None,
             url=raw.get("link") or None,
