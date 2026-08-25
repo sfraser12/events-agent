@@ -121,6 +121,23 @@ Three outputs:
 
 SQLite. Use `sqlite3` from the standard library or SQLModel — do not reach for a heavyweight ORM.
 
+**Multi-household split (added in Phase 4, ahead of schedule on purpose).** The
+original design put `score`/`verdict`/`snoozed_until`/etc. directly on `event`.
+That works for exactly one household — it breaks the moment a second
+household's taste profile needs to score the *same* physical event
+differently, or record its own independent verdict. So `event` (and
+`venue`/`event_source`/`event_change`/`duplicate_candidate`) hold only
+genuinely shared facts about an event, true regardless of who's looking at
+it. Everything that's a judgment call — score, audience, verdict, snooze —
+lives in `household_event_state`, keyed by `(household_id, event_id)`. There
+is one `household` row today (seeded from `config.yaml` + `taste-profile.md`
+on every `events-agent init`); the plan is to widen the harvest radius to
+cover all of central Scotland and add more households filtering the same
+shared catalog daily — `config.yaml`/`taste-profile.md` stay single-file for
+now (cheap to turn into a `households/` directory later, unlike a schema
+migration), and CLI commands (`score`, `digest`) already loop over every row
+in `household` rather than assuming there's only one.
+
 ```sql
 CREATE TABLE venue (
     id              INTEGER PRIMARY KEY,
@@ -130,8 +147,7 @@ CREATE TABLE venue (
     postcode        TEXT,
     latitude        REAL,
     longitude       REAL,
-    drive_minutes   INTEGER,          -- computed once from home
-    UNIQUE(name_normalised)
+    type            TEXT              -- source-provided venue category, e.g. "bar", "theatre"
 );
 
 CREATE TABLE event (
@@ -155,7 +171,43 @@ CREATE TABLE event (
     blurb           TEXT,
 
     first_seen      TEXT NOT NULL,
-    last_seen       TEXT NOT NULL,
+    last_seen       TEXT NOT NULL
+);
+
+CREATE INDEX idx_event_fingerprint ON event(fingerprint);
+CREATE INDEX idx_event_date        ON event(event_date);
+CREATE INDEX idx_event_onsale      ON event(on_sale_date);
+
+-- One row per household (today: just the one). config.yaml stays the
+-- human-edited source of truth; this row is a queryable materialization of
+-- it, re-synced on every `events-agent init`.
+CREATE TABLE household (
+    id                  INTEGER PRIMARY KEY,
+    label               TEXT NOT NULL,
+    home_latitude       REAL NOT NULL,
+    home_longitude      REAL NOT NULL,
+    radius_miles        REAL NOT NULL,
+    near_days           INTEGER,          -- digest horizon: "this week" cutoff
+    month_days          INTEGER,          -- digest horizon: "this month" cutoff
+    max_drive_minutes   INTEGER,
+    price_ceiling       REAL,
+    blackout_dates      TEXT,             -- JSON array of [start_iso, end_iso] pairs
+    taste_profile_path  TEXT NOT NULL,
+    digest_threshold    INTEGER,
+    alert_threshold     INTEGER,
+    digest_day          TEXT,
+    digest_hour         INTEGER,
+    email_to            TEXT,
+    created_at          TEXT NOT NULL
+);
+
+-- Per-household view of an event: score, verdict, snooze. Two households
+-- can (and will) score the same gig differently — this is the field people
+-- leave out and then abandon the tool three weeks later. Build it in from
+-- Phase 1 even before there is a way to set it.
+CREATE TABLE household_event_state (
+    household_id    INTEGER NOT NULL REFERENCES household(id),
+    event_id        INTEGER NOT NULL REFERENCES event(id),
 
     -- scoring
     score           INTEGER,
@@ -164,17 +216,17 @@ CREATE TABLE event (
     urgency         TEXT,
     scored_at       TEXT,
 
-    -- user state: the field that makes this usable long-term
+    -- user state
     verdict         TEXT,             -- NULL | interested | booked | no
     verdict_at      TEXT,
     snoozed_until   TEXT,
-    surfaced_at     TEXT              -- last time this appeared in a digest
+    surfaced_at     TEXT,             -- last time this appeared in a digest
+
+    PRIMARY KEY (household_id, event_id)
 );
 
-CREATE INDEX idx_event_fingerprint ON event(fingerprint);
-CREATE INDEX idx_event_date        ON event(event_date);
-CREATE INDEX idx_event_onsale      ON event(on_sale_date);
-CREATE INDEX idx_event_verdict     ON event(verdict);
+CREATE INDEX idx_hes_verdict ON household_event_state(verdict);
+CREATE INDEX idx_hes_score   ON household_event_state(score);
 
 CREATE TABLE event_source (
     event_id        INTEGER REFERENCES event(id),
@@ -191,7 +243,8 @@ CREATE TABLE event_change (
     field           TEXT NOT NULL,
     old_value       TEXT,
     new_value       TEXT,
-    detected_at     TEXT NOT NULL
+    detected_at     TEXT NOT NULL,
+    notified_at     TEXT              -- set once the daily alert has surfaced this change
 );
 
 CREATE TABLE duplicate_candidate (
@@ -214,7 +267,9 @@ CREATE TABLE source_run (
 );
 ```
 
-`verdict` is the field people leave out and then abandon the tool three weeks later. Build it in from Phase 1 even before there is a way to set it.
+Hard constraints (radius, price ceiling, blackout dates) are applied in
+Python against `household` — see `constraints.py` — before an event ever
+reaches the model, never left to the prompt.
 
 ---
 
@@ -294,15 +349,17 @@ events-agent/
 ├── pyproject.toml
 ├── src/events_agent/
 │   ├── __init__.py
-│   ├── cli.py                 # entry point: harvest | score | digest | alert | run
+│   ├── cli.py                 # entry point: init | harvest | alert | score | digest | verdict | run
 │   ├── config.py
 │   ├── db.py                  # schema, migrations, upsert logic
 │   ├── models.py              # RawEvent, Event, ScoreResult (Pydantic)
 │   ├── normalise.py           # title/venue normalisation, fingerprinting
 │   ├── dedupe.py
+│   ├── constraints.py         # hard radius/price/blackout filter, per household
 │   ├── scoring.py             # the LLM pass
 │   ├── delivery/
 │   │   ├── digest.py
+│   │   ├── email.py           # smtplib sender shared by digest (and alert, if ever wanted)
 │   │   ├── alert.py
 │   │   └── ics.py
 │   └── sources/
@@ -375,3 +432,5 @@ Runs on a Mac mini via `launchd`. Two jobs: a daily alert run and a weekly diges
 The known failure mode is the Mac sleeping through the scheduled time. `launchd` does not fire missed jobs by default in the way you might expect. Check `pmset -g` and either keep the machine awake, or set `StartCalendarInterval` alongside a `RunAtLoad` catch-up check that compares against the last `source_run` timestamp and runs if the last successful run is more than 36 hours old.
 
 Build order change: Skiddle is the Phase 1 adapter. Ticketmaster moves to Phase 2 pending API key access.
+
+Schema change: Phase 4 split `event`'s scoring/verdict columns into a new `household` + `household_event_state` pair (see "Data model" above) — done during Phase 4 itself, ahead of any second household actually existing, specifically to avoid migrating live data later.
