@@ -9,6 +9,7 @@ from events_agent import cli
 from events_agent.config import Config, Constraints, Delivery, Home, Horizons, Scoring, Search, Secrets
 from events_agent.db import get_connection, init_db
 from events_agent.sources.skiddle import SkiddleAdapter
+from events_agent.sources.ticketmaster import TicketmasterAdapter
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -27,6 +28,37 @@ class FakeSkiddleAdapter:
             raw_results = json.load(f)["results"]
         for raw in raw_results:
             yield parser._parse_event(raw, "THEATRE")
+
+
+class FakeTicketmasterAdapter:
+    """Stands in for TicketmasterAdapter — yields RawEvents parsed from a real saved fixture."""
+
+    name = "ticketmaster"
+
+    def __init__(self, **kwargs):
+        pass
+
+    def fetch(self, since=None):
+        parser = TicketmasterAdapter(api_key="x", latitude=0, longitude=0, radius_miles=25)
+        with (FIXTURES / "ticketmaster_search_variety.json").open() as f:
+            raw_results = json.load(f)["_embedded"]["events"]
+        for raw in raw_results:
+            yield parser._parse_event(raw)
+
+
+def make_failing_adapter(name: str):
+    """A source class whose fetch() always raises, for the one-source-down tests."""
+
+    class FailingAdapter:
+        def __init__(self, **kwargs):
+            pass
+
+        def fetch(self, since=None):
+            raise RuntimeError("simulated API outage")
+            yield  # pragma: no cover — makes this a generator function
+
+    FailingAdapter.name = name
+    return FailingAdapter
 
 
 @pytest.fixture
@@ -61,7 +93,7 @@ def test_harvest_upserts_events_and_prints_table(wired_cli, capsys):
 
     out = capsys.readouterr().out
     assert "The Hush Club" in out
-    assert "5 events from skiddle (5 new, 0 updated)." in out
+    assert "skiddle: 5 events (5 new, 0 updated)" in out
 
 
 def test_harvest_is_idempotent_on_rerun(wired_cli, capsys):
@@ -75,7 +107,7 @@ def test_harvest_is_idempotent_on_rerun(wired_cli, capsys):
     assert count == 5
 
     out = capsys.readouterr().out
-    assert "5 events from skiddle (0 new, 5 updated)." in out
+    assert "skiddle: 5 events (0 new, 5 updated)" in out
 
 
 def test_harvest_logs_source_run(wired_cli):
@@ -94,6 +126,60 @@ def test_harvest_fails_loudly_without_api_key(wired_cli, monkeypatch, capsys):
 
     assert exit_code == 1
     assert "SKIDDLE_API_KEY not set" in capsys.readouterr().err
+
+
+@pytest.fixture
+def wired_cli_two_sources(wired_cli, monkeypatch):
+    monkeypatch.setattr(cli, "TicketmasterAdapter", FakeTicketmasterAdapter)
+    monkeypatch.setattr(
+        cli, "load_secrets", lambda: Secrets(skiddle_api_key="test-key", ticketmaster_api_key="test-tm-key")
+    )
+    return wired_cli
+
+
+def test_harvest_aggregates_both_sources(wired_cli_two_sources):
+    exit_code = cli.cmd_harvest(argparse_namespace())
+
+    assert exit_code == 0
+    conn = get_connection(wired_cli_two_sources)
+    source_names = {
+        row[0] for row in conn.execute("SELECT DISTINCT source_name FROM event_source").fetchall()
+    }
+    conn.close()
+    assert source_names == {"skiddle", "ticketmaster"}
+
+
+def test_harvest_one_source_failing_does_not_block_the_other(wired_cli, monkeypatch, capsys):
+    monkeypatch.setattr(cli, "TicketmasterAdapter", make_failing_adapter("ticketmaster"))
+    monkeypatch.setattr(
+        cli, "load_secrets", lambda: Secrets(skiddle_api_key="test-key", ticketmaster_api_key="test-tm-key")
+    )
+
+    exit_code = cli.cmd_harvest(argparse_namespace())
+
+    assert exit_code == 0  # skiddle succeeded, so the command as a whole did not fail
+    conn = get_connection(wired_cli)
+    rows = conn.execute("SELECT source_name, status, error FROM source_run ORDER BY id").fetchall()
+    conn.close()
+    assert ("skiddle", "ok", None) in rows
+    failed = [r for r in rows if r[0] == "ticketmaster"]
+    assert failed[0][1] == "failed"
+    assert "simulated API outage" in failed[0][2]
+
+    err = capsys.readouterr().err
+    assert "ticketmaster: FAILED" in err
+
+
+def test_harvest_fails_only_if_every_source_fails(wired_cli, monkeypatch):
+    monkeypatch.setattr(cli, "SkiddleAdapter", make_failing_adapter("skiddle"))
+    monkeypatch.setattr(cli, "TicketmasterAdapter", make_failing_adapter("ticketmaster"))
+    monkeypatch.setattr(
+        cli, "load_secrets", lambda: Secrets(skiddle_api_key="test-key", ticketmaster_api_key="test-tm-key")
+    )
+
+    exit_code = cli.cmd_harvest(argparse_namespace())
+
+    assert exit_code == 1
 
 
 def argparse_namespace():

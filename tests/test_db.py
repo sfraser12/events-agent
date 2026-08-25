@@ -111,3 +111,45 @@ def test_upsert_raw_event_stores_venue_type(conn):
 
     venue_type = conn.execute("SELECT type FROM venue WHERE name_normalised = 'babbity bowster'").fetchone()[0]
     assert venue_type == "bar"
+
+
+def test_upsert_venue_resolves_by_proximity_when_names_differ(conn):
+    # Real drift observed between Skiddle and Ticketmaster's pins for the same
+    # SWG3 building: ~140m apart, different spelling ("Galvanizers, SWG3" vs
+    # "Galvanizers SWG3" — this test uses names that don't normalise the same,
+    # unlike that real pair, to isolate the proximity fallback specifically).
+    first_id = upsert_venue(conn, "Galvanizers SWG3", "Glasgow", "G3 8QG", 55.86371100, -4.29821400)
+    second_id = upsert_venue(conn, "Galvanizers - SWG3 Glasgow", "Glasgow", "G3 8QG", 55.8645723, -4.2995517)
+
+    assert first_id == second_id
+    count = conn.execute("SELECT COUNT(*) FROM venue").fetchone()[0]
+    assert count == 1
+
+
+def test_upsert_venue_proximity_match_does_not_rename_the_venue(conn):
+    first_id = upsert_venue(conn, "Galvanizers SWG3", "Glasgow", "G3 8QG", 55.86371100, -4.29821400)
+    upsert_venue(conn, "Galvanizers - SWG3 Glasgow", "Glasgow", "G3 8QG", 55.8645723, -4.2995517)
+
+    name = conn.execute("SELECT name FROM venue WHERE id = ?", (first_id,)).fetchone()[0]
+    assert name == "Galvanizers SWG3"  # the first-seen spelling wins, not the second source's
+
+
+def test_upsert_venue_beyond_proximity_threshold_creates_a_new_venue(conn):
+    upsert_venue(conn, "OVO Hydro", "Glasgow", "G3 8YW", 55.859881, -4.285367)
+    # Real Barrowland coordinates — ~2.5km from the Hydro, well outside the 150m fallback.
+    upsert_venue(conn, "Barrowland Ballroom Extra", "Glasgow", "G4 0TT", 55.8550553, -4.2369184)
+
+    count = conn.execute("SELECT COUNT(*) FROM venue").fetchone()[0]
+    assert count == 2
+
+
+def test_upsert_venue_type_is_not_erased_by_a_source_that_lacks_it(conn):
+    # Skiddle sets a real type first...
+    venue_id = upsert_venue(conn, "OVO Hydro", "Glasgow", "G3 8YW", 55.859881, -4.285367, venue_type="arena")
+    # ...then Ticketmaster harvests the same venue by exact name, but it has
+    # no concept of venue "type" and always passes None — that must not wipe
+    # out the type Skiddle already recorded.
+    upsert_venue(conn, "OVO Hydro", "Glasgow", "G3 8YW", 55.859881, -4.285367, venue_type=None)
+
+    venue_type = conn.execute("SELECT type FROM venue WHERE id = ?", (venue_id,)).fetchone()[0]
+    assert venue_type == "arena"

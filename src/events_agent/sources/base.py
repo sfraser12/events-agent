@@ -34,3 +34,12 @@ class RateLimiter:
             if remaining > 0:
                 time.sleep(remaining)
         self._last_call = time.monotonic()
+
+
+def parse_iso_datetime(value: str | None) -> datetime | None:
+    """Shared by adapters whose source APIs return ISO8601 timestamps
+    (Skiddle's `+00:00` offsets, Ticketmaster's `Z` suffix — Python 3.11's
+    fromisoformat handles both)."""
+    if not value:
+        return None
+    return datetime.fromisoformat(value)

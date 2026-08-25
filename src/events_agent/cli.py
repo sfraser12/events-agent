@@ -8,6 +8,7 @@ import sys
 from events_agent.config import DEFAULT_DB_PATH, REPO_ROOT, load_config, load_secrets
 from events_agent.db import finish_source_run, get_connection, init_db, start_source_run, upsert_raw_event
 from events_agent.sources.skiddle import SkiddleAdapter
+from events_agent.sources.ticketmaster import TicketmasterAdapter
 
 STUB_COMMANDS = ("score", "digest", "alert", "run")
 
@@ -26,40 +27,75 @@ def cmd_init(args: argparse.Namespace) -> int:
 def cmd_harvest(args: argparse.Namespace) -> int:
     config = load_config()
     secrets = load_secrets()
-    if not secrets.skiddle_api_key:
-        print("SKIDDLE_API_KEY not set in .env — copy .env.example and fill it in.", file=sys.stderr)
-        return 1
 
-    adapter = SkiddleAdapter(
-        api_key=secrets.skiddle_api_key,
-        latitude=config.home.latitude,
-        longitude=config.home.longitude,
-        radius_miles=config.search.radius_miles,
-        cache_dir=REPO_ROOT / ".cache" / "skiddle",
-    )
+    adapters: list = []
+    if secrets.skiddle_api_key:
+        adapters.append(
+            SkiddleAdapter(
+                api_key=secrets.skiddle_api_key,
+                latitude=config.home.latitude,
+                longitude=config.home.longitude,
+                radius_miles=config.search.radius_miles,
+                cache_dir=REPO_ROOT / ".cache" / "skiddle",
+            )
+        )
+    else:
+        print("SKIDDLE_API_KEY not set in .env — skipping Skiddle.", file=sys.stderr)
+
+    if secrets.ticketmaster_api_key:
+        adapters.append(
+            TicketmasterAdapter(
+                api_key=secrets.ticketmaster_api_key,
+                latitude=config.home.latitude,
+                longitude=config.home.longitude,
+                radius_miles=config.search.radius_miles,
+                cache_dir=REPO_ROOT / ".cache" / "ticketmaster",
+            )
+        )
+    else:
+        print("TICKETMASTER_API_KEY not set in .env — skipping Ticketmaster.", file=sys.stderr)
+
+    if not adapters:
+        print("No source API keys configured — copy .env.example and fill in at least one.", file=sys.stderr)
+        return 1
 
     conn = get_connection(DEFAULT_DB_PATH)
-    run_id = start_source_run(conn, adapter.name)
-    conn.commit()  # the run row must survive a rollback below if harvesting fails
-    rows: list[tuple[int, bool, object]] = []
+    all_rows: list[tuple[int, bool, object]] = []
+    # (source_name, new_count, updated_count, error) — one entry per adapter,
+    # regardless of success, so one source going down never hides the others.
+    summaries: list[tuple[str, int, int, str | None]] = []
     try:
-        for raw_event in adapter.fetch(since=None):
-            event_id, created = upsert_raw_event(conn, raw_event)
-            rows.append((event_id, created, raw_event))
-        finish_source_run(conn, run_id, status="ok", rows_fetched=len(rows))
-        conn.commit()
-    except Exception as exc:
-        conn.rollback()
-        finish_source_run(conn, run_id, status="failed", rows_fetched=0, error=str(exc))
-        conn.commit()
-        print(f"skiddle harvest failed: {exc}", file=sys.stderr)
-        return 1
+        for adapter in adapters:
+            run_id = start_source_run(conn, adapter.name)
+            conn.commit()  # the run row must survive a rollback below if this adapter fails
+            source_rows: list[tuple[int, bool, object]] = []
+            try:
+                for raw_event in adapter.fetch(since=None):
+                    event_id, created = upsert_raw_event(conn, raw_event)
+                    source_rows.append((event_id, created, raw_event))
+                finish_source_run(conn, run_id, status="ok", rows_fetched=len(source_rows))
+                conn.commit()
+                all_rows.extend(source_rows)
+                new_count = sum(1 for _, created, _ in source_rows if created)
+                summaries.append((adapter.name, new_count, len(source_rows) - new_count, None))
+            except Exception as exc:
+                conn.rollback()
+                finish_source_run(conn, run_id, status="failed", rows_fetched=0, error=str(exc))
+                conn.commit()
+                summaries.append((adapter.name, 0, 0, str(exc)))
     finally:
         conn.close()
 
-    print_event_table(rows)
-    new_count = sum(1 for _, created, _ in rows if created)
-    print(f"\n{len(rows)} events from skiddle ({new_count} new, {len(rows) - new_count} updated).")
+    print_event_table(all_rows)
+    print()
+    for name, new_count, updated_count, error in summaries:
+        if error:
+            print(f"{name}: FAILED — {error}", file=sys.stderr)
+        else:
+            print(f"{name}: {new_count + updated_count} events ({new_count} new, {updated_count} updated)")
+
+    if all(error for _, _, _, error in summaries):
+        return 1
     return 0
 
 
@@ -68,12 +104,12 @@ def print_event_table(rows: list[tuple[int, bool, object]]) -> None:
         print("No events found.")
         return
 
-    headers = ("date", "category", "title", "venue", "price")
+    headers = ("date", "source", "category", "title", "venue", "price")
     table_rows = []
     for _, _, raw in rows:
         date_str = raw.event_date.date().isoformat() if raw.event_date else "TBC"
         price = _format_price(raw.price_min, raw.price_max, raw.currency)
-        table_rows.append((date_str, raw.category or "-", raw.title, raw.venue_name, price))
+        table_rows.append((date_str, raw.source_name, raw.category or "-", raw.title, raw.venue_name, price))
 
     widths = [
         max(len(headers[i]), max((len(r[i]) for r in table_rows), default=0)) for i in range(len(headers))
@@ -110,7 +146,9 @@ def build_parser() -> argparse.ArgumentParser:
     init_parser = subparsers.add_parser("init", help="Create the SQLite database and check config.")
     init_parser.set_defaults(func=cmd_init)
 
-    harvest_parser = subparsers.add_parser("harvest", help="Fetch events from Skiddle and upsert to the database.")
+    harvest_parser = subparsers.add_parser(
+        "harvest", help="Fetch events from all configured sources and upsert to the database."
+    )
     harvest_parser.set_defaults(func=cmd_harvest)
 
     for name in STUB_COMMANDS:

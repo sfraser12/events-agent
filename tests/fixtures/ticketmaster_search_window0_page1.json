@@ -1,0 +1,950 @@
+{
+  "page": {
+    "size": 200,
+    "totalElements": 212,
+    "totalPages": 2,
+    "number": 1
+  },
+  "_embedded": {
+    "events": [
+      {
+        "name": "Dead Calm",
+        "id": "1AwZkokGkd1mOWL",
+        "url": "https://www.ticketweb.uk/event/dead-calm-saint-lukes-tickets/14144984?REFERRAL_ID=tmfeed",
+        "pleaseNote": null,
+        "info": null,
+        "dates": {
+          "start": {
+            "localDate": "2026-09-20",
+            "localTime": "19:00:00",
+            "dateTime": "2026-09-20T18:00:00Z",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false
+          },
+          "timezone": "Europe/London",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "sales": {
+          "public": {
+            "startDateTime": "2026-02-13T10:00:00Z",
+            "startTBD": false,
+            "startTBA": false,
+            "endDateTime": "2026-09-20T17:00:00Z"
+          }
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nJ",
+              "name": "Music"
+            },
+            "genre": {
+              "id": "KnvZfZ7vAva",
+              "name": "Folk"
+            },
+            "subGenre": {
+              "id": "KZazBEonSMnZfZ7va1F",
+              "name": "Indie Folk"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "priceRanges": null,
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Saint Luke's",
+              "id": "KovZ9177Vu0",
+              "postalCode": "G40 2JZ",
+              "city": {
+                "name": "Glasgow"
+              },
+              "location": {
+                "longitude": "-4.23494336",
+                "latitude": "55.85515215"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "A Play, A Pie and A Pint: The Whaler's Wife",
+        "id": "LvZ18QJey4thndhyh8hJd",
+        "url": "https://www.universe.com/events/a-play-a-pie-and-a-pint-the-whalers-wife-tickets-80SN19?ref=ticketmaster",
+        "pleaseNote": null,
+        "info": null,
+        "dates": {
+          "access": {
+            "startDateTime": "2026-07-23T10:00:04Z",
+            "startApproximate": false,
+            "endDateTime": "2026-09-21T13:00:00Z",
+            "endApproximate": false
+          },
+          "start": {
+            "localDate": "2026-09-21",
+            "localTime": "13:00:00",
+            "dateTime": "2026-09-21T12:00:00Z",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false
+          },
+          "end": {
+            "localTime": "13:00:00",
+            "dateTime": "2026-09-21T13:00:00Z",
+            "approximate": false,
+            "noSpecificTime": false
+          },
+          "timezone": "Europe/London",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "sales": {
+          "public": {
+            "startDateTime": "2026-07-01T11:05:55Z",
+            "startTBD": false,
+            "startTBA": false,
+            "endDateTime": "2026-09-21T13:00:00Z"
+          }
+        },
+        "classifications": [
+          {
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7na",
+              "name": "Arts & Theatre"
+            },
+            "genre": {
+              "id": "KnvZfZ7v7l1",
+              "name": "Theatre"
+            },
+            "subGenre": {
+              "id": "KZazBEonSMnZfZ7v7ll",
+              "name": "Miscellaneous"
+            },
+            "family": false
+          }
+        ],
+        "priceRanges": null,
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Oran Mor",
+              "id": "KovZ9177c7f",
+              "postalCode": "G12 8QX",
+              "city": {
+                "name": "Glasgow"
+              },
+              "location": {
+                "longitude": "-4.28915700",
+                "latitude": "55.87738000"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "Off the Hook Presents... Daz and Will Unhooked",
+        "id": "1AdjZ_7GkwAFsVr",
+        "url": "https://www.ticketmaster.co.uk/off-the-hook-presents-daz-and-glasgow-21-09-2026/event/3700644C85231D1E",
+        "pleaseNote": "Under 16s must be accompanied by an adult over 18. A max of 6 tickets per person and per household applies. Tickets in excess of 6 will be cancelled.",
+        "info": null,
+        "dates": {
+          "start": {
+            "localDate": "2026-09-21",
+            "localTime": "19:00:00",
+            "dateTime": "2026-09-21T18:00:00Z",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false
+          },
+          "timezone": "Europe/London",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "sales": {
+          "public": {
+            "startDateTime": "2026-02-18T10:00:00Z",
+            "startTBD": false,
+            "startTBA": false,
+            "endDateTime": "2026-09-21T18:00:00Z"
+          }
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7na",
+              "name": "Arts & Theatre"
+            },
+            "genre": {
+              "id": "KnvZfZ7v7l1",
+              "name": "Theatre"
+            },
+            "subGenre": {
+              "id": "KZazBEonSMnZfZ7vaaJ",
+              "name": "Podcast"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "priceRanges": null,
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Kings Theatre Glasgow",
+              "id": "KovZ9177g50",
+              "postalCode": "G2 4JN",
+              "city": {
+                "name": "Glasgow"
+              },
+              "location": {
+                "longitude": "-4.26874500",
+                "latitude": "55.86511200"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "Piff and Pop's Magic Shoppe",
+        "id": "1adbZbSqFZ8ZduFv",
+        "url": "https://www.ticketmaster.co.uk/piff-and-pops-magic-shoppe-glasgow-21-09-2026/event/3600633748010C70",
+        "pleaseNote": "Age Restriction: No under 5s, under 16s must be accompanied by an adult over 18. A max of 6 tickets per person and per household applies. Tickets in excess of 6 will be cancelled. 2 sets with an interval Doors: 18:30",
+        "info": null,
+        "dates": {
+          "start": {
+            "localDate": "2026-09-21",
+            "localTime": "19:30:00",
+            "dateTime": "2026-09-21T18:30:00Z",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false
+          },
+          "timezone": "Europe/London",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "sales": {
+          "public": {
+            "startDateTime": "2025-09-26T09:00:00Z",
+            "startTBD": false,
+            "startTBA": false,
+            "endDateTime": "2026-09-21T18:30:00Z"
+          },
+          "presales": [
+            {
+              "startDateTime": "2025-09-25T09:00:00Z",
+              "endDateTime": "2025-09-26T08:00:00Z",
+              "name": "Ticketmaster Presale"
+            }
+          ]
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7na",
+              "name": "Arts & Theatre"
+            },
+            "genre": {
+              "id": "KnvZfZ7v7lv",
+              "name": "Magic & Illusion"
+            },
+            "subGenre": {
+              "id": "KZazBEonSMnZfZ7v7l7",
+              "name": "Magic"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "priceRanges": null,
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Pavilion Theatre Glasgow",
+              "id": "KovZ9177na7",
+              "postalCode": "G2 3AX",
+              "city": {
+                "name": "Glasgow"
+              },
+              "location": {
+                "longitude": "-4.25576000",
+                "latitude": "55.86501700"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "A Play, A Pie and A Pint: The Whaler's Wife",
+        "id": "LvZ18QJey4thndhyh8hJ7",
+        "url": "https://www.universe.com/events/a-play-a-pie-and-a-pint-the-whalers-wife-tickets-80SN19?ref=ticketmaster",
+        "pleaseNote": null,
+        "info": null,
+        "dates": {
+          "access": {
+            "startDateTime": "2026-07-23T10:00:04Z",
+            "startApproximate": false,
+            "endDateTime": "2026-09-22T13:00:00Z",
+            "endApproximate": false
+          },
+          "start": {
+            "localDate": "2026-09-22",
+            "localTime": "13:00:00",
+            "dateTime": "2026-09-22T12:00:00Z",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false
+          },
+          "end": {
+            "localTime": "13:00:00",
+            "dateTime": "2026-09-22T13:00:00Z",
+            "approximate": false,
+            "noSpecificTime": false
+          },
+          "timezone": "Europe/London",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "sales": {
+          "public": {
+            "startDateTime": "2026-07-01T11:05:55Z",
+            "startTBD": false,
+            "startTBA": false,
+            "endDateTime": "2026-09-22T13:00:00Z"
+          }
+        },
+        "classifications": [
+          {
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7na",
+              "name": "Arts & Theatre"
+            },
+            "genre": {
+              "id": "KnvZfZ7v7l1",
+              "name": "Theatre"
+            },
+            "subGenre": {
+              "id": "KZazBEonSMnZfZ7v7ll",
+              "name": "Miscellaneous"
+            },
+            "family": false
+          }
+        ],
+        "priceRanges": null,
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Oran Mor",
+              "id": "KovZ9177c7f",
+              "postalCode": "G12 8QX",
+              "city": {
+                "name": "Glasgow"
+              },
+              "location": {
+                "longitude": "-4.28915700",
+                "latitude": "55.87738000"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "Musicmanmike. Memory Lane",
+        "id": "17uOv0G6C1D7A9-",
+        "url": "https://www.ticketmaster.co.uk/musicmanmike-memory-lane-glasgow-22-09-2026/event/360064E2BB1055E1",
+        "pleaseNote": "Over 14s only. Under 16s must be accompanied by an adult over 18. A max of 6 tickets per person and per household applies. Tickets in excess of 6 will be cancelled.",
+        "info": null,
+        "dates": {
+          "start": {
+            "localDate": "2026-09-22",
+            "localTime": "19:00:00",
+            "dateTime": "2026-09-22T18:00:00Z",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false
+          },
+          "timezone": "Europe/London",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "sales": {
+          "public": {
+            "startDateTime": "2026-07-07T09:00:00Z",
+            "startTBD": false,
+            "startTBA": false,
+            "endDateTime": "2026-09-22T19:00:00Z"
+          }
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nJ",
+              "name": "Music"
+            },
+            "genre": {
+              "id": "KnvZfZ7vAv1",
+              "name": "Hip-Hop/Rap"
+            },
+            "subGenre": {
+              "id": "KZazBEonSMnZfZ7vaEI",
+              "name": "Trap"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "priceRanges": null,
+        "_embedded": {
+          "venues": [
+            {
+              "name": "The Poetry Club SWG3",
+              "id": "KovZ917A_p0",
+              "postalCode": "G3 8QG",
+              "city": {
+                "name": "Glasgow"
+              },
+              "location": {
+                "longitude": "-4.29968200",
+                "latitude": "55.86458400"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "The Afghan Whigs",
+        "id": "1AdFZ_FGkMwuoAX",
+        "url": "https://www.ticketweb.uk/event/the-afghan-whigs-galvanizers-swg3-tickets/14850403?REFERRAL_ID=tmfeed",
+        "pleaseNote": null,
+        "info": null,
+        "dates": {
+          "start": {
+            "localDate": "2026-09-22",
+            "localTime": "19:00:00",
+            "dateTime": "2026-09-22T18:00:00Z",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false
+          },
+          "timezone": "Europe/London",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "sales": {
+          "public": {
+            "startDateTime": "2026-04-15T09:00:00Z",
+            "startTBD": false,
+            "startTBA": false,
+            "endDateTime": "2026-09-22T18:00:00Z"
+          }
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nJ",
+              "name": "Music"
+            },
+            "genre": {
+              "id": "KnvZfZ7vAeA",
+              "name": "Rock"
+            },
+            "subGenre": {
+              "id": "KZazBEonSMnZfZ7v6F1",
+              "name": "Pop"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "priceRanges": null,
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Galvanizers SWG3",
+              "id": "KovZ9177wff",
+              "postalCode": "G3 8QG",
+              "city": {
+                "name": "Glasgow"
+              },
+              "location": {
+                "longitude": "-4.29821400",
+                "latitude": "55.86371100"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "Split Chain",
+        "id": "17uOv0G61rlTd16",
+        "url": "https://www.ticketmaster.co.uk/split-chain-glasgow-22-09-2026/event/360064A7ABFC3287",
+        "pleaseNote": "Over 14s only. Under 16s must be accompanied by an adult over 18. A max of 8 tickets per person and per household applies. Tickets in excess of 8 will be cancelled.",
+        "info": null,
+        "dates": {
+          "start": {
+            "localDate": "2026-09-22",
+            "localTime": "19:00:00",
+            "dateTime": "2026-09-22T18:00:00Z",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false
+          },
+          "timezone": "Europe/London",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "sales": {
+          "public": {
+            "startDateTime": "2026-05-18T09:00:00Z",
+            "startTBD": false,
+            "startTBA": false,
+            "endDateTime": "2026-09-22T18:00:00Z"
+          }
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nJ",
+              "name": "Music"
+            },
+            "genre": {
+              "id": "KnvZfZ7vAeA",
+              "name": "Rock"
+            },
+            "subGenre": {
+              "id": "KZazBEonSMnZfZ7v6F1",
+              "name": "Pop"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "priceRanges": null,
+        "_embedded": {
+          "venues": [
+            {
+              "name": "G2",
+              "id": "KovZ9177syV",
+              "postalCode": "G2 3LW",
+              "city": {
+                "name": "Glasgow"
+              },
+              "location": {
+                "longitude": "-4.26886200",
+                "latitude": "55.86629600"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "Pacific Avenue",
+        "id": "17GOv0G62muxYlj",
+        "url": "https://www.ticketweb.uk/event/pacific-avenue-king-tuts-wah-wah-hut-tickets/14701573?REFERRAL_ID=tmfeed",
+        "pleaseNote": null,
+        "info": null,
+        "dates": {
+          "start": {
+            "localDate": "2026-09-22",
+            "localTime": "19:00:00",
+            "dateTime": "2026-09-22T18:00:00Z",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false
+          },
+          "timezone": "Europe/London",
+          "status": {
+            "code": "offsale"
+          },
+          "spanMultipleDays": false
+        },
+        "sales": {
+          "public": {
+            "startDateTime": "2025-11-19T10:00:00Z",
+            "startTBD": false,
+            "startTBA": false,
+            "endDateTime": "2026-03-26T14:00:00Z"
+          }
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nJ",
+              "name": "Music"
+            },
+            "genre": {
+              "id": "KnvZfZ7vAeA",
+              "name": "Rock"
+            },
+            "subGenre": {
+              "id": "KZazBEonSMnZfZ7v6dt",
+              "name": "Alternative Rock"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "priceRanges": null,
+        "_embedded": {
+          "venues": [
+            {
+              "name": "King Tuts Wah Wah Hut",
+              "id": "KovZ9177YV0",
+              "postalCode": "G2 5RL",
+              "city": {
+                "name": "Glasgow"
+              },
+              "location": {
+                "longitude": "-4.26503700",
+                "latitude": "55.86263700"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "Jamie Webster",
+        "id": "G5dzZ_1WyRsfT",
+        "url": "https://www.ticketmaster.co.uk/jamie-webster-glasgow-22-09-2026/event/3E0064AF79BF153F",
+        "pleaseNote": "Age Restrictions: Standing: Over 14s only Seated: Over 8s only. Under 16s must be accompanied by an adult over 18. Under 25s require ID to purchase alcohol. A max of 4 tickets per person and per household applies. Tickets in excess of 4 will be cancelled.",
+        "info": "Security - Bag Policy: Large bags including rucksacks are not allowed. There are no facilities to leave large bags or luggage. If you really have to bring a bag - and it's preferable you don't, please make sure it's small. Only one small bag per person is permitted and it must not be bigger than A4 size. Height: 28.7cm Width: 21cm Depth 15cm",
+        "dates": {
+          "start": {
+            "localDate": "2026-09-22",
+            "localTime": "19:00:00",
+            "dateTime": "2026-09-22T18:00:00Z",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false
+          },
+          "timezone": "Europe/London",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "sales": {
+          "public": {
+            "startDateTime": "2026-05-29T09:00:00Z",
+            "startTBD": false,
+            "startTBA": false,
+            "endDateTime": "2026-09-22T20:00:00Z"
+          },
+          "presales": [
+            {
+              "startDateTime": "2026-05-27T09:00:00Z",
+              "endDateTime": "2026-05-29T08:00:00Z",
+              "name": "Artist Presale",
+              "description": "Tickets are available exclusively to fans who have been invited by the artist and may require a unique link or code to access tickets.",
+              "shortDescription": "Exclusive Presale for Fans invited by the Artist"
+            },
+            {
+              "startDateTime": "2026-05-27T09:00:00Z",
+              "endDateTime": "2026-05-29T08:00:00Z",
+              "name": "Priority From O2",
+              "description": "Available to O2 Priority Customers. Eligible fans must access this sale from the link below or the O2 Priority app. No presale code is required.",
+              "shortDescription": "Exclusive Presale for O2 Priority Customers",
+              "linkDescription": "Access Priority from O2 Presale",
+              "url": "https://priority.o2.co.uk/"
+            },
+            {
+              "startDateTime": "2026-05-28T09:00:00Z",
+              "endDateTime": "2026-05-29T08:00:00Z",
+              "name": "Gigs in Scotland Presale",
+              "description": "Available to Gigs in Scotland Customers. Eligible fans must access this sale from the link below with a Gigs in Scotland account.",
+              "shortDescription": "Exclusive Presale for Gigs in Scotland Customers",
+              "linkDescription": "Access Gigs in Scotland Presale",
+              "url": "https://www.gigsinscotland.com/"
+            },
+            {
+              "startDateTime": "2026-05-28T09:00:00Z",
+              "endDateTime": "2026-05-29T08:00:00Z",
+              "name": "Spotify Presale",
+              "description": "Available to Spotify subscribers. Eligible fans must access this sale from the link in the email sent from Spotify with a valid presale code.",
+              "shortDescription": "Exclusive Presale for Spotify Subscribers"
+            }
+          ]
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nJ",
+              "name": "Music"
+            },
+            "genre": {
+              "id": "KnvZfZ7vAeA",
+              "name": "Rock"
+            },
+            "subGenre": {
+              "id": "KZazBEonSMnZfZ7v6F1",
+              "name": "Pop"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "priceRanges": null,
+        "_embedded": {
+          "venues": [
+            {
+              "name": "O2 Academy Glasgow",
+              "id": "KovZ9177aJf",
+              "postalCode": "G5 9NT",
+              "city": {
+                "name": "Glasgow"
+              },
+              "location": {
+                "longitude": "-4.25878090",
+                "latitude": "55.85044960"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "Suzi Ruffell: the Juggle",
+        "id": "1AwZkotGkdN5o7O",
+        "url": "https://www.ticketweb.uk/event/suzi-ruffell-the-juggle-oran-mor-tickets/14770773?REFERRAL_ID=tmfeed",
+        "pleaseNote": null,
+        "info": null,
+        "dates": {
+          "start": {
+            "localDate": "2026-09-22",
+            "localTime": "19:30:00",
+            "dateTime": "2026-09-22T18:30:00Z",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false
+          },
+          "timezone": "Europe/London",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "sales": {
+          "public": {
+            "startDateTime": "2026-03-09T11:00:00Z",
+            "startTBD": false,
+            "startTBA": false,
+            "endDateTime": "2026-09-22T16:30:00Z"
+          }
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7na",
+              "name": "Arts & Theatre"
+            },
+            "genre": {
+              "id": "KnvZfZ7vAe1",
+              "name": "Comedy"
+            },
+            "subGenre": {
+              "id": "KZazBEonSMnZfZ7vF17",
+              "name": "Comedy"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "priceRanges": null,
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Oran Mor",
+              "id": "KovZ9177c7f",
+              "postalCode": "G12 8QX",
+              "city": {
+                "name": "Glasgow"
+              },
+              "location": {
+                "longitude": "-4.28915700",
+                "latitude": "55.87738000"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "A Play, A Pie and A Pint: The Whaler's Wife",
+        "id": "LvZ18QJey4thndhyh8hJA",
+        "url": "https://www.universe.com/events/a-play-a-pie-and-a-pint-the-whalers-wife-tickets-80SN19?ref=ticketmaster",
+        "pleaseNote": null,
+        "info": null,
+        "dates": {
+          "access": {
+            "startDateTime": "2026-07-23T10:00:04Z",
+            "startApproximate": false,
+            "endDateTime": "2026-09-23T13:00:00Z",
+            "endApproximate": false
+          },
+          "start": {
+            "localDate": "2026-09-23",
+            "localTime": "13:00:00",
+            "dateTime": "2026-09-23T12:00:00Z",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false
+          },
+          "end": {
+            "localTime": "13:00:00",
+            "dateTime": "2026-09-23T13:00:00Z",
+            "approximate": false,
+            "noSpecificTime": false
+          },
+          "timezone": "Europe/London",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "sales": {
+          "public": {
+            "startDateTime": "2026-07-01T11:05:55Z",
+            "startTBD": false,
+            "startTBA": false,
+            "endDateTime": "2026-09-23T13:00:00Z"
+          }
+        },
+        "classifications": [
+          {
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7na",
+              "name": "Arts & Theatre"
+            },
+            "genre": {
+              "id": "KnvZfZ7v7l1",
+              "name": "Theatre"
+            },
+            "subGenre": {
+              "id": "KZazBEonSMnZfZ7v7ll",
+              "name": "Miscellaneous"
+            },
+            "family": false
+          }
+        ],
+        "priceRanges": null,
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Oran Mor",
+              "id": "KovZ9177c7f",
+              "postalCode": "G12 8QX",
+              "city": {
+                "name": "Glasgow"
+              },
+              "location": {
+                "longitude": "-4.28915700",
+                "latitude": "55.87738000"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

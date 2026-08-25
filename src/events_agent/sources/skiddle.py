@@ -21,7 +21,7 @@ from urllib.parse import urlencode
 import requests
 
 from events_agent.models import RawEvent
-from events_agent.sources.base import RateLimiter
+from events_agent.sources.base import RateLimiter, parse_iso_datetime
 
 SEARCH_URL = "https://www.skiddle.com/api/v1/events/search/"
 
@@ -138,8 +138,8 @@ class SkiddleAdapter:
         pricing = raw.get("ticketpricing") or {}
         opening_times = raw.get("openingtimes") or {}
 
-        event_date = _parse_datetime(raw.get("startdate"))
-        event_date_end = _parse_datetime(raw.get("enddate"))
+        event_date = parse_iso_datetime(raw.get("startdate"))
+        event_date_end = parse_iso_datetime(raw.get("enddate"))
         category = CATEGORY_BY_EVENTCODE.get(raw.get("EventCode", eventcode), "other")
         status = _parse_status(raw)
         price_min, price_max = _parse_price_range(pricing)
@@ -167,12 +167,6 @@ class SkiddleAdapter:
             blurb=raw.get("description") or None,
             raw=raw,
         )
-
-
-def _parse_datetime(value: str | None) -> datetime | None:
-    if not value:
-        return None
-    return datetime.fromisoformat(value)
 
 
 def _parse_status(raw: dict[str, Any]) -> str:

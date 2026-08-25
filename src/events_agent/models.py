@@ -29,6 +29,7 @@ class RawEvent:
     price_min: float | None = None
     price_max: float | None = None
     currency: str = "GBP"
+    on_sale_date: datetime | None = None
 
     min_age: int | None = None
     doors_open: str | None = None  # source-provided time string, e.g. "19:30"

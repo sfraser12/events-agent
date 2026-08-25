@@ -1,0 +1,461 @@
+{
+  "page": {
+    "size": 20,
+    "totalElements": 5,
+    "totalPages": 1,
+    "number": 0
+  },
+  "_embedded": {
+    "events": [
+      {
+        "name": "Laughterama: Michelle Wolf & Rose Matafeo",
+        "id": "G5vHZ_5RaBMbU",
+        "url": "https://www.ticketmaster.co.uk/laughterama-michelle-wolf-rose-matafeo-manchester-06-09-2026/event/1F0064BBC9EB7636",
+        "pleaseNote": "Over 16s only. Under 18s must be accompanied by an adult over 18. A max of 8 tickets per person and per household applies. Tickets in excess of 8 will be cancelled. Lineup: Michelle Wolf, Rose Matafeo, Bella Hull, Amy Annette, Sarah Keyworth, Phil Ellis",
+        "info": "LAUGHTERAMA, Manchester's biggest comedy festival returns to Castlefield Bowl with five nights of astounding all-star stand-up, craft beers, street eats & more. ROSE MATAFEO BELLA HULL AMY ANNETTE SARAH KEYWORTH PHIL ELLIS A special guest headliner to be announced is joined by an almighty line-up starring Starstruck creator, BAFTA nominee and Edinburgh Comedy Award winner Rose Matafeo. \"A near-perfect comedian\" - The Guardian Joining Rose is a huge bill with viral phenomenon Sarah Keyworth, superstars in the making Bella Hull and Amy Annette, plus Taskmaster dark horse Phil Ellis as host. Doors 18:15 Show 19:30",
+        "dates": {
+          "start": {
+            "localDate": "2026-09-06",
+            "localTime": "19:30:00",
+            "dateTime": "2026-09-06T18:30:00Z",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false
+          },
+          "timezone": "Europe/London",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "sales": {
+          "public": {
+            "startDateTime": "2026-05-29T09:00:00Z",
+            "startTBD": false,
+            "startTBA": false,
+            "endDateTime": "2026-09-06T18:30:00Z"
+          }
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7na",
+              "name": "Arts & Theatre"
+            },
+            "genre": {
+              "id": "KnvZfZ7vAe1",
+              "name": "Comedy"
+            },
+            "subGenre": {
+              "id": "KZazBEonSMnZfZ7vF17",
+              "name": "Comedy"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7lt",
+              "name": "Event Style"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7vAAv",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "priceRanges": null,
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Castlefield Bowl",
+              "id": "KovZpZAnJ1kA",
+              "postalCode": "M3 4JR",
+              "city": {
+                "name": "Manchester"
+              },
+              "location": {
+                "longitude": "-2.25688100",
+                "latitude": "53.47652400"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "Mods Mayday",
+        "id": "G5dFZ975dZstp",
+        "url": "https://www.ticketweb.uk/event/mods-mayday-round-chapel-tickets/11770435?REFERRAL_ID=tmfeed",
+        "pleaseNote": null,
+        "info": null,
+        "dates": {
+          "start": {
+            "localDate": "2022-05-02",
+            "localTime": "15:00:00",
+            "dateTime": "2022-05-02T14:00:00Z",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false
+          },
+          "timezone": "Europe/London",
+          "status": {
+            "code": "cancelled"
+          },
+          "spanMultipleDays": false
+        },
+        "sales": {
+          "public": {
+            "startDateTime": "2022-02-02T14:00:00Z",
+            "startTBD": false,
+            "startTBA": false,
+            "endDateTime": "2030-05-01T23:00:00Z"
+          }
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nJ",
+              "name": "Music"
+            },
+            "genre": {
+              "id": "KnvZfZ7vAeA",
+              "name": "Rock"
+            },
+            "subGenre": {
+              "id": "KZazBEonSMnZfZ7v6F1",
+              "name": "Pop"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "priceRanges": null,
+        "_embedded": {
+          "venues": [
+            {
+              "name": "Round Chapel",
+              "id": "KovZ9177px0",
+              "postalCode": "E5 0LY",
+              "city": {
+                "name": "London"
+              },
+              "location": {
+                "longitude": "-0.04993000",
+                "latitude": "51.55274900"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "AEW: Dynamite & Collision",
+        "id": "17uOv0G619Bt9pI",
+        "url": "https://www.ticketmaster.co.uk/aew-dynamite-collision-glasgow-26-08-2026/event/360064A5FAA575A8",
+        "pleaseNote": "Over 8s only. Under 16s must be accompanied by an adult. A max of 8 tickets per person and per household applies. Tickets in excess of 8 will be cancelled. Level 3 is accessible by stairs only. Levels 2 & 3 may not suit those who have mobility difficulties or who are uncomfortable with heights. For more information on OVO Customer presales, please visit https://ovo-live.com/what/",
+        "info": "Admission to the event is subject to the venue's terms & conditions. Please ensure you read and accept these terms before purchasing tickets. By placing your order, you confirm you have read these terms & agree to be bound by them. You should save a copy of these terms for future reference. The venue reserves the right to refuse admission or eject customers in reasonable circumstances and may on occasion have to conduct security searches to ensure the safety of customers. Customers should note that they may be refused entry or ejected from the venue on account of being (or appearing to be) underage (where relevant), abusive, threatening, drunken, declining to be searched, carrying offensive weapons or illegal substances or for any other anti-social behaviour. No refunds will be offered to customers who are refused entry or ejected in such circumstances.",
+        "dates": {
+          "start": {
+            "localDate": "2026-08-26",
+            "localTime": "17:30:00",
+            "dateTime": "2026-08-26T16:30:00Z",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false
+          },
+          "timezone": "Europe/London",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "sales": {
+          "public": {
+            "startDateTime": "2026-05-15T09:00:00Z",
+            "startTBD": false,
+            "startTBA": false,
+            "endDateTime": "2026-08-26T19:00:00Z"
+          },
+          "presales": [
+            {
+              "startDateTime": "2026-05-12T09:00:00Z",
+              "endDateTime": "2026-05-15T08:00:00Z",
+              "name": "Artist Presale",
+              "description": "Tickets are available exclusively to fans who have been invited by the artist and may require a unique link or code to access tickets.",
+              "shortDescription": "Exclusive Presale for Fans invited by the Artist"
+            },
+            {
+              "startDateTime": "2026-05-13T09:00:00Z",
+              "endDateTime": "2026-05-15T08:00:00Z",
+              "name": "OVO Presale",
+              "description": "Available to OVO Members. Eligible fans must access this sale from the link below with an OVO Live account. No presale code is required.",
+              "shortDescription": "Exclusive Presale for OVO Members",
+              "linkDescription": "Access OVO Presale",
+              "url": "https://ovo-live.com/"
+            },
+            {
+              "startDateTime": "2026-05-13T09:00:00Z",
+              "endDateTime": "2026-05-15T08:00:00Z",
+              "name": "Priority from O2",
+              "description": "Available to O2 Priority Customers. Eligible fans must access this sale from the link below or the O2 Priority app. No presale code is required.",
+              "shortDescription": "Exclusive Presale for O2 Priority Customers",
+              "linkDescription": "Access Priority from O2 Presale",
+              "url": "https://priority.o2.co.uk/"
+            },
+            {
+              "startDateTime": "2026-05-14T09:00:00Z",
+              "endDateTime": "2026-05-15T08:00:00Z",
+              "name": "Live Nation Presale",
+              "description": "Fans must be signed in to their My Live Nation account and access the presale through the Live Nation website. No code required",
+              "shortDescription": "Exclusive for My Live Nation Subscribers",
+              "linkDescription": "My Live Nation account",
+              "url": "https://www.livenation.co.uk/register/"
+            }
+          ]
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nE",
+              "name": "Sports"
+            },
+            "genre": {
+              "id": "KnvZfZ7vAAk",
+              "name": "Wrestling"
+            },
+            "subGenre": {
+              "id": "KZazBEonSMnZfZ7vFna",
+              "name": "Wrestling"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "priceRanges": null,
+        "_embedded": {
+          "venues": [
+            {
+              "name": "OVO Hydro",
+              "id": "KovZ9177Sq0",
+              "postalCode": "G3 8YW",
+              "city": {
+                "name": "Glasgow"
+              },
+              "location": {
+                "longitude": "-4.28815400",
+                "latitude": "55.86087000"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "Venue Premium - AEW: Dynamite & Collision",
+        "id": "17uOv0G61xl9VFu",
+        "url": "https://www.ticketmaster.co.uk/venue-premium-aew-dynamite-collision-glasgow-26-08-2026/event/360064A8AB5F420D",
+        "pleaseNote": "Over 8s only. Under 16s must be accompanied by an adult. A max of 8 tickets per person and per household applies. Tickets in excess of 8 will be cancelled. Level 3 is accessible by stairs only. Levels 2 & 3 may not suit those who have mobility difficulties or who are uncomfortable with heights. For more information on OVO Customer presales, please visit https://ovo-live.com/what/",
+        "info": "Admission to the event is subject to the venue's terms & conditions. Please ensure you read and accept these terms before purchasing tickets. By placing your order, you confirm you have read these terms & agree to be bound by them. You should save a copy of these terms for future reference. The venue reserves the right to refuse admission or eject customers in reasonable circumstances and may on occasion have to conduct security searches to ensure the safety of customers. Customers should note that they may be refused entry or ejected from the venue on account of being (or appearing to be) underage (where relevant), abusive, threatening, drunken, declining to be searched, carrying offensive weapons or illegal substances or for any other anti-social behaviour. No refunds will be offered to customers who are refused entry or ejected in such circumstances.",
+        "dates": {
+          "start": {
+            "localDate": "2026-08-26",
+            "localTime": "17:30:00",
+            "dateTime": "2026-08-26T16:30:00Z",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false
+          },
+          "timezone": "Europe/London",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "sales": {
+          "public": {
+            "startDateTime": "2026-05-15T09:00:00Z",
+            "startTBD": false,
+            "startTBA": false,
+            "endDateTime": "2026-08-26T19:00:00Z"
+          }
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7n1",
+              "name": "Miscellaneous"
+            },
+            "genre": {
+              "id": "KnvZfZ7vAAE",
+              "name": "Community/Civic"
+            },
+            "subGenre": {
+              "id": "KZazBEonSMnZfZ7vFlv",
+              "name": "Community/Civic"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "priceRanges": null,
+        "_embedded": {
+          "venues": [
+            {
+              "name": "OVO Hydro",
+              "id": "KovZ9177Sq0",
+              "postalCode": "G3 8YW",
+              "city": {
+                "name": "Glasgow"
+              },
+              "location": {
+                "longitude": "-4.28815400",
+                "latitude": "55.86087000"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "AEW: Dynamite & Collision",
+        "id": "17uOv0G619Bt9pI-priced-fixture",
+        "url": "https://www.ticketmaster.co.uk/aew-dynamite-collision-glasgow-26-08-2026/event/360064A5FAA575A8",
+        "pleaseNote": "Over 8s only. Under 16s must be accompanied by an adult. A max of 8 tickets per person and per household applies. Tickets in excess of 8 will be cancelled. Level 3 is accessible by stairs only. Levels 2 & 3 may not suit those who have mobility difficulties or who are uncomfortable with heights. For more information on OVO Customer presales, please visit https://ovo-live.com/what/",
+        "info": "Admission to the event is subject to the venue's terms & conditions. Please ensure you read and accept these terms before purchasing tickets. By placing your order, you confirm you have read these terms & agree to be bound by them. You should save a copy of these terms for future reference. The venue reserves the right to refuse admission or eject customers in reasonable circumstances and may on occasion have to conduct security searches to ensure the safety of customers. Customers should note that they may be refused entry or ejected from the venue on account of being (or appearing to be) underage (where relevant), abusive, threatening, drunken, declining to be searched, carrying offensive weapons or illegal substances or for any other anti-social behaviour. No refunds will be offered to customers who are refused entry or ejected in such circumstances.",
+        "dates": {
+          "start": {
+            "localDate": "2026-08-26",
+            "localTime": "17:30:00",
+            "dateTime": "2026-08-26T16:30:00Z",
+            "dateTBD": false,
+            "dateTBA": false,
+            "timeTBA": false,
+            "noSpecificTime": false
+          },
+          "timezone": "Europe/London",
+          "status": {
+            "code": "onsale"
+          },
+          "spanMultipleDays": false
+        },
+        "sales": {
+          "public": {
+            "startDateTime": "2026-05-15T09:00:00Z",
+            "startTBD": false,
+            "startTBA": false,
+            "endDateTime": "2026-08-26T19:00:00Z"
+          },
+          "presales": [
+            {
+              "startDateTime": "2026-05-12T09:00:00Z",
+              "endDateTime": "2026-05-15T08:00:00Z",
+              "name": "Artist Presale",
+              "description": "Tickets are available exclusively to fans who have been invited by the artist and may require a unique link or code to access tickets.",
+              "shortDescription": "Exclusive Presale for Fans invited by the Artist"
+            },
+            {
+              "startDateTime": "2026-05-13T09:00:00Z",
+              "endDateTime": "2026-05-15T08:00:00Z",
+              "name": "OVO Presale",
+              "description": "Available to OVO Members. Eligible fans must access this sale from the link below with an OVO Live account. No presale code is required.",
+              "shortDescription": "Exclusive Presale for OVO Members",
+              "linkDescription": "Access OVO Presale",
+              "url": "https://ovo-live.com/"
+            },
+            {
+              "startDateTime": "2026-05-13T09:00:00Z",
+              "endDateTime": "2026-05-15T08:00:00Z",
+              "name": "Priority from O2",
+              "description": "Available to O2 Priority Customers. Eligible fans must access this sale from the link below or the O2 Priority app. No presale code is required.",
+              "shortDescription": "Exclusive Presale for O2 Priority Customers",
+              "linkDescription": "Access Priority from O2 Presale",
+              "url": "https://priority.o2.co.uk/"
+            },
+            {
+              "startDateTime": "2026-05-14T09:00:00Z",
+              "endDateTime": "2026-05-15T08:00:00Z",
+              "name": "Live Nation Presale",
+              "description": "Fans must be signed in to their My Live Nation account and access the presale through the Live Nation website. No code required",
+              "shortDescription": "Exclusive for My Live Nation Subscribers",
+              "linkDescription": "My Live Nation account",
+              "url": "https://www.livenation.co.uk/register/"
+            }
+          ]
+        },
+        "classifications": [
+          {
+            "primary": true,
+            "segment": {
+              "id": "KZFzniwnSyZfZ7v7nE",
+              "name": "Sports"
+            },
+            "genre": {
+              "id": "KnvZfZ7vAAk",
+              "name": "Wrestling"
+            },
+            "subGenre": {
+              "id": "KZazBEonSMnZfZ7vFna",
+              "name": "Wrestling"
+            },
+            "type": {
+              "id": "KZAyXgnZfZ7v7nI",
+              "name": "Undefined"
+            },
+            "subType": {
+              "id": "KZFzBErXgnZfZ7v7lJ",
+              "name": "Undefined"
+            },
+            "family": false
+          }
+        ],
+        "priceRanges": [
+          {
+            "type": "standard",
+            "currency": "GBP",
+            "min": 25.0,
+            "max": 85.0
+          }
+        ],
+        "_embedded": {
+          "venues": [
+            {
+              "name": "OVO Hydro",
+              "id": "KovZ9177Sq0",
+              "postalCode": "G3 8YW",
+              "city": {
+                "name": "Glasgow"
+              },
+              "location": {
+                "longitude": "-4.28815400",
+                "latitude": "55.86087000"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -5,10 +5,18 @@ from __future__ import annotations
 import json
 import sqlite3
 from datetime import UTC, datetime
+from math import asin, cos, radians, sin, sqrt
 from pathlib import Path
 
+from events_agent.dedupe import find_and_flag_candidates
 from events_agent.models import RawEvent
 from events_agent.normalise import fingerprint, normalise_text
+
+# Fallback venue-matching distance when two sources spell/geocode the same
+# building differently (confirmed real: Skiddle vs Ticketmaster's pins for the
+# same SWG3 space sit ~140m apart). Small enough to stay low-risk in a dense
+# city center, comfortably above that observed drift.
+VENUE_PROXIMITY_METERS = 150
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS venue (
@@ -144,11 +152,24 @@ def upsert_venue(
     ).fetchone()
     if row:
         venue_id = row[0]
+        # COALESCE: a source that doesn't expose a venue "type" (e.g.
+        # Ticketmaster) passes None here — that must never overwrite a type
+        # a different source already set for this same venue.
         conn.execute(
-            "UPDATE venue SET name = ?, city = ?, postcode = ?, latitude = ?, longitude = ?, type = ? WHERE id = ?",
+            "UPDATE venue SET name = ?, city = ?, postcode = ?, latitude = ?, longitude = ?, "
+            "type = COALESCE(?, type) WHERE id = ?",
             (name, city, postcode, latitude, longitude, venue_type, venue_id),
         )
         return venue_id
+
+    if latitude is not None and longitude is not None:
+        nearby_id = _find_nearby_venue(conn, latitude, longitude)
+        if nearby_id is not None:
+            # Proximity-only match: two sources spell/geocode the same venue
+            # differently. Reuse the row but don't touch its stored fields —
+            # only an exact-name match updates those, so the canonical name
+            # doesn't flap between sources' differing spellings each harvest.
+            return nearby_id
 
     cur = conn.execute(
         "INSERT INTO venue (name, name_normalised, city, postcode, latitude, longitude, type) "
@@ -156,6 +177,25 @@ def upsert_venue(
         (name, name_normalised, city, postcode, latitude, longitude, venue_type),
     )
     return cur.lastrowid
+
+
+def _find_nearby_venue(conn: sqlite3.Connection, latitude: float, longitude: float) -> int | None:
+    rows = conn.execute(
+        "SELECT id, latitude, longitude FROM venue WHERE latitude IS NOT NULL AND longitude IS NOT NULL"
+    ).fetchall()
+    for venue_id, v_lat, v_lon in rows:
+        if haversine_meters(latitude, longitude, v_lat, v_lon) <= VENUE_PROXIMITY_METERS:
+            return venue_id
+    return None
+
+
+def haversine_meters(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    earth_radius_m = 6_371_000
+    phi1, phi2 = radians(lat1), radians(lat2)
+    d_phi = radians(lat2 - lat1)
+    d_lambda = radians(lon2 - lon1)
+    a = sin(d_phi / 2) ** 2 + cos(phi1) * cos(phi2) * sin(d_lambda / 2) ** 2
+    return 2 * earth_radius_m * asin(sqrt(a))
 
 
 def upsert_raw_event(conn: sqlite3.Connection, raw: RawEvent) -> tuple[int, bool]:
@@ -239,6 +279,9 @@ def upsert_raw_event(conn: sqlite3.Connection, raw: RawEvent) -> tuple[int, bool
             ),
         )
         event_id = cur.lastrowid
+        # Only a brand-new event needs near-miss dedupe — one that matched an
+        # existing fingerprint was already merged above, not a candidate.
+        find_and_flag_candidates(conn, event_id)
 
     conn.execute(
         """
