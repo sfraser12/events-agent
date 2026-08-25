@@ -403,6 +403,14 @@ LLM scoring pass with strict JSON output and validation. Weekly digest email gro
 
 ### Phase 5 — Calendar and ad-hoc
 ICS export or Google Calendar push for shortlisted events. A `events-agent ask "anything on the last weekend in October?"` command that queries the database and answers in prose.
+**Status: the `.ics` half is done** — `events-agent calendar` writes shortlisted
+(`verdict` = `interested`/`booked`) events to a plain `.ics` file, provisional
+entries marked `STATUS:TENTATIVE`. No Google Calendar OAuth push: a static
+file imports into any calendar app without an auth flow to maintain in a
+cron job, which satisfies the actual goal ("both people can plan around
+them") more simply. **`events-agent ask` is deliberately left for the
+backlog** — a real feature (free-text parsing + a new LLM prompt), not a
+quick add-on, and not requested yet.
 
 ### Phase 6 — Venue feeds
 Add ICS/RSS adapters for the venue shortlist. Deliberately last: it is the most fiddly and the least reusable work, and by this point the pipeline around it is stable.

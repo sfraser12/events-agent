@@ -137,7 +137,7 @@ def _event_card_html(event: DigestEvent) -> str:
               {reason}
               <div style="font-size:12px; color:{MUTED};">{price} &nbsp;&middot;&nbsp; \
 <span style="background:{ACCENT_BG}; color:{ACCENT}; padding:2px 8px; border-radius:10px; font-weight:600;">\
-score {event.score}</span></div>
+score {event.score}</span> &nbsp;&middot;&nbsp; <code style="color:{MUTED};">id {event.event_id}</code></div>
             </td>
 {cta_cell(event.url)}
           </tr>
@@ -164,7 +164,10 @@ def build_digest_plain(household: dict[str, Any], horizons: dict[str, list[Diges
         for event in events:
             price = _format_price(event.price_min, event.price_max, event.currency)
             date_str = event.event_date[:10] if event.event_date else "TBC"
-            lines.append(f"- {date_str}  {event.title} @ {event.venue_name or '?'}  {price}  (score {event.score})")
+            lines.append(
+                f"- {date_str}  {event.title} @ {event.venue_name or '?'}  {price}  "
+                f"(score {event.score}, id {event.event_id})"
+            )
             if event.reason:
                 lines.append(f"    {event.reason}")
             if event.url:

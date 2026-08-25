@@ -174,6 +174,21 @@ def test_build_digest_html_includes_event_titles(conn, household):
     assert "https://example.com/karine" in html  # the booking link
 
 
+def test_build_digest_html_shows_event_id_for_marking_verdicts(conn, household):
+    # The digest is the only place you'd learn an event's id — without it
+    # shown here, `events-agent verdict <id> ...` has nothing to work from.
+    event_id, _ = upsert_raw_event(conn, make_raw_event())
+    score_event(conn, household["id"], event_id, 80)
+    conn.commit()
+
+    horizons = build_digest(conn, household)
+    html = build_digest_html(household, horizons)
+    plain = build_digest_plain(household, horizons)
+
+    assert f"id {event_id}" in html
+    assert f"id {event_id}" in plain
+
+
 def test_build_digest_html_escapes_special_characters_in_title(conn, household):
     event_id, _ = upsert_raw_event(conn, make_raw_event(title="Rock & Roll <Live>"))
     score_event(conn, household["id"], event_id, 80)

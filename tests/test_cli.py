@@ -1,6 +1,7 @@
 """events-agent harvest, end to end against a temp DB. Skiddle is faked from a fixture."""
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -212,6 +213,44 @@ def test_score_fails_loudly_without_api_key(wired_cli, monkeypatch, capsys):
     assert "ANTHROPIC_API_KEY not set" in capsys.readouterr().err
 
 
+def test_calendar_command_writes_only_shortlisted_events(wired_cli, tmp_path):
+    cli.cmd_init(argparse_namespace())  # seeds household 1
+    conn = get_connection(wired_cli)
+    keep_id, _ = upsert_raw_event(
+        conn,
+        RawEvent(
+            source_name="skiddle",
+            source_event_id="1",
+            title="Shortlisted Gig",
+            category="music",
+            venue_name="Test Venue",
+            event_date=datetime(2026, 9, 10, 19, 0, tzinfo=UTC),
+        ),
+    )
+    skip_id, _ = upsert_raw_event(
+        conn,
+        RawEvent(
+            source_name="skiddle",
+            source_event_id="2",
+            title="Undecided Gig",
+            category="music",
+            venue_name="Test Venue",
+            event_date=datetime(2026, 9, 11, 19, 0, tzinfo=UTC),
+        ),
+    )
+    conn.commit()
+    conn.close()
+    cli.cmd_verdict(verdict_namespace(keep_id, "interested"))
+
+    out_path = tmp_path / "out.ics"
+    exit_code = cli.cmd_calendar(calendar_namespace(out_path))
+
+    assert exit_code == 0
+    text = out_path.read_text()
+    assert "SUMMARY:Shortlisted Gig" in text
+    assert "Undecided Gig" not in text
+
+
 def test_verdict_command_writes_to_household_event_state(wired_cli):
     cli.cmd_init(argparse_namespace())  # seeds household 1
     conn = get_connection(wired_cli)
@@ -249,3 +288,9 @@ def verdict_namespace(event_id: int, verdict: str, household: int = 1):
     import argparse
 
     return argparse.Namespace(event_id=event_id, verdict=verdict, household=household)
+
+
+def calendar_namespace(out: Path | None = None):
+    import argparse
+
+    return argparse.Namespace(out=out)

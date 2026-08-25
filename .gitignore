@@ -4,6 +4,7 @@
 *.sqlite3
 .cache/
 fixtures_live/
+*.ics
 __pycache__/
 .venv/
 .DS_Store

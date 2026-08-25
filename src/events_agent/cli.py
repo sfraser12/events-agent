@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import sys
 from datetime import UTC, datetime
+from pathlib import Path
 
 from events_agent.config import DEFAULT_DB_PATH, REPO_ROOT, load_config, load_secrets
 from events_agent.db import (
@@ -22,6 +23,7 @@ from events_agent.db import (
 from events_agent.delivery.alert import build_alert_html, build_alert_plain, find_alertable_changes, mark_notified
 from events_agent.delivery.digest import build_digest, build_digest_html, build_digest_plain
 from events_agent.delivery.email import send_email
+from events_agent.delivery.ics import build_ics, select_calendar_events
 from events_agent.scoring import AnthropicLLMClient, run_scoring
 from events_agent.sources.skiddle import SkiddleAdapter
 from events_agent.sources.ticketmaster import TicketmasterAdapter
@@ -304,6 +306,24 @@ def cmd_digest(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_calendar(args: argparse.Namespace) -> int:
+    conn = get_connection(DEFAULT_DB_PATH)
+    try:
+        households = list_households_as_dicts(conn)
+        if not households:
+            print("No household configured — run 'events-agent init' first.", file=sys.stderr)
+            return 1
+
+        out_path = args.out or (REPO_ROOT / "marquee.ics")
+        for household in households:
+            events = select_calendar_events(conn, household)
+            out_path.write_text(build_ics(household, events), encoding="utf-8")
+            print(f"{household['label']}: {len(events)} shortlisted event(s) written to {out_path}")
+    finally:
+        conn.close()
+    return 0
+
+
 def cmd_verdict(args: argparse.Namespace) -> int:
     conn = get_connection(DEFAULT_DB_PATH)
     try:
@@ -343,6 +363,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     digest_parser = subparsers.add_parser("digest", help="Email the weekly digest of scored events.")
     digest_parser.set_defaults(func=cmd_digest)
+
+    calendar_parser = subparsers.add_parser(
+        "calendar", help="Write shortlisted events (verdict interested/booked) to an .ics file."
+    )
+    calendar_parser.add_argument("--out", type=Path, default=None)
+    calendar_parser.set_defaults(func=cmd_calendar)
 
     verdict_parser = subparsers.add_parser(
         "verdict", help="Record a decision on an event: interested, booked, or no."
