@@ -26,6 +26,7 @@ def make_raw_event(**overrides) -> RawEvent:
         venue_postcode="G1 1PE",
         venue_latitude=55.858409,
         venue_longitude=-4.242684,
+        venue_type="bar",
         event_date=datetime(2026, 8, 22, 19, 30, tzinfo=UTC),
         event_date_end=datetime(2026, 8, 22, 21, 0, tzinfo=UTC),
         status="on_sale",
@@ -103,3 +104,10 @@ def test_upsert_venue_updates_existing_row_on_rerun(conn):
     assert first_id == second_id
     row = conn.execute("SELECT latitude, longitude FROM venue WHERE id = ?", (first_id,)).fetchone()
     assert row == (55.859, -4.243)
+
+
+def test_upsert_raw_event_stores_venue_type(conn):
+    upsert_raw_event(conn, make_raw_event())
+
+    venue_type = conn.execute("SELECT type FROM venue WHERE name_normalised = 'babbity bowster'").fetchone()[0]
+    assert venue_type == "bar"

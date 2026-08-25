@@ -20,6 +20,7 @@ class RawEvent:
     venue_postcode: str | None = None
     venue_latitude: float | None = None
     venue_longitude: float | None = None
+    venue_type: str | None = None  # source-provided venue category, e.g. "bar", "theatre"
 
     event_date: datetime | None = None
     event_date_end: datetime | None = None
@@ -28,6 +29,9 @@ class RawEvent:
     price_min: float | None = None
     price_max: float | None = None
     currency: str = "GBP"
+
+    min_age: int | None = None
+    doors_open: str | None = None  # source-provided time string, e.g. "19:30"
 
     url: str | None = None
     blurb: str | None = None

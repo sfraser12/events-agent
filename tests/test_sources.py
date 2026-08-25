@@ -117,9 +117,12 @@ def test_parse_event_maps_real_skiddle_fields():
     assert event.venue_name == "Babbity Bowster"
     assert event.venue_city == "Glasgow"
     assert event.venue_postcode == "G1 1PE"
+    assert event.venue_type == "bar"
     assert event.price_min == 17
     assert event.price_max == 17
     assert event.currency == "GBP"
+    assert event.min_age == 16
+    assert event.doors_open == "19:30"
     assert event.event_date.isoformat() == "2026-08-22T19:30:00+00:00"
     assert event.url.startswith("https://www.skiddle.com/whats-on/")
     assert event.raw["id"] == "42462366"
@@ -127,12 +130,53 @@ def test_parse_event_maps_real_skiddle_fields():
 
 def test_parse_event_not_cancelled_maps_to_on_sale():
     with (FIXTURES / "skiddle_search_theatre_offset0.json").open() as f:
-        raw = json.load(f)["results"][1]  # cancelled == "0"
+        raw = json.load(f)["results"][1]  # cancelled == "0", hotSeller == false
 
     adapter = make_adapter(session=FakeSession({}))
     event = adapter._parse_event(raw, "THEATRE")
 
     assert event.status == "on_sale"
+
+
+def test_parse_event_hot_seller_maps_to_low_availability():
+    with (FIXTURES / "skiddle_search_theatre_offset0.json").open() as f:
+        raw = json.load(f)["results"][3]  # hotSeller == true, cancelled == "0"
+
+    adapter = make_adapter(session=FakeSession({}))
+    event = adapter._parse_event(raw, "THEATRE")
+
+    assert event.status == "low_availability"
+
+
+def test_parse_event_rescheduled_date_maps_to_cancelled():
+    with (FIXTURES / "skiddle_search_theatre_offset0.json").open() as f:
+        raw = json.load(f)["results"][2]  # cancelled == "0" but rescheduledDate is set
+
+    adapter = make_adapter(session=FakeSession({}))
+    event = adapter._parse_event(raw, "THEATRE")
+
+    assert event.status == "cancelled"
+
+
+def test_parse_event_zero_price_treated_as_unknown_not_free():
+    with (FIXTURES / "skiddle_search_theatre_offset0.json").open() as f:
+        raw = json.load(f)["results"][4]  # ticketpricing minPrice/maxPrice == 0/0
+
+    adapter = make_adapter(session=FakeSession({}))
+    event = adapter._parse_event(raw, "THEATRE")
+
+    assert event.price_min is None
+    assert event.price_max is None
+
+
+def test_parse_event_blank_min_age_is_none():
+    with (FIXTURES / "skiddle_search_theatre_offset0.json").open() as f:
+        raw = json.load(f)["results"][2]  # minage == ""
+
+    adapter = make_adapter(session=FakeSession({}))
+    event = adapter._parse_event(raw, "THEATRE")
+
+    assert event.min_age is None
 
 
 def test_cache_avoids_second_http_call(tmp_path, monkeypatch):

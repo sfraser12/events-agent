@@ -19,7 +19,8 @@ CREATE TABLE IF NOT EXISTS venue (
     postcode        TEXT,
     latitude        REAL,
     longitude       REAL,
-    drive_minutes   INTEGER
+    drive_minutes   INTEGER,
+    type            TEXT              -- source-provided venue category, e.g. "bar", "theatre"
 );
 
 CREATE TABLE IF NOT EXISTS event (
@@ -111,9 +112,21 @@ def init_db(db_path: Path) -> None:
     conn = get_connection(db_path)
     try:
         conn.executescript(SCHEMA)
+        _migrate(conn)
         conn.commit()
     finally:
         conn.close()
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Additive column migrations for databases created before a schema change.
+
+    CREATE TABLE IF NOT EXISTS leaves existing tables untouched, so a new
+    column added to SCHEMA needs an explicit ALTER TABLE here too.
+    """
+    venue_columns = {row[1] for row in conn.execute("PRAGMA table_info(venue)")}
+    if "type" not in venue_columns:
+        conn.execute("ALTER TABLE venue ADD COLUMN type TEXT")
 
 
 def upsert_venue(
@@ -123,6 +136,7 @@ def upsert_venue(
     postcode: str | None,
     latitude: float | None,
     longitude: float | None,
+    venue_type: str | None = None,
 ) -> int:
     name_normalised = normalise_text(name)
     row = conn.execute(
@@ -131,15 +145,15 @@ def upsert_venue(
     if row:
         venue_id = row[0]
         conn.execute(
-            "UPDATE venue SET name = ?, city = ?, postcode = ?, latitude = ?, longitude = ? WHERE id = ?",
-            (name, city, postcode, latitude, longitude, venue_id),
+            "UPDATE venue SET name = ?, city = ?, postcode = ?, latitude = ?, longitude = ?, type = ? WHERE id = ?",
+            (name, city, postcode, latitude, longitude, venue_type, venue_id),
         )
         return venue_id
 
     cur = conn.execute(
-        "INSERT INTO venue (name, name_normalised, city, postcode, latitude, longitude) "
-        "VALUES (?, ?, ?, ?, ?, ?)",
-        (name, name_normalised, city, postcode, latitude, longitude),
+        "INSERT INTO venue (name, name_normalised, city, postcode, latitude, longitude, type) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (name, name_normalised, city, postcode, latitude, longitude, venue_type),
     )
     return cur.lastrowid
 
@@ -159,6 +173,7 @@ def upsert_raw_event(conn: sqlite3.Connection, raw: RawEvent) -> tuple[int, bool
         raw.venue_postcode,
         raw.venue_latitude,
         raw.venue_longitude,
+        raw.venue_type,
     )
 
     title_normalised = normalise_text(raw.title)

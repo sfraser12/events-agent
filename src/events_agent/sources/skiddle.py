@@ -136,11 +136,13 @@ class SkiddleAdapter:
     def _parse_event(self, raw: dict[str, Any], eventcode: str) -> RawEvent:
         venue = raw.get("venue") or {}
         pricing = raw.get("ticketpricing") or {}
+        opening_times = raw.get("openingtimes") or {}
 
         event_date = _parse_datetime(raw.get("startdate"))
         event_date_end = _parse_datetime(raw.get("enddate"))
         category = CATEGORY_BY_EVENTCODE.get(raw.get("EventCode", eventcode), "other")
-        status = "cancelled" if raw.get("cancelled") == "1" else "on_sale"
+        status = _parse_status(raw)
+        price_min, price_max = _parse_price_range(pricing)
 
         return RawEvent(
             source_name=self.name,
@@ -152,12 +154,15 @@ class SkiddleAdapter:
             venue_postcode=venue.get("postcode") or None,
             venue_latitude=venue.get("latitude"),
             venue_longitude=venue.get("longitude"),
+            venue_type=venue.get("type") or None,
             event_date=event_date,
             event_date_end=event_date_end,
             status=status,
-            price_min=pricing.get("minPrice"),
-            price_max=pricing.get("maxPrice"),
+            price_min=price_min,
+            price_max=price_max,
             currency=raw.get("currency") or "GBP",
+            min_age=_parse_min_age(raw.get("minage")),
+            doors_open=opening_times.get("doorsopen") or None,
             url=raw.get("link") or None,
             blurb=raw.get("description") or None,
             raw=raw,
@@ -168,3 +173,31 @@ def _parse_datetime(value: str | None) -> datetime | None:
     if not value:
         return None
     return datetime.fromisoformat(value)
+
+
+def _parse_status(raw: dict[str, Any]) -> str:
+    # cancellationDate/rescheduledDate can be populated even when the "cancelled"
+    # flag itself is "0" — treat any of the three as a definitive cancellation.
+    if raw.get("cancelled") == "1" or raw.get("cancellationDate") or raw.get("rescheduledDate"):
+        return "cancelled"
+    if raw.get("hotSeller"):
+        return "low_availability"
+    return "on_sale"
+
+
+def _parse_price_range(pricing: dict[str, Any]) -> tuple[float | None, float | None]:
+    min_price = pricing.get("minPrice")
+    max_price = pricing.get("maxPrice")
+    # Skiddle uses 0/0 to mean "no pricing data yet", not "free" — leave both NULL.
+    if not min_price and not max_price:
+        return None, None
+    return min_price, max_price
+
+
+def _parse_min_age(value: str | None) -> int | None:
+    if not value:
+        return None
+    try:
+        return int(value)
+    except ValueError:
+        return None
