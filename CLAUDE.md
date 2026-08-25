@@ -462,9 +462,17 @@ this Mac (a `run_*.sh` wrapper in the project root, invoked by a plist in
 The known failure mode is the Mac sleeping through the scheduled time —
 `launchd` does not fire missed jobs by default. `pmset -g sched` shows
 what's actually active — currently just the single every-day 06:25 entry.
-Not yet built: a `RunAtLoad` catch-up check (compare against the last
-`source_run`/send timestamp and run anyway if overdue) for the case where
-the Mac was off or asleep through an unexpected outage.
+
+**`RunAtLoad` catch-up is built.** Both plists set `RunAtLoad`, so each
+wrapper script also runs on every `launchctl load`/reboot/login, not just
+its `StartCalendarInterval`. Each script guards this with a marker file
+(`logs/.last_attempt_daily` / `logs/.last_attempt_weekly`, a plain epoch-
+seconds timestamp) written after every attempt regardless of exit code —
+if the marker is younger than the catch-up window (36h daily, ~8 days
+weekly), the script exits immediately; only a genuinely missed scheduled
+slot (Mac off/asleep through it) is older than that and triggers a real
+run. Marked on attempt rather than success so a persistently failing step
+gets retried once per window rather than on every reboot.
 
 Build order change: Skiddle is the Phase 1 adapter. Ticketmaster moves to Phase 2 pending API key access.
 
