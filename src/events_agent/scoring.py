@@ -25,7 +25,12 @@ from events_agent.models import DuplicateAdjudication, ScoreResult
 SCORE_BATCH_SIZE = 40
 DUPLICATE_BATCH_SIZE = 20
 DEFAULT_MODEL = "claude-sonnet-5"
-MAX_TOKENS = 4096
+# Measured against a real 40-event batch: ~2,000 output tokens with thinking
+# off. Generous headroom over that observed cost — Anthropic bills actual
+# tokens generated, not this cap, so there's no cost to leaving margin, only
+# a risk of truncation (stop_reason: max_tokens, silently invalid JSON) if
+# it's too tight.
+MAX_TOKENS = 8192
 
 SCORE_SYSTEM_PROMPT = """\
 You score events for a household's weekly what's-on digest against their taste profile.
@@ -75,6 +80,12 @@ class AnthropicLLMClient:
             model=self.model,
             max_tokens=MAX_TOKENS,
             system=system,
+            # This is a structured classification task, not one that benefits
+            # from a visible reasoning trace — measured against a real batch,
+            # leaving this unset let the model spend ~2,600-3,000 tokens on
+            # unrequested thinking before the answer even started, which blew
+            # through max_tokens and truncated the JSON mid-response.
+            thinking={"type": "disabled"},
             messages=[{"role": "user", "content": user_content}],
         )
         return "".join(block.text for block in response.content if block.type == "text")
@@ -303,9 +314,24 @@ def _call_with_retry(client: LLMClient, system: str, user_content: str, model_cl
 
 def _parse_and_validate(raw_text: str, model_cls: type) -> tuple[list | None, str | None]:
     try:
-        data = json.loads(raw_text)
+        data = json.loads(_strip_markdown_fences(raw_text))
         if not isinstance(data, list):
             raise ValueError("expected a JSON array")
         return [model_cls.model_validate(item) for item in data], None
     except (json.JSONDecodeError, ValidationError, ValueError) as exc:
         return None, str(exc)
+
+
+def _strip_markdown_fences(text: str) -> str:
+    """The system prompt says "no markdown code fences" — measured against a
+    real response, the model wraps the JSON in ```json ... ``` anyway, every
+    time. That's consistent behavior, not a fluke, so the retry-once path
+    would hit the identical failure — stripping defensively here is what
+    actually makes the instruction work, rather than relying on the model to
+    comply with a rule the parser can just tolerate."""
+    stripped = text.strip()
+    if stripped.startswith("```"):
+        stripped = stripped.removeprefix("```json").removeprefix("```")
+        stripped = stripped.removesuffix("```")
+        stripped = stripped.strip()
+    return stripped

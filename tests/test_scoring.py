@@ -133,6 +133,26 @@ def test_run_scoring_for_household_scores_via_the_llm_and_upserts(conn, househol
     assert row == (92, "both", "A folk act we love.", "none")
 
 
+def test_run_scoring_handles_response_wrapped_in_markdown_fences(conn, household):
+    # Regression: measured against the real API, the model wraps its JSON in
+    # ```json ... ``` despite the system prompt saying not to — consistently,
+    # not as a fluke, so this must be tolerated rather than relied on not to
+    # happen.
+    event_id, _ = upsert_raw_event(conn, make_raw_event())
+    fenced = (
+        "```json\n"
+        + json.dumps([{"event_id": event_id, "score": 77, "audience": "scott", "reason": "Good fit.", "urgency": "none"}])
+        + "\n```"
+    )
+    client = FakeLLMClient([fenced])
+
+    stats = run_scoring_for_household(conn, client, household)
+    conn.commit()
+
+    assert stats == {"scored": 1, "excluded": 0, "failed": 0}
+    assert len(client.calls) == 1  # succeeded on the first call, no retry needed
+
+
 def test_run_scoring_for_household_excludes_events_failing_constraints_without_calling_the_model(conn, household):
     # Real Barrowland coordinates but a narrow household radius — should be
     # filtered in Python before ever reaching the (fake) model.
