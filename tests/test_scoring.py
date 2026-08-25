@@ -118,6 +118,42 @@ def test_select_scoring_candidates_excludes_already_scored_unchanged_events(conn
     assert select_scoring_candidates(conn, household["id"]) == []
 
 
+def test_select_scoring_candidates_excludes_events_re_harvested_unchanged_after_scoring(conn, household):
+    # Regression: harvest re-touches nearly every known event on every run
+    # (both sources just re-return the same listings). If upsert_raw_event
+    # advanced last_seen unconditionally, this exact sequence — score once,
+    # then harvest again with nothing actually different — would make
+    # last_seen > scored_at true for basically every event and trigger a
+    # near-full rescore every single day. Confirmed in production: a second
+    # real `run` rescored 2,739 events for what should've been a handful of
+    # genuine changes.
+    event_id, _ = upsert_raw_event(conn, make_raw_event())
+    upsert_score(
+        conn, household["id"], event_id, score=80, audience="both",
+        score_reason="great", urgency="none", scored_at=datetime.now(UTC).isoformat(),
+    )
+    conn.commit()
+
+    upsert_raw_event(conn, make_raw_event())  # identical re-harvest, nothing differs
+    conn.commit()
+
+    assert select_scoring_candidates(conn, household["id"]) == []
+
+
+def test_select_scoring_candidates_includes_events_re_harvested_with_a_real_change(conn, household):
+    event_id, _ = upsert_raw_event(conn, make_raw_event(status="on_sale"))
+    upsert_score(
+        conn, household["id"], event_id, score=80, audience="both",
+        score_reason="great", urgency="none", scored_at=datetime.now(UTC).isoformat(),
+    )
+    conn.commit()
+
+    upsert_raw_event(conn, make_raw_event(status="low_availability"))  # genuine change
+    conn.commit()
+
+    assert select_scoring_candidates(conn, household["id"]) == [event_id]
+
+
 def test_run_scoring_for_household_scores_via_the_llm_and_upserts(conn, household):
     event_id, _ = upsert_raw_event(conn, make_raw_event())
     response = json.dumps(

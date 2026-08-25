@@ -70,6 +70,34 @@ def test_upsert_raw_event_is_idempotent_on_rerun(conn):
     assert count == 1
 
 
+def test_upsert_raw_event_does_not_advance_last_seen_when_nothing_changed(conn):
+    # Regression: harvest re-touches nearly every known event on every run
+    # (both sources just re-return the same listings unchanged). If
+    # last_seen advanced unconditionally, select_scoring_candidates's
+    # `last_seen > scored_at` check would treat almost the entire catalog
+    # as "changed" and trigger a near-full rescore every single day —
+    # confirmed in production: a second real `run` rescored 2,739 events,
+    # nearly the whole catalog, for what should have been a handful of
+    # genuine changes.
+    event_id, _ = upsert_raw_event(conn, make_raw_event())
+    first_last_seen = conn.execute("SELECT last_seen FROM event WHERE id = ?", (event_id,)).fetchone()[0]
+
+    upsert_raw_event(conn, make_raw_event())  # identical re-fetch, nothing differs
+
+    second_last_seen = conn.execute("SELECT last_seen FROM event WHERE id = ?", (event_id,)).fetchone()[0]
+    assert second_last_seen == first_last_seen
+
+
+def test_upsert_raw_event_advances_last_seen_when_something_changed(conn):
+    event_id, _ = upsert_raw_event(conn, make_raw_event(status="on_sale"))
+    first_last_seen = conn.execute("SELECT last_seen FROM event WHERE id = ?", (event_id,)).fetchone()[0]
+
+    upsert_raw_event(conn, make_raw_event(status="low_availability"))
+
+    second_last_seen = conn.execute("SELECT last_seen FROM event WHERE id = ?", (event_id,)).fetchone()[0]
+    assert second_last_seen > first_last_seen
+
+
 def test_upsert_raw_event_updates_changed_status(conn):
     event_id, _ = upsert_raw_event(conn, make_raw_event(status="on_sale"))
     upsert_raw_event(conn, make_raw_event(status="cancelled"))

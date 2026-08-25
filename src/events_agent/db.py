@@ -293,11 +293,48 @@ def upsert_raw_event(conn: sqlite3.Connection, raw: RawEvent) -> tuple[int, bool
     new_on_sale_date = _iso_or_none(raw.on_sale_date)
 
     row = conn.execute(
-        "SELECT id, status, price_min, price_max, on_sale_date FROM event WHERE fingerprint = ?", (fp,)
+        """
+        SELECT id, title, category, venue_id, event_date, event_date_end, status,
+               price_min, price_max, currency, on_sale_date, url, blurb, last_seen
+        FROM event WHERE fingerprint = ?
+        """,
+        (fp,),
     ).fetchone()
     if row:
-        event_id, old_status, old_price_min, old_price_max, old_on_sale_date = row
+        (
+            event_id, old_title, old_category, old_venue_id, old_event_date, old_event_date_end,
+            old_status, old_price_min, old_price_max, old_currency, old_on_sale_date, old_url,
+            old_blurb, old_last_seen,
+        ) = row
         created = False
+        new_event_date = _iso_or_none(raw.event_date)
+        new_event_date_end = _iso_or_none(raw.event_date_end)
+
+        # last_seen only advances when something about the event actually
+        # changed — harvest re-touches nearly every known event on every
+        # run (both sources just re-return the same listings), so if it
+        # advanced unconditionally, select_scoring_candidates's
+        # `last_seen > scored_at` check would treat almost the entire
+        # catalog as "changed" and trigger a near-full rescore every single
+        # day. Confirmed in production: a second real `run` rescored 2,739
+        # events, nearly the whole catalog, for what should have been a
+        # handful of genuine changes.
+        content_changed = (
+            old_title != raw.title
+            or old_category != raw.category
+            or old_venue_id != venue_id
+            or old_event_date != new_event_date
+            or old_event_date_end != new_event_date_end
+            or old_status != raw.status
+            or old_price_min != raw.price_min
+            or old_price_max != raw.price_max
+            or old_currency != raw.currency
+            or old_on_sale_date != new_on_sale_date
+            or old_url != raw.url
+            or old_blurb != raw.blurb
+        )
+        new_last_seen = now if content_changed else old_last_seen
+
         conn.execute(
             """
             UPDATE event SET
@@ -312,8 +349,8 @@ def upsert_raw_event(conn: sqlite3.Connection, raw: RawEvent) -> tuple[int, bool
                 title_normalised,
                 raw.category,
                 venue_id,
-                _iso_or_none(raw.event_date),
-                _iso_or_none(raw.event_date_end),
+                new_event_date,
+                new_event_date_end,
                 raw.status,
                 raw.price_min,
                 raw.price_max,
@@ -321,7 +358,7 @@ def upsert_raw_event(conn: sqlite3.Connection, raw: RawEvent) -> tuple[int, bool
                 new_on_sale_date,
                 raw.url,
                 raw.blurb,
-                now,
+                new_last_seen,
                 event_id,
             ),
         )
