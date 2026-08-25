@@ -7,7 +7,8 @@ import pytest
 
 from events_agent import cli
 from events_agent.config import Config, Constraints, Delivery, Home, Horizons, Scoring, Search, Secrets
-from events_agent.db import get_connection, init_db
+from events_agent.db import get_connection, init_db, upsert_raw_event
+from events_agent.models import RawEvent
 from events_agent.sources.skiddle import SkiddleAdapter
 from events_agent.sources.ticketmaster import TicketmasterAdapter
 
@@ -182,7 +183,69 @@ def test_harvest_fails_only_if_every_source_fails(wired_cli, monkeypatch):
     assert exit_code == 1
 
 
+def test_init_seeds_household_from_config(wired_cli):
+    cli.cmd_init(argparse_namespace())
+
+    conn = get_connection(wired_cli)
+    row = conn.execute(
+        "SELECT label, home_latitude, radius_miles, digest_threshold, email_to FROM household WHERE id = 1"
+    ).fetchone()
+    conn.close()
+    assert row == ("Milngavie", 55.9410, 25, 60, "test@example.com")
+
+
+def test_alert_requires_a_household(wired_cli, capsys):
+    # wired_cli's init_db creates the schema but doesn't seed a household —
+    # only cmd_init does that, and this test deliberately hasn't run it.
+    exit_code = cli.cmd_alert(argparse_namespace())
+
+    assert exit_code == 1
+    assert "No household configured" in capsys.readouterr().err
+
+
+def test_score_fails_loudly_without_api_key(wired_cli, monkeypatch, capsys):
+    monkeypatch.setattr(cli, "load_secrets", lambda: Secrets(skiddle_api_key="test-key", anthropic_api_key=""))
+
+    exit_code = cli.cmd_score(argparse_namespace())
+
+    assert exit_code == 1
+    assert "ANTHROPIC_API_KEY not set" in capsys.readouterr().err
+
+
+def test_verdict_command_writes_to_household_event_state(wired_cli):
+    cli.cmd_init(argparse_namespace())  # seeds household 1
+    conn = get_connection(wired_cli)
+    event_id, _ = upsert_raw_event(
+        conn,
+        RawEvent(
+            source_name="skiddle",
+            source_event_id="1",
+            title="Test Gig",
+            category="music",
+            venue_name="Test Venue",
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+    exit_code = cli.cmd_verdict(verdict_namespace(event_id, "no"))
+
+    assert exit_code == 0
+    conn = get_connection(wired_cli)
+    verdict = conn.execute(
+        "SELECT verdict FROM household_event_state WHERE household_id = 1 AND event_id = ?", (event_id,)
+    ).fetchone()[0]
+    conn.close()
+    assert verdict == "no"
+
+
 def argparse_namespace():
     import argparse
 
     return argparse.Namespace()
+
+
+def verdict_namespace(event_id: int, verdict: str, household: int = 1):
+    import argparse
+
+    return argparse.Namespace(event_id=event_id, verdict=verdict, household=household)

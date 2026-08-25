@@ -1,10 +1,16 @@
-"""RawEvent: the common shape every source adapter yields, before normalisation."""
+"""RawEvent: the common shape every source adapter yields, before normalisation.
+
+Also: the strict-JSON output shapes the LLM scoring pass (Stage 3) must
+validate against — see CLAUDE.md's Stage 3 spec for the exact schema.
+"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
+
+from pydantic import BaseModel, Field
 
 
 @dataclass
@@ -38,3 +44,23 @@ class RawEvent:
     blurb: str | None = None
 
     raw: dict[str, Any] = field(default_factory=dict)
+
+
+class ScoreResult(BaseModel):
+    """One event's scoring-pass output — validated against the model's raw
+    JSON before it's trusted. A parse/validation failure here is exactly
+    what triggers the retry-once-then-flag-for-review path in scoring.py."""
+
+    event_id: int
+    score: int = Field(ge=0, le=100)
+    audience: Literal["scott", "both", "partner"]
+    reason: str
+    urgency: Literal["none", "on_sale_soon", "selling_fast", "last_chance"]
+
+
+class DuplicateAdjudication(BaseModel):
+    """One duplicate_candidate pair's adjudication output."""
+
+    pair_id: int
+    same_event: bool
+    reason: str

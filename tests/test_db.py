@@ -1,8 +1,18 @@
+import sqlite3
 from datetime import UTC, date, datetime
 
 import pytest
 
-from events_agent.db import get_connection, init_db, mark_past_events, upsert_raw_event, upsert_venue
+from events_agent.db import (
+    get_connection,
+    get_household_as_dict,
+    init_db,
+    list_households_as_dicts,
+    mark_past_events,
+    upsert_household,
+    upsert_raw_event,
+    upsert_venue,
+)
 from events_agent.models import RawEvent
 
 
@@ -271,3 +281,118 @@ def test_mark_past_events_ignores_undated_events(conn):
     marked = mark_past_events(conn, today=date(2026, 8, 24))
 
     assert marked == 0
+
+
+def test_upsert_household_seeds_a_new_row(conn, tmp_path):
+    upsert_household(
+        conn,
+        household_id=1,
+        label="Milngavie",
+        home_latitude=55.9410,
+        home_longitude=-4.3170,
+        radius_miles=25,
+        near_days=7,
+        month_days=31,
+        max_drive_minutes=90,
+        price_ceiling=200,
+        blackout_dates=[("2026-10-12", "2026-10-26")],
+        taste_profile_path=str(tmp_path / "taste-profile.md"),
+        digest_threshold=60,
+        alert_threshold=45,
+        digest_day="sunday",
+        digest_hour=8,
+        email_to="test@example.com",
+    )
+    conn.commit()
+
+    household = get_household_as_dict(conn, 1)
+    assert household["label"] == "Milngavie"
+    assert household["radius_miles"] == 25
+    assert household["blackout_dates"] == '[["2026-10-12", "2026-10-26"]]'
+
+
+def test_upsert_household_is_idempotent_on_rerun(conn, tmp_path):
+    kwargs = dict(
+        household_id=1,
+        home_latitude=55.9410,
+        home_longitude=-4.3170,
+        radius_miles=25,
+        near_days=7,
+        month_days=31,
+        max_drive_minutes=90,
+        price_ceiling=200,
+        blackout_dates=[],
+        taste_profile_path=str(tmp_path / "taste-profile.md"),
+        digest_threshold=60,
+        alert_threshold=45,
+        digest_day="sunday",
+        digest_hour=8,
+        email_to="test@example.com",
+    )
+    upsert_household(conn, label="Milngavie", **kwargs)
+    upsert_household(conn, label="Milngavie (renamed)", **kwargs)
+    conn.commit()
+
+    assert len(list_households_as_dicts(conn)) == 1
+    assert get_household_as_dict(conn, 1)["label"] == "Milngavie (renamed)"
+
+
+def test_init_db_migrates_a_pre_phase_4_database(tmp_path):
+    """Simulates a database created before household_event_state existed —
+    score/verdict/etc. still live directly on `event`, all NULL (as they
+    always were pre-Phase-4, since scoring never ran), plus venue.drive_minutes.
+    init_db must drop them and add the new tables without error.
+    """
+    db_path = tmp_path / "old.db"
+    old_conn = sqlite3.connect(db_path)
+    old_conn.executescript(
+        """
+        CREATE TABLE venue (
+            id INTEGER PRIMARY KEY, name TEXT NOT NULL, name_normalised TEXT NOT NULL UNIQUE,
+            city TEXT, postcode TEXT, latitude REAL, longitude REAL, drive_minutes INTEGER, type TEXT
+        );
+        CREATE TABLE event (
+            id INTEGER PRIMARY KEY, fingerprint TEXT NOT NULL, title TEXT NOT NULL,
+            title_normalised TEXT NOT NULL, category TEXT, venue_id INTEGER REFERENCES venue(id),
+            event_date TEXT, event_date_end TEXT, announced_date TEXT, on_sale_date TEXT,
+            status TEXT, price_min REAL, price_max REAL, currency TEXT DEFAULT 'GBP',
+            url TEXT, blurb TEXT, first_seen TEXT NOT NULL, last_seen TEXT NOT NULL,
+            score INTEGER, audience TEXT, score_reason TEXT, urgency TEXT, scored_at TEXT,
+            verdict TEXT, verdict_at TEXT, snoozed_until TEXT, surfaced_at TEXT
+        );
+        CREATE INDEX idx_event_verdict ON event(verdict);
+        CREATE TABLE event_change (
+            id INTEGER PRIMARY KEY, event_id INTEGER REFERENCES event(id), field TEXT NOT NULL,
+            old_value TEXT, new_value TEXT, detected_at TEXT NOT NULL
+        );
+        """
+    )
+    old_conn.execute(
+        "INSERT INTO venue (name, name_normalised) VALUES ('Test Venue', 'test venue')"
+    )
+    old_conn.execute(
+        "INSERT INTO event (fingerprint, title, title_normalised, first_seen, last_seen) "
+        "VALUES ('fp1', 'Test Event', 'test event', '2026-01-01', '2026-01-01')"
+    )
+    old_conn.commit()
+    old_conn.close()
+
+    init_db(db_path)  # must not raise
+
+    conn = get_connection(db_path)
+    try:
+        event_columns = {row[1] for row in conn.execute("PRAGMA table_info(event)")}
+        venue_columns = {row[1] for row in conn.execute("PRAGMA table_info(venue)")}
+        assert "score" not in event_columns
+        assert "verdict" not in event_columns
+        assert "drive_minutes" not in venue_columns
+
+        tables = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        assert "household" in tables
+        assert "household_event_state" in tables
+
+        # Pre-existing data survived the column drops.
+        title = conn.execute("SELECT title FROM event WHERE fingerprint = 'fp1'").fetchone()[0]
+        assert title == "Test Event"
+    finally:
+        conn.close()

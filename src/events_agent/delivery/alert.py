@@ -11,6 +11,9 @@ from __future__ import annotations
 import sqlite3
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from typing import Any
+
+from events_agent.constraints import event_matches_household
 
 ALERT_WINDOW = timedelta(hours=48)
 
@@ -25,12 +28,25 @@ class AlertItem:
     reason: str
 
 
-def find_alertable_changes(conn: sqlite3.Connection, now: datetime) -> list[AlertItem]:
+def find_alertable_changes(conn: sqlite3.Connection, now: datetime, household: dict[str, Any]) -> list[AlertItem]:
+    """Household-scoped: a change outside this household's radius/price
+    ceiling/blackout dates isn't urgent *to them*, regardless of how urgent
+    it is in the abstract — otherwise every household would get alerted
+    about every other household's events once more than one exists.
+
+    Note: notified_at lives on event_change itself, not per-household — with
+    one household that's exactly right; the day a second one exists, two
+    households filtering the same still-unnotified change would each see it
+    once, which is still correct, but only one of them marking it notified
+    would (harmlessly) suppress it for the other too. Fine for now, flagged
+    here rather than silently assumed correct.
+    """
     now_iso = now.isoformat()
     cutoff = (now + ALERT_WINDOW).isoformat()
     rows = conn.execute(
         """
-        SELECT ec.id, e.id, e.title, v.name, e.url, ec.field, ec.new_value
+        SELECT ec.id, e.id, e.title, v.name, e.url, ec.field, ec.new_value,
+               v.latitude, v.longitude, e.price_min, e.price_max, e.event_date
         FROM event_change ec
         JOIN event e ON e.id = ec.event_id
         LEFT JOIN venue v ON v.id = e.venue_id
@@ -45,7 +61,20 @@ def find_alertable_changes(conn: sqlite3.Connection, now: datetime) -> list[Aler
     ).fetchall()
 
     items = []
-    for change_id, event_id, title, venue_name, url, field, new_value in rows:
+    for change_id, event_id, title, venue_name, url, field, new_value, venue_lat, venue_lon, price_min, price_max, event_date in rows:
+        if not event_matches_household(
+            venue_latitude=venue_lat,
+            venue_longitude=venue_lon,
+            price_min=price_min,
+            price_max=price_max,
+            event_date=event_date,
+            home_latitude=household["home_latitude"],
+            home_longitude=household["home_longitude"],
+            radius_miles=household["radius_miles"],
+            price_ceiling=household["price_ceiling"],
+            blackout_dates_json=household["blackout_dates"],
+        ):
+            continue
         reason = _low_availability_reason() if field == "status" else _on_sale_reason(new_value)
         items.append(AlertItem(change_id, event_id, title, venue_name, url, reason))
     return items

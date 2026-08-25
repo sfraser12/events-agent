@@ -14,6 +14,9 @@ search:
 constraints:
   max_drive_minutes: 60
   price_ceiling: 0
+  # List of date ranges, e.g.:
+  #   - start: "2026-10-12"
+  #     end: "2026-10-26"
   blackout_dates: []
 
 scoring:

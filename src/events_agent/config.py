@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from datetime import date
 from pathlib import Path
 
 import yaml
@@ -31,10 +32,19 @@ class Search(BaseModel):
     horizons: Horizons
 
 
+class BlackoutRange(BaseModel):
+    start: date
+    end: date
+
+
 class Constraints(BaseModel):
     max_drive_minutes: int
     price_ceiling: float
-    blackout_dates: list[str] = []
+    # A single date can't express "12-26 October" — blackout periods in
+    # taste-profile.md are always ranges, so this is too (was list[str] of
+    # single dates, but nothing had ever populated it, so no migration risk
+    # in fixing the shape now, before Phase 4's constraint filter needs it).
+    blackout_dates: list[BlackoutRange] = []
 
 
 class Scoring(BaseModel):

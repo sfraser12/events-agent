@@ -11,15 +11,28 @@ from events_agent.db import (
     finish_source_run,
     get_connection,
     init_db,
+    list_households_as_dicts,
     mark_past_events,
+    mark_surfaced,
+    set_verdict,
     start_source_run,
+    upsert_household,
     upsert_raw_event,
 )
 from events_agent.delivery.alert import find_alertable_changes, mark_notified
+from events_agent.delivery.digest import build_digest, build_digest_html, build_digest_plain
+from events_agent.delivery.email import send_email
+from events_agent.scoring import AnthropicLLMClient, run_scoring
 from events_agent.sources.skiddle import SkiddleAdapter
 from events_agent.sources.ticketmaster import TicketmasterAdapter
 
-STUB_COMMANDS = ("score", "digest", "run")
+STUB_COMMANDS = ("run",)
+
+# Single-file today, deliberately (see CLAUDE.md build notes) — a households/
+# directory with one config + taste profile per household is the cheap way
+# to extend this later; not built until a second household actually exists.
+TASTE_PROFILE_PATH = REPO_ROOT / "taste-profile.md"
+HOUSEHOLD_ID = 1
 
 
 def cmd_init(args: argparse.Namespace) -> int:
@@ -28,6 +41,34 @@ def cmd_init(args: argparse.Namespace) -> int:
     try:
         config = load_config()
         print(f"Config loaded: home={config.home.label}, radius={config.search.radius_miles}mi")
+
+        conn = get_connection(DEFAULT_DB_PATH)
+        try:
+            upsert_household(
+                conn,
+                HOUSEHOLD_ID,
+                label=config.home.label,
+                home_latitude=config.home.latitude,
+                home_longitude=config.home.longitude,
+                radius_miles=config.search.radius_miles,
+                near_days=config.search.horizons.near_days,
+                month_days=config.search.horizons.month_days,
+                max_drive_minutes=config.constraints.max_drive_minutes,
+                price_ceiling=config.constraints.price_ceiling,
+                blackout_dates=[
+                    (r.start.isoformat(), r.end.isoformat()) for r in config.constraints.blackout_dates
+                ],
+                taste_profile_path=str(TASTE_PROFILE_PATH),
+                digest_threshold=config.scoring.digest_threshold,
+                alert_threshold=config.scoring.alert_threshold,
+                digest_day=config.delivery.digest_day,
+                digest_hour=config.delivery.digest_hour,
+                email_to=config.delivery.email_to,
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        print(f"Household seeded from config.yaml (taste profile: {TASTE_PROFILE_PATH.name}).")
     except FileNotFoundError as exc:
         print(f"Note: {exc}", file=sys.stderr)
     return 0
@@ -149,20 +190,110 @@ def cmd_alert(args: argparse.Namespace) -> int:
     conn = get_connection(DEFAULT_DB_PATH)
     try:
         now = datetime.now(UTC)
-        items = find_alertable_changes(conn, now)
-        if not items:
-            print("No urgent alerts.")
-        else:
-            print(f"URGENT — {len(items)} event(s) need attention:\n")
+        households = list_households_as_dicts(conn)
+        if not households:
+            print("No household configured — run 'events-agent init' first.", file=sys.stderr)
+            return 1
+
+        all_change_ids: set[int] = set()
+        any_items = False
+        for household in households:
+            items = find_alertable_changes(conn, now, household)
+            if not items:
+                continue
+            any_items = True
+            print(f"URGENT for {household['label']} — {len(items)} event(s) need attention:\n")
             for item in items:
                 venue = f" @ {item.venue_name}" if item.venue_name else ""
                 print(f"- {item.title}{venue}: {item.reason}")
                 if item.url:
                     print(f"  {item.url}")
-            mark_notified(conn, [item.change_id for item in items], now)
+            all_change_ids.update(item.change_id for item in items)
+
+        if not any_items:
+            print("No urgent alerts.")
+        else:
+            mark_notified(conn, list(all_change_ids), now)
         conn.commit()
     finally:
         conn.close()
+    return 0
+
+
+def cmd_score(args: argparse.Namespace) -> int:
+    secrets = load_secrets()
+    if not secrets.anthropic_api_key:
+        print("ANTHROPIC_API_KEY not set in .env — copy .env.example and fill it in.", file=sys.stderr)
+        return 1
+
+    client = AnthropicLLMClient(api_key=secrets.anthropic_api_key)
+    conn = get_connection(DEFAULT_DB_PATH)
+    try:
+        households = list_households_as_dicts(conn)
+        if not households:
+            print("No household configured — run 'events-agent init' first.", file=sys.stderr)
+            return 1
+        summary = run_scoring(conn, client)
+        conn.commit()
+    finally:
+        conn.close()
+
+    for label, stats in summary["households"].items():
+        print(f"{label}: {stats['scored']} scored, {stats['excluded']} excluded (constraints), {stats['failed']} failed")
+    print(f"{summary['duplicates_adjudicated']} duplicate pair(s) adjudicated.")
+    return 0
+
+
+def cmd_digest(args: argparse.Namespace) -> int:
+    secrets = load_secrets()
+    conn = get_connection(DEFAULT_DB_PATH)
+    try:
+        households = list_households_as_dicts(conn)
+        if not households:
+            print("No household configured — run 'events-agent init' first.", file=sys.stderr)
+            return 1
+
+        for household in households:
+            horizons = build_digest(conn, household)
+            total = sum(len(events) for events in horizons.values())
+            if total == 0:
+                print(f"{household['label']}: nothing to send this week.")
+                continue
+
+            html_body = build_digest_html(household, horizons)
+            plain_body = build_digest_plain(household, horizons)
+            subject = f"Events digest — {datetime.now(UTC):%d %b %Y}"
+            sent = send_email(
+                smtp_host=secrets.smtp_host,
+                smtp_port=secrets.smtp_port,
+                smtp_user=secrets.smtp_user,
+                smtp_password=secrets.smtp_password,
+                from_email=secrets.smtp_user,
+                to_email=household["email_to"],
+                subject=subject,
+                html_body=html_body,
+                plain_body=plain_body,
+            )
+            if sent:
+                event_ids = [event.event_id for events in horizons.values() for event in events]
+                mark_surfaced(conn, household["id"], event_ids, datetime.now(UTC).isoformat())
+                conn.commit()
+                print(f"{household['label']}: digest sent to {household['email_to']} ({total} events).")
+            else:
+                print(f"{household['label']}: digest NOT sent ({total} events ready — see error above).", file=sys.stderr)
+    finally:
+        conn.close()
+    return 0
+
+
+def cmd_verdict(args: argparse.Namespace) -> int:
+    conn = get_connection(DEFAULT_DB_PATH)
+    try:
+        set_verdict(conn, args.household, args.event_id, args.verdict)
+        conn.commit()
+    finally:
+        conn.close()
+    print(f"Event {args.event_id} marked '{args.verdict}' for household {args.household}.")
     return 0
 
 
@@ -188,6 +319,20 @@ def build_parser() -> argparse.ArgumentParser:
 
     alert_parser = subparsers.add_parser("alert", help="Print urgent alerts: imminent on-sale dates and low availability.")
     alert_parser.set_defaults(func=cmd_alert)
+
+    score_parser = subparsers.add_parser("score", help="Run the LLM scoring pass over new/changed events.")
+    score_parser.set_defaults(func=cmd_score)
+
+    digest_parser = subparsers.add_parser("digest", help="Email the weekly digest of scored events.")
+    digest_parser.set_defaults(func=cmd_digest)
+
+    verdict_parser = subparsers.add_parser(
+        "verdict", help="Record a decision on an event: interested, booked, or no."
+    )
+    verdict_parser.add_argument("event_id", type=int)
+    verdict_parser.add_argument("verdict", choices=["interested", "booked", "no"])
+    verdict_parser.add_argument("--household", type=int, default=HOUSEHOLD_ID)
+    verdict_parser.set_defaults(func=cmd_verdict)
 
     for name in STUB_COMMANDS:
         stub_parser = subparsers.add_parser(name, help=f"({name} — not implemented yet)")

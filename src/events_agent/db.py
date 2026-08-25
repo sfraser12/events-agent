@@ -27,7 +27,6 @@ CREATE TABLE IF NOT EXISTS venue (
     postcode        TEXT,
     latitude        REAL,
     longitude       REAL,
-    drive_minutes   INTEGER,
     type            TEXT              -- source-provided venue category, e.g. "bar", "theatre"
 );
 
@@ -52,7 +51,43 @@ CREATE TABLE IF NOT EXISTS event (
     blurb           TEXT,
 
     first_seen      TEXT NOT NULL,
-    last_seen       TEXT NOT NULL,
+    last_seen       TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_event_fingerprint ON event(fingerprint);
+CREATE INDEX IF NOT EXISTS idx_event_date        ON event(event_date);
+CREATE INDEX IF NOT EXISTS idx_event_onsale      ON event(on_sale_date);
+
+-- One row per household (today: just the one). Scoring/delivery settings
+-- mirror config.yaml + taste-profile.md — config.yaml stays the human-edited
+-- source of truth, this row is a queryable materialization of it, re-synced
+-- on every `events-agent init`.
+CREATE TABLE IF NOT EXISTS household (
+    id                  INTEGER PRIMARY KEY,
+    label               TEXT NOT NULL,
+    home_latitude       REAL NOT NULL,
+    home_longitude      REAL NOT NULL,
+    radius_miles        REAL NOT NULL,
+    near_days           INTEGER,           -- digest horizon: "this week" cutoff
+    month_days          INTEGER,           -- digest horizon: "this month" cutoff
+    max_drive_minutes   INTEGER,
+    price_ceiling       REAL,
+    blackout_dates      TEXT,              -- JSON array of [start_iso, end_iso] pairs
+    taste_profile_path  TEXT NOT NULL,
+    digest_threshold    INTEGER,
+    alert_threshold     INTEGER,
+    digest_day          TEXT,
+    digest_hour         INTEGER,
+    email_to            TEXT,
+    created_at          TEXT NOT NULL
+);
+
+-- Per-household view of an event: score, verdict, snooze. Split out from
+-- `event` because those are judgments about taste, not facts about the
+-- event — two households can (and will) score the same gig differently.
+CREATE TABLE IF NOT EXISTS household_event_state (
+    household_id    INTEGER NOT NULL REFERENCES household(id),
+    event_id        INTEGER NOT NULL REFERENCES event(id),
 
     score           INTEGER,
     audience        TEXT,
@@ -63,13 +98,13 @@ CREATE TABLE IF NOT EXISTS event (
     verdict         TEXT,
     verdict_at      TEXT,
     snoozed_until   TEXT,
-    surfaced_at     TEXT
+    surfaced_at     TEXT,
+
+    PRIMARY KEY (household_id, event_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_event_fingerprint ON event(fingerprint);
-CREATE INDEX IF NOT EXISTS idx_event_date        ON event(event_date);
-CREATE INDEX IF NOT EXISTS idx_event_onsale      ON event(on_sale_date);
-CREATE INDEX IF NOT EXISTS idx_event_verdict     ON event(verdict);
+CREATE INDEX IF NOT EXISTS idx_hes_verdict ON household_event_state(verdict);
+CREATE INDEX IF NOT EXISTS idx_hes_score   ON household_event_state(score);
 
 CREATE TABLE IF NOT EXISTS event_source (
     event_id        INTEGER REFERENCES event(id),
@@ -128,18 +163,44 @@ def init_db(db_path: Path) -> None:
 
 
 def _migrate(conn: sqlite3.Connection) -> None:
-    """Additive column migrations for databases created before a schema change.
+    """Migrations for databases created before a schema change.
 
-    CREATE TABLE IF NOT EXISTS leaves existing tables untouched, so a new
-    column added to SCHEMA needs an explicit ALTER TABLE here too.
+    CREATE TABLE IF NOT EXISTS leaves existing tables untouched, so a changed
+    column set needs an explicit ALTER TABLE here too.
     """
     venue_columns = {row[1] for row in conn.execute("PRAGMA table_info(venue)")}
     if "type" not in venue_columns:
         conn.execute("ALTER TABLE venue ADD COLUMN type TEXT")
+    if "drive_minutes" in venue_columns:
+        # Was a venue-level cache of "minutes from home" — but "home" is
+        # per-household now (Phase 4), so a single cached value on the venue
+        # row is the wrong shape. Never populated by any code either way.
+        conn.execute("ALTER TABLE venue DROP COLUMN drive_minutes")
 
     event_change_columns = {row[1] for row in conn.execute("PRAGMA table_info(event_change)")}
     if "notified_at" not in event_change_columns:
         conn.execute("ALTER TABLE event_change ADD COLUMN notified_at TEXT")
+
+    # Phase 4: score/audience/verdict/etc. moved off `event` onto the new
+    # household_event_state table (per-household judgments, not facts about
+    # the event). Safe as a hard drop, not a data-preserving migration: these
+    # columns are NULL for every event in every database that predates
+    # scoring ever running.
+    event_columns = {row[1] for row in conn.execute("PRAGMA table_info(event)")}
+    if "score" in event_columns:
+        conn.execute("DROP INDEX IF EXISTS idx_event_verdict")
+        for column in (
+            "score",
+            "audience",
+            "score_reason",
+            "urgency",
+            "scored_at",
+            "verdict",
+            "verdict_at",
+            "snoozed_until",
+            "surfaced_at",
+        ):
+            conn.execute(f"ALTER TABLE event DROP COLUMN {column}")
 
 
 def upsert_venue(
@@ -365,6 +426,177 @@ def mark_past_events(conn: sqlite3.Connection, today: date) -> int:
             )
             marked += 1
     return marked
+
+
+def upsert_household(
+    conn: sqlite3.Connection,
+    household_id: int,
+    label: str,
+    home_latitude: float,
+    home_longitude: float,
+    radius_miles: float,
+    near_days: int | None,
+    month_days: int | None,
+    max_drive_minutes: int | None,
+    price_ceiling: float | None,
+    blackout_dates: list[tuple[str, str]],
+    taste_profile_path: str,
+    digest_threshold: int | None,
+    alert_threshold: int | None,
+    digest_day: str | None,
+    digest_hour: int | None,
+    email_to: str | None,
+) -> int:
+    """Idempotent upsert by explicit id — config.yaml stays the source of
+    truth, this row is a queryable materialization of it, re-synced on every
+    `events-agent init` (same pattern as upsert_venue, just keyed by an
+    explicit id rather than a natural key, since a household has no other
+    unique identifier)."""
+    now = datetime.now(UTC).isoformat()
+    conn.execute(
+        """
+        INSERT INTO household (
+            id, label, home_latitude, home_longitude, radius_miles, near_days, month_days,
+            max_drive_minutes, price_ceiling, blackout_dates, taste_profile_path,
+            digest_threshold, alert_threshold, digest_day, digest_hour, email_to,
+            created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET
+            label = excluded.label,
+            home_latitude = excluded.home_latitude,
+            home_longitude = excluded.home_longitude,
+            radius_miles = excluded.radius_miles,
+            near_days = excluded.near_days,
+            month_days = excluded.month_days,
+            max_drive_minutes = excluded.max_drive_minutes,
+            price_ceiling = excluded.price_ceiling,
+            blackout_dates = excluded.blackout_dates,
+            taste_profile_path = excluded.taste_profile_path,
+            digest_threshold = excluded.digest_threshold,
+            alert_threshold = excluded.alert_threshold,
+            digest_day = excluded.digest_day,
+            digest_hour = excluded.digest_hour,
+            email_to = excluded.email_to
+        """,
+        (
+            household_id,
+            label,
+            home_latitude,
+            home_longitude,
+            radius_miles,
+            near_days,
+            month_days,
+            max_drive_minutes,
+            price_ceiling,
+            _to_json(blackout_dates),
+            taste_profile_path,
+            digest_threshold,
+            alert_threshold,
+            digest_day,
+            digest_hour,
+            email_to,
+            now,
+        ),
+    )
+    return household_id
+
+
+HOUSEHOLD_COLUMNS = (
+    "id",
+    "label",
+    "home_latitude",
+    "home_longitude",
+    "radius_miles",
+    "near_days",
+    "month_days",
+    "max_drive_minutes",
+    "price_ceiling",
+    "blackout_dates",
+    "taste_profile_path",
+    "digest_threshold",
+    "alert_threshold",
+    "digest_day",
+    "digest_hour",
+    "email_to",
+)
+
+
+def list_households(conn: sqlite3.Connection) -> list[tuple]:
+    """Rows shaped per HOUSEHOLD_COLUMNS (blackout_dates still JSON text —
+    callers that need it parsed should json.loads it)."""
+    return conn.execute(f"SELECT {', '.join(HOUSEHOLD_COLUMNS)} FROM household ORDER BY id").fetchall()
+
+
+def get_household(conn: sqlite3.Connection, household_id: int) -> tuple | None:
+    return conn.execute(
+        f"SELECT {', '.join(HOUSEHOLD_COLUMNS)} FROM household WHERE id = ?", (household_id,)
+    ).fetchone()
+
+
+def list_households_as_dicts(conn: sqlite3.Connection) -> list[dict]:
+    """Same rows as list_households, as {column: value} dicts — every
+    household-scoped call site (scoring, digest, alert) wants named access,
+    not positional."""
+    return [dict(zip(HOUSEHOLD_COLUMNS, row, strict=True)) for row in list_households(conn)]
+
+
+def get_household_as_dict(conn: sqlite3.Connection, household_id: int) -> dict | None:
+    row = get_household(conn, household_id)
+    return dict(zip(HOUSEHOLD_COLUMNS, row, strict=True)) if row else None
+
+
+def upsert_score(
+    conn: sqlite3.Connection,
+    household_id: int,
+    event_id: int,
+    score: int | None,
+    audience: str | None,
+    score_reason: str | None,
+    urgency: str | None,
+    scored_at: str,
+) -> None:
+    conn.execute(
+        """
+        INSERT INTO household_event_state (household_id, event_id, score, audience, score_reason, urgency, scored_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(household_id, event_id) DO UPDATE SET
+            score = excluded.score,
+            audience = excluded.audience,
+            score_reason = excluded.score_reason,
+            urgency = excluded.urgency,
+            scored_at = excluded.scored_at
+        """,
+        (household_id, event_id, score, audience, score_reason, urgency, scored_at),
+    )
+
+
+def set_verdict(
+    conn: sqlite3.Connection,
+    household_id: int,
+    event_id: int,
+    verdict: str,
+    verdict_at: str | None = None,
+    snoozed_until: str | None = None,
+) -> None:
+    now = verdict_at or datetime.now(UTC).isoformat()
+    conn.execute(
+        """
+        INSERT INTO household_event_state (household_id, event_id, verdict, verdict_at, snoozed_until)
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(household_id, event_id) DO UPDATE SET
+            verdict = excluded.verdict,
+            verdict_at = excluded.verdict_at,
+            snoozed_until = excluded.snoozed_until
+        """,
+        (household_id, event_id, verdict, now, snoozed_until),
+    )
+
+
+def mark_surfaced(conn: sqlite3.Connection, household_id: int, event_ids: list[int], surfaced_at: str) -> None:
+    conn.executemany(
+        "UPDATE household_event_state SET surfaced_at = ? WHERE household_id = ? AND event_id = ?",
+        [(surfaced_at, household_id, event_id) for event_id in event_ids],
+    )
 
 
 def _record_changes(
