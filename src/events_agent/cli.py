@@ -29,8 +29,6 @@ from events_agent.scoring import AnthropicLLMClient, run_scoring
 from events_agent.sources.skiddle import SkiddleAdapter
 from events_agent.sources.ticketmaster import TicketmasterAdapter
 
-STUB_COMMANDS = ("run",)
-
 # Single-file today, deliberately (see CLAUDE.md build notes) — a households/
 # directory with one config + taste profile per household is the cheap way
 # to extend this later; not built until a second household actually exists.
@@ -381,12 +379,22 @@ def cmd_verdict(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_stub(name: str):
-    def handler(args: argparse.Namespace) -> int:
-        print(f"'{name}' is not implemented yet.")
-        return 0
-
-    return handler
+def cmd_run(args: argparse.Namespace) -> int:
+    """The daily pipeline: harvest, score, alert — meant to be the single
+    launchd-scheduled entry point for the early-morning job. Each step is
+    attempted even if an earlier one failed (fail loudly, degrade
+    gracefully): a harvest outage shouldn't suppress an alert on a change
+    already detected in a previous run. Weekly delivery (digest, fortnight)
+    is deliberately not part of this — it's a separate, lightweight,
+    deliver-only pass on its own Sunday-evening schedule against whatever
+    this job already refreshed that morning, not a second harvest+score."""
+    worst = 0
+    for step_name, step_fn in (("harvest", cmd_harvest), ("score", cmd_score), ("alert", cmd_alert)):
+        code = step_fn(args)
+        if code != 0:
+            print(f"run: '{step_name}' step failed (exit {code}) — continuing with remaining steps.", file=sys.stderr)
+            worst = code
+    return worst
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -429,9 +437,8 @@ def build_parser() -> argparse.ArgumentParser:
     verdict_parser.add_argument("--household", type=int, default=HOUSEHOLD_ID)
     verdict_parser.set_defaults(func=cmd_verdict)
 
-    for name in STUB_COMMANDS:
-        stub_parser = subparsers.add_parser(name, help=f"({name} — not implemented yet)")
-        stub_parser.set_defaults(func=cmd_stub(name))
+    run_parser = subparsers.add_parser("run", help="Daily pipeline: harvest, score, alert.")
+    run_parser.set_defaults(func=cmd_run)
 
     return parser
 

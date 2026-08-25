@@ -204,6 +204,22 @@ def test_alert_requires_a_household(wired_cli, capsys):
     assert "No household configured" in capsys.readouterr().err
 
 
+def test_run_chains_harvest_score_alert_and_continues_on_failure(wired_cli, capsys):
+    # wired_cli's secrets have no ANTHROPIC_API_KEY, so the score step fails —
+    # run should still attempt alert rather than stopping short (fail loudly,
+    # degrade gracefully: a broken step shouldn't suppress the others).
+    cli.cmd_init(argparse_namespace())
+    capsys.readouterr()  # discard init's output
+
+    exit_code = cli.cmd_run(argparse_namespace())
+
+    out, err = capsys.readouterr()
+    assert exit_code == 1  # non-zero because the score step failed
+    assert "ANTHROPIC_API_KEY not set" in err
+    assert "run: 'score' step failed" in err
+    assert "no urgent alerts" in out.lower()  # alert step still ran despite the score failure
+
+
 def test_fortnight_requires_a_household(wired_cli, capsys):
     exit_code = cli.cmd_fortnight(argparse_namespace())
 

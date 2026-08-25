@@ -436,9 +436,30 @@ Wider: Usher Hall and Festival Theatre (Edinburgh) if the radius is widened.
 
 ## Scheduling
 
-Runs on a Mac mini via `launchd`. Two jobs: a daily alert run and a weekly digest run.
+Runs via `launchd`, mirroring the existing `com.scott.stockpicker` pattern on
+this Mac (a `run_*.sh` wrapper in the project root, invoked by a plist in
+`~/Library/LaunchAgents`, logging to `logs/`). Two jobs:
 
-The known failure mode is the Mac sleeping through the scheduled time. `launchd` does not fire missed jobs by default in the way you might expect. Check `pmset -g` and either keep the machine awake, or set `StartCalendarInterval` alongside a `RunAtLoad` catch-up check that compares against the last `source_run` timestamp and runs if the last successful run is more than 36 hours old.
+- **`com.scott.eventsagent.daily`** — 06:40 every day. Runs `run_daily.sh`,
+  which calls `events-agent run` (harvest → score → alert). Piggybacks on
+  the Mac's existing global `pmset repeat wakeorpoweron` wake at 06:25 —
+  no separate wake needed for this one.
+- **`com.scott.eventsagent.weekly`** — Sunday 19:00. Runs `run_weekly.sh`,
+  which calls `events-agent digest` then `events-agent fortnight` —
+  deliver-only, deliberately no harvest/score here (that already happened
+  in the same day's 06:40 run; re-running it in the evening would just be a
+  second LLM bill for the same data). Needs its own wake, since the Mac may
+  have gone back to sleep between the morning run and 19:00 — added as a
+  second entry in the same `pmset repeat` schedule (a different event type,
+  `wake` rather than `wakeorpoweron`, so it doesn't clobber the existing
+  daily entry): `sudo pmset repeat wakeorpoweron MTWRFSU 06:25:00 wake SU 18:55:00`.
+
+The known failure mode is the Mac sleeping through the scheduled time —
+`launchd` does not fire missed jobs by default. The wake schedule above
+covers the expected case; `pmset -g sched` shows what's actually active.
+Not yet built: a `RunAtLoad` catch-up check (compare against the last
+`source_run`/send timestamp and run anyway if overdue) for the case where
+the Mac was off or asleep through an unexpected outage.
 
 Build order change: Skiddle is the Phase 1 adapter. Ticketmaster moves to Phase 2 pending API key access.
 

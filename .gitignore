@@ -1,10 +1,12 @@
 .env
 *.db
+*.db-journal
 *.sqlite
 *.sqlite3
 .cache/
 fixtures_live/
 *.ics
+logs/
 __pycache__/
 .venv/
 .DS_Store
