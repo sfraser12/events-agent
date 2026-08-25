@@ -448,15 +448,20 @@ this Mac (a `run_*.sh` wrapper in the project root, invoked by a plist in
   which calls `events-agent digest` then `events-agent fortnight` —
   deliver-only, deliberately no harvest/score here (that already happened
   in the same day's 06:40 run; re-running it in the evening would just be a
-  second LLM bill for the same data). Needs its own wake, since the Mac may
-  have gone back to sleep between the morning run and 19:00 — added as a
-  second entry in the same `pmset repeat` schedule (a different event type,
-  `wake` rather than `wakeorpoweron`, so it doesn't clobber the existing
-  daily entry): `sudo pmset repeat wakeorpoweron MTWRFSU 06:25:00 wake SU 18:55:00`.
+  second LLM bill for the same data). No dedicated wake for this one — tried
+  adding a second `pmset repeat` entry (a distinct `wake SU`/`wake U` event
+  alongside the existing `wakeorpoweron`) and confirmed twice on this
+  machine that `pmset repeat` won't hold two wake-family entries at once;
+  the later one silently drops the earlier. Settled on relying on `pmset
+  -g`'s observed `sleep 0` (idle system sleep disabled) instead — if that
+  holds, the Mac never goes back to sleep after the 06:25 wake, so no
+  second wake is needed. Verify by checking `logs/weekly.log` after the
+  first few Sundays; if entries are missing, that assumption was wrong and
+  this needs revisiting (a `poweron`-type entry was the untried fallback).
 
 The known failure mode is the Mac sleeping through the scheduled time —
-`launchd` does not fire missed jobs by default. The wake schedule above
-covers the expected case; `pmset -g sched` shows what's actually active.
+`launchd` does not fire missed jobs by default. `pmset -g sched` shows
+what's actually active — currently just the single every-day 06:25 entry.
 Not yet built: a `RunAtLoad` catch-up check (compare against the last
 `source_run`/send timestamp and run anyway if overdue) for the case where
 the Mac was off or asleep through an unexpected outage.
