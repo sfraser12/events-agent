@@ -1,5 +1,6 @@
 import json
 from datetime import UTC, datetime
+from typing import Any
 
 import pytest
 
@@ -13,6 +14,7 @@ from events_agent.db import (
 )
 from events_agent.models import RawEvent
 from events_agent.scoring import (
+    _score_batch,
     adjudicate_duplicates,
     run_scoring_for_household,
     select_scoring_candidates,
@@ -24,9 +26,9 @@ class FakeLLMClient:
 
     def __init__(self, responses: list[str]):
         self.responses = list(responses)
-        self.calls: list[tuple[str, str]] = []
+        self.calls: list[tuple[str, str | list[dict[str, Any]]]] = []
 
-    def create_message(self, system: str, user_content: str) -> str:
+    def create_message(self, system: str, user_content: str | list[dict[str, Any]]) -> str:
         self.calls.append((system, user_content))
         return self.responses.pop(0)
 
@@ -131,6 +133,47 @@ def test_run_scoring_for_household_scores_via_the_llm_and_upserts(conn, househol
         "SELECT score, audience, score_reason, urgency FROM household_event_state WHERE event_id = ?", (event_id,)
     ).fetchone()
     assert row == (92, "both", "A folk act we love.", "none")
+
+
+def test_score_batch_marks_the_taste_profile_block_cacheable(conn, household):
+    # The taste profile is stable across every batch in a run and across
+    # weeks until edited — it must be its own block with a cache breakpoint,
+    # and the (genuinely volatile, different every batch) events list must
+    # come after that breakpoint, uncached.
+    response = json.dumps(
+        [{"event_id": 1, "score": 50, "audience": "both", "reason": "x", "urgency": "none"}]
+    )
+    client = FakeLLMClient([response])
+    payload = [{"event_id": 1, "title": "Test Event"}]
+
+    _score_batch(client, "Likes folk music.", payload)
+
+    assert len(client.calls) == 1
+    _, user_content = client.calls[0]
+    assert isinstance(user_content, list)
+    assert len(user_content) == 2
+    taste_block, events_block = user_content
+    assert "Likes folk music." in taste_block["text"]
+    assert taste_block["cache_control"] == {"type": "ephemeral", "ttl": "1h"}
+    assert "Test Event" in events_block["text"]
+    assert "cache_control" not in events_block
+
+
+def test_score_batch_retry_preserves_the_cached_block(conn, household):
+    # A retry must append to the cached content, not rebuild it — rebuilding
+    # would change the prefix bytes and silently defeat the cache hit.
+    valid = json.dumps([{"event_id": 1, "score": 50, "audience": "both", "reason": "x", "urgency": "none"}])
+    client = FakeLLMClient(["not valid json", valid])
+    payload = [{"event_id": 1, "title": "Test Event"}]
+
+    _score_batch(client, "Likes folk music.", payload)
+
+    assert len(client.calls) == 2
+    _, retry_content = client.calls[1]
+    assert isinstance(retry_content, list)
+    assert retry_content[0]["cache_control"] == {"type": "ephemeral", "ttl": "1h"}
+    assert "Likes folk music." in retry_content[0]["text"]
+    assert any("previous response was invalid" in block["text"] for block in retry_content)
 
 
 def test_run_scoring_handles_response_wrapped_in_markdown_fences(conn, household):

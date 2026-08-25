@@ -61,9 +61,11 @@ JSON array."""
 
 class LLMClient(Protocol):
     """The one method this module needs from an Anthropic client — lets
-    tests substitute a fake without importing the real SDK."""
+    tests substitute a fake without importing the real SDK. user_content is
+    either a plain string, or a list of Anthropic content-block dicts when a
+    caller wants to mark part of it cacheable (see _score_batch)."""
 
-    def create_message(self, system: str, user_content: str) -> str: ...
+    def create_message(self, system: str, user_content: str | list[dict[str, Any]]) -> str: ...
 
 
 class AnthropicLLMClient:
@@ -75,7 +77,7 @@ class AnthropicLLMClient:
         self._client = anthropic.Anthropic(api_key=api_key)
         self.model = model
 
-    def create_message(self, system: str, user_content: str) -> str:
+    def create_message(self, system: str, user_content: str | list[dict[str, Any]]) -> str:
         response = self._client.messages.create(
             model=self.model,
             max_tokens=MAX_TOKENS,
@@ -287,27 +289,56 @@ def _get_event_for_scoring(conn: sqlite3.Connection, event_id: int) -> dict[str,
 def _score_batch(
     client: LLMClient, taste_profile: str, payload: list[dict[str, Any]]
 ) -> tuple[list[ScoreResult] | None, str | None]:
-    user_content = f"Taste profile:\n\n{taste_profile}\n\nEvents to score:\n\n{json.dumps(payload)}"
+    # The taste profile is identical across every batch in one household's
+    # run (up to ~50 calls for a first full pass) and across every run until
+    # the household edits the file — cache it as its own block so only the
+    # first call pays full input price for it. The events list is genuinely
+    # different every batch, so it's appended uncached, after the breakpoint.
+    # (render order is system -> messages, so this prefix also picks up
+    # SCORE_SYSTEM_PROMPT for free — that alone is too short to cache on its
+    # own, under the ~1024 token minimum, but combined with the taste profile
+    # comfortably clears it.)
+    user_content = [
+        {
+            "type": "text",
+            "text": f"Taste profile:\n\n{taste_profile}",
+            "cache_control": {"type": "ephemeral", "ttl": "1h"},
+        },
+        {
+            "type": "text",
+            "text": f"Events to score:\n\n{json.dumps(payload)}",
+        },
+    ]
     return _call_with_retry(client, SCORE_SYSTEM_PROMPT, user_content, ScoreResult)
 
 
 def _adjudicate_batch(
     client: LLMClient, payload: list[dict[str, Any]]
 ) -> tuple[list[DuplicateAdjudication] | None, str | None]:
+    # Nothing stable to cache here — no per-household content, and each
+    # batch is a different set of pairs.
     user_content = json.dumps(payload)
     return _call_with_retry(client, DUPLICATE_SYSTEM_PROMPT, user_content, DuplicateAdjudication)
 
 
-def _call_with_retry(client: LLMClient, system: str, user_content: str, model_cls: type) -> tuple[list | None, str | None]:
+def _call_with_retry(
+    client: LLMClient, system: str, user_content: str | list[dict[str, Any]], model_cls: type
+) -> tuple[list | None, str | None]:
     raw_text = client.create_message(system, user_content)
     items, error = _parse_and_validate(raw_text, model_cls)
     if error is None:
         return items, None
 
-    retry_content = (
-        f"{user_content}\n\nYour previous response was invalid: {error}\n"
+    retry_note = (
+        f"Your previous response was invalid: {error}\n"
         "Return ONLY a valid JSON array matching the schema — no prose, no markdown fences."
     )
+    if isinstance(user_content, list):
+        # Append rather than rebuild — keeps the cached block(s) intact, so
+        # the retry call still benefits from the same cache hit.
+        retry_content = [*user_content, {"type": "text", "text": retry_note}]
+    else:
+        retry_content = f"{user_content}\n\n{retry_note}"
     raw_text = client.create_message(system, retry_content)
     return _parse_and_validate(raw_text, model_cls)
 
