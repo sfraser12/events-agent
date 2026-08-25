@@ -5,6 +5,7 @@ never from the full event table.
 
 from __future__ import annotations
 
+import html
 import sqlite3
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
@@ -86,29 +87,104 @@ def _days(n: int) -> timedelta:
     return timedelta(days=n)
 
 
+# Email-safe design: inline styles only (Gmail/Outlook strip <style> blocks
+# and won't load external fonts), table-based layout for client compatibility,
+# web-safe font stacks only. 600px is the standard email container width.
+_BG = "#F4F5F2"
+_CARD = "#FFFFFF"
+_INK = "#1A1D1B"
+_MUTED = "#6B7268"
+_BORDER = "#E1E4DE"
+_ACCENT = "#1E5C4F"
+_ACCENT_BG = "#E4F2ED"
+_SERIF = "Georgia,'Times New Roman',serif"
+_SANS = "Helvetica,Arial,sans-serif"
+
+
 def build_digest_html(household: dict[str, Any], horizons: dict[str, list[DigestEvent]]) -> str:
-    sections = []
-    for horizon in HORIZONS:
-        events = horizons[horizon]
-        if not events:
-            continue
-        rows_html = "\n".join(_event_row_html(e) for e in events)
-        sections.append(f"<h2>{horizon.title()}</h2>\n<table cellpadding='6'>\n{rows_html}\n</table>")
+    today_str = datetime.now(UTC).strftime("%A %d %B %Y")
+    sections = "".join(_horizon_section_html(h, horizons[h]) for h in HORIZONS if horizons[h])
+    if not sections:
+        sections = (
+            f"<tr><td style=\"padding:24px 32px 32px; font-size:14px; color:{_MUTED}; font-family:{_SANS};\">"
+            "Nothing new this week.</td></tr>"
+        )
 
-    body = "\n".join(sections) if sections else "<p>Nothing new this week.</p>"
-    return f"<html><body><h1>Events digest for {household['label']}</h1>\n{body}</body></html>"
+    return f"""\
+<div style="background:{_BG}; padding:24px 12px; font-family:{_SANS};">
+  <table role="presentation" width="600" cellpadding="0" cellspacing="0" \
+style="width:600px; max-width:100%; margin:0 auto; background:{_CARD}; border-radius:8px; overflow:hidden;">
+    <tr>
+      <td style="padding:28px 32px 8px;">
+        <div style="font-family:{_SERIF}; font-size:22px; font-weight:700; color:{_INK};">\
+Events digest for {html.escape(household["label"])}</div>
+        <div style="font-size:13px; color:{_MUTED}; margin-top:4px;">{today_str}</div>
+      </td>
+    </tr>
+    {sections}
+    <tr>
+      <td style="padding:18px 32px 26px; font-size:11px; color:{_MUTED}; border-top:1px solid {_BORDER};">
+        Scored against your taste profile — not for you? Reply, or run \
+<code style="background:{_ACCENT_BG}; padding:1px 5px; border-radius:3px;">events-agent verdict &lt;id&gt; no</code>.
+      </td>
+    </tr>
+  </table>
+</div>"""
 
 
-def _event_row_html(event: DigestEvent) -> str:
+def _horizon_section_html(horizon: str, events: list[DigestEvent]) -> str:
+    rows = "".join(_event_card_html(e) for e in events)
+    return f"""\
+    <tr>
+      <td style="padding:20px 32px 4px;">
+        <div style="font-family:{_SERIF}; font-size:13px; font-weight:700; text-transform:uppercase; \
+letter-spacing:0.06em; color:{_ACCENT}; border-bottom:2px solid {_ACCENT}; padding-bottom:6px;">\
+{html.escape(horizon.title())}</div>
+      </td>
+    </tr>
+    {rows}"""
+
+
+def _event_card_html(event: DigestEvent) -> str:
     price = _format_price(event.price_min, event.price_max, event.currency)
-    date_str = event.event_date[:10] if event.event_date else "TBC"
-    link = f"<a href='{event.url}'>Book</a>" if event.url else ""
-    return (
-        "<tr>"
-        f"<td>{date_str}</td><td>{event.title}</td><td>{event.venue_name or ''}</td>"
-        f"<td>{price}</td><td>{event.score}</td><td>{event.reason or ''}</td><td>{link}</td>"
-        "</tr>"
-    )
+    date_str = _format_event_date(event.event_date)
+    venue = html.escape(event.venue_name) if event.venue_name else "venue TBC"
+    title = html.escape(event.title)
+    reason = f'<div style="font-size:13px; color:#3E453F; font-style:italic; margin:2px 0 6px;">{html.escape(event.reason)}</div>' if event.reason else ""
+
+    cta = ""
+    if event.url:
+        cta = f"""\
+        <td style="vertical-align:top; text-align:right; padding-left:12px; width:96px;">
+          <a href="{html.escape(event.url)}" style="display:inline-block; background:{_ACCENT}; color:#FFFFFF; \
+text-decoration:none; font-size:13px; font-weight:600; padding:8px 14px; border-radius:6px; white-space:nowrap;">\
+Book &rarr;</a>
+        </td>"""
+
+    return f"""\
+    <tr>
+      <td style="padding:14px 32px; border-bottom:1px solid {_BORDER};">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td style="vertical-align:top;">
+              <div style="font-size:12px; color:{_MUTED};">{date_str} &middot; {venue}</div>
+              <div style="font-size:16px; font-weight:700; color:{_INK}; margin:2px 0 2px;">{title}</div>
+              {reason}
+              <div style="font-size:12px; color:{_MUTED};">{price} &nbsp;&middot;&nbsp; \
+<span style="background:{_ACCENT_BG}; color:{_ACCENT}; padding:2px 8px; border-radius:10px; font-weight:600;">\
+score {event.score}</span></div>
+            </td>
+{cta}
+          </tr>
+        </table>
+      </td>
+    </tr>"""
+
+
+def _format_event_date(event_date: str | None) -> str:
+    if not event_date:
+        return "Date TBC"
+    return datetime.fromisoformat(event_date).strftime("%a %-d %b")
 
 
 def build_digest_plain(household: dict[str, Any], horizons: dict[str, list[DigestEvent]]) -> str:

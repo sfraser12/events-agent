@@ -170,6 +170,31 @@ def test_build_digest_html_includes_event_titles(conn, household):
 
     assert "Karine Polwart" in html
     assert household["label"] in html
+    assert "score 80" in html
+    assert "https://example.com/karine" in html  # the booking link
+
+
+def test_build_digest_html_escapes_special_characters_in_title(conn, household):
+    event_id, _ = upsert_raw_event(conn, make_raw_event(title="Rock & Roll <Live>"))
+    score_event(conn, household["id"], event_id, 80)
+    conn.commit()
+
+    horizons = build_digest(conn, household)
+    html = build_digest_html(household, horizons)
+
+    assert "Rock &amp; Roll &lt;Live&gt;" in html
+    assert "<Live>" not in html
+
+
+def test_build_digest_html_omits_book_link_when_no_url(conn, household):
+    event_id, _ = upsert_raw_event(conn, make_raw_event(url=None))
+    score_event(conn, household["id"], event_id, 80)
+    conn.commit()
+
+    horizons = build_digest(conn, household)
+    html = build_digest_html(household, horizons)
+
+    assert "Book" not in html
 
 
 def test_build_digest_plain_says_nothing_new_when_empty(household):
