@@ -299,8 +299,6 @@ def test_upsert_household_seeds_a_new_row(conn, tmp_path):
         taste_profile_path=str(tmp_path / "taste-profile.md"),
         digest_threshold=60,
         alert_threshold=45,
-        digest_day="sunday",
-        digest_hour=8,
         email_to="test@example.com",
     )
     conn.commit()
@@ -325,8 +323,6 @@ def test_upsert_household_is_idempotent_on_rerun(conn, tmp_path):
         taste_profile_path=str(tmp_path / "taste-profile.md"),
         digest_threshold=60,
         alert_threshold=45,
-        digest_day="sunday",
-        digest_hour=8,
         email_to="test@example.com",
     )
     upsert_household(conn, label="Milngavie", **kwargs)
@@ -394,5 +390,30 @@ def test_init_db_migrates_a_pre_phase_4_database(tmp_path):
         # Pre-existing data survived the column drops.
         title = conn.execute("SELECT title FROM event WHERE fingerprint = 'fp1'").fetchone()[0]
         assert title == "Test Event"
+    finally:
+        conn.close()
+
+
+def test_init_db_drops_unused_digest_day_and_hour_columns(tmp_path):
+    """digest_day/digest_hour were added with household in Phase 4, then
+    found to be dead (nothing ever read them — cadence belongs to the
+    launchd plist, not app config). A database created between that commit
+    and this cleanup would still have them; init_db must drop them cleanly.
+    """
+    db_path = tmp_path / "old.db"
+    init_db(db_path)  # current schema — no digest_day/digest_hour to begin with
+    conn = sqlite3.connect(db_path)
+    conn.execute("ALTER TABLE household ADD COLUMN digest_day TEXT")
+    conn.execute("ALTER TABLE household ADD COLUMN digest_hour INTEGER")
+    conn.commit()
+    conn.close()
+
+    init_db(db_path)  # must not raise, must drop them
+
+    conn = get_connection(db_path)
+    try:
+        household_columns = {row[1] for row in conn.execute("PRAGMA table_info(household)")}
+        assert "digest_day" not in household_columns
+        assert "digest_hour" not in household_columns
     finally:
         conn.close()

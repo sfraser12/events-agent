@@ -61,8 +61,6 @@ def cmd_init(args: argparse.Namespace) -> int:
                 taste_profile_path=str(TASTE_PROFILE_PATH),
                 digest_threshold=config.scoring.digest_threshold,
                 alert_threshold=config.scoring.alert_threshold,
-                digest_day=config.delivery.digest_day,
-                digest_hour=config.delivery.digest_hour,
                 email_to=config.delivery.email_to,
             )
             conn.commit()

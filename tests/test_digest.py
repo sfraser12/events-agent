@@ -43,8 +43,6 @@ def household(conn, tmp_path):
         taste_profile_path=str(taste_path),
         digest_threshold=60,
         alert_threshold=45,
-        digest_day="sunday",
-        digest_hour=8,
         email_to="test@example.com",
     )
     conn.commit()

@@ -53,8 +53,9 @@ class Scoring(BaseModel):
 
 
 class Delivery(BaseModel):
-    digest_day: str
-    digest_hour: int
+    # Cadence (when digest/alert actually run) lives in the launchd plist,
+    # not here — duplicating it in config.yaml would just let the two drift
+    # out of sync. This is only who the digest goes to.
     email_to: str
 
 

@@ -76,7 +76,7 @@ def wired_cli(tmp_path, monkeypatch):
             search=Search(radius_miles=25, horizons=Horizons(near_days=7, month_days=31, long_days=270)),
             constraints=Constraints(max_drive_minutes=60, price_ceiling=120),
             scoring=Scoring(digest_threshold=60, alert_threshold=45),
-            delivery=Delivery(digest_day="sunday", digest_hour=8, email_to="test@example.com"),
+            delivery=Delivery(email_to="test@example.com"),
         ),
     )
     monkeypatch.setattr(cli, "load_secrets", lambda: Secrets(skiddle_api_key="test-key"))

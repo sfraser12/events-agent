@@ -76,8 +76,6 @@ CREATE TABLE IF NOT EXISTS household (
     taste_profile_path  TEXT NOT NULL,
     digest_threshold    INTEGER,
     alert_threshold     INTEGER,
-    digest_day          TEXT,
-    digest_hour         INTEGER,
     email_to            TEXT,
     created_at          TEXT NOT NULL
 );
@@ -201,6 +199,14 @@ def _migrate(conn: sqlite3.Connection) -> None:
             "surfaced_at",
         ):
             conn.execute(f"ALTER TABLE event DROP COLUMN {column}")
+
+    # digest_day/digest_hour were never read anywhere — cadence belongs to
+    # the launchd plist, not app config that can drift out of sync with it.
+    household_columns = {row[1] for row in conn.execute("PRAGMA table_info(household)")}
+    if "digest_day" in household_columns:
+        conn.execute("ALTER TABLE household DROP COLUMN digest_day")
+    if "digest_hour" in household_columns:
+        conn.execute("ALTER TABLE household DROP COLUMN digest_hour")
 
 
 def upsert_venue(
@@ -443,8 +449,6 @@ def upsert_household(
     taste_profile_path: str,
     digest_threshold: int | None,
     alert_threshold: int | None,
-    digest_day: str | None,
-    digest_hour: int | None,
     email_to: str | None,
 ) -> int:
     """Idempotent upsert by explicit id — config.yaml stays the source of
@@ -458,9 +462,9 @@ def upsert_household(
         INSERT INTO household (
             id, label, home_latitude, home_longitude, radius_miles, near_days, month_days,
             max_drive_minutes, price_ceiling, blackout_dates, taste_profile_path,
-            digest_threshold, alert_threshold, digest_day, digest_hour, email_to,
+            digest_threshold, alert_threshold, email_to,
             created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
             label = excluded.label,
             home_latitude = excluded.home_latitude,
@@ -474,8 +478,6 @@ def upsert_household(
             taste_profile_path = excluded.taste_profile_path,
             digest_threshold = excluded.digest_threshold,
             alert_threshold = excluded.alert_threshold,
-            digest_day = excluded.digest_day,
-            digest_hour = excluded.digest_hour,
             email_to = excluded.email_to
         """,
         (
@@ -492,8 +494,6 @@ def upsert_household(
             taste_profile_path,
             digest_threshold,
             alert_threshold,
-            digest_day,
-            digest_hour,
             email_to,
             now,
         ),
@@ -515,8 +515,6 @@ HOUSEHOLD_COLUMNS = (
     "taste_profile_path",
     "digest_threshold",
     "alert_threshold",
-    "digest_day",
-    "digest_hour",
     "email_to",
 )
 

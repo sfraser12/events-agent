@@ -195,8 +195,6 @@ CREATE TABLE household (
     taste_profile_path  TEXT NOT NULL,
     digest_threshold    INTEGER,
     alert_threshold     INTEGER,
-    digest_day          TEXT,
-    digest_hour         INTEGER,
     email_to            TEXT,
     created_at          TEXT NOT NULL
 );
@@ -296,10 +294,12 @@ scoring:
   digest_threshold: 60
   alert_threshold: 45          # lower bar for on-sale alerts
 delivery:
-  digest_day: sunday
-  digest_hour: 8
   email_to: ""
 ```
+
+Cadence (when `alert`/`digest` actually run) lives in the launchd plist, not
+here — see "Scheduling" below. Keeping it in one place only avoids the two
+drifting out of sync.
 
 `.env` — gitignored, never committed:
 

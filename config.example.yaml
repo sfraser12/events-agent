@@ -24,6 +24,4 @@ scoring:
   alert_threshold: 45
 
 delivery:
-  digest_day: sunday
-  digest_hour: 8
   email_to: ""
