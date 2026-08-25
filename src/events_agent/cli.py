@@ -19,7 +19,7 @@ from events_agent.db import (
     upsert_household,
     upsert_raw_event,
 )
-from events_agent.delivery.alert import find_alertable_changes, mark_notified
+from events_agent.delivery.alert import build_alert_html, build_alert_plain, find_alertable_changes, mark_notified
 from events_agent.delivery.digest import build_digest, build_digest_html, build_digest_plain
 from events_agent.delivery.email import send_email
 from events_agent.scoring import AnthropicLLMClient, run_scoring
@@ -185,6 +185,7 @@ def _format_price(price_min: float | None, price_max: float | None, currency: st
 
 
 def cmd_alert(args: argparse.Namespace) -> int:
+    secrets = load_secrets()
     conn = get_connection(DEFAULT_DB_PATH)
     try:
         now = datetime.now(UTC)
@@ -198,6 +199,7 @@ def cmd_alert(args: argparse.Namespace) -> int:
         for household in households:
             items = find_alertable_changes(conn, now, household)
             if not items:
+                print(f"{household['label']}: no urgent alerts.")
                 continue
             any_items = True
             print(f"URGENT for {household['label']} — {len(items)} event(s) need attention:\n")
@@ -206,11 +208,28 @@ def cmd_alert(args: argparse.Namespace) -> int:
                 print(f"- {item.title}{venue}: {item.reason}")
                 if item.url:
                     print(f"  {item.url}")
-            all_change_ids.update(item.change_id for item in items)
+
+            plural = "" if len(items) == 1 else "s"
+            sent = send_email(
+                smtp_host=secrets.smtp_host,
+                smtp_port=secrets.smtp_port,
+                smtp_user=secrets.smtp_user,
+                smtp_password=secrets.smtp_password,
+                from_email=secrets.smtp_user,
+                to_email=household["email_to"],
+                subject=f"Marquee — {len(items)} thing{plural} need a decision today",
+                html_body=build_alert_html(household, items, now),
+                plain_body=build_alert_plain(household, items, now),
+            )
+            if sent:
+                all_change_ids.update(item.change_id for item in items)
+                print(f"  (alert emailed to {household['email_to']})")
+            else:
+                print(f"  (alert email NOT sent — see error above; not marking notified, will retry next run)")
 
         if not any_items:
             print("No urgent alerts.")
-        else:
+        if all_change_ids:
             mark_notified(conn, list(all_change_ids), now)
         conn.commit()
     finally:
@@ -260,7 +279,8 @@ def cmd_digest(args: argparse.Namespace) -> int:
 
             html_body = build_digest_html(household, horizons)
             plain_body = build_digest_plain(household, horizons)
-            subject = f"Events digest — {datetime.now(UTC):%d %b %Y}"
+            plural = "" if total == 1 else "s"
+            subject = f"Marquee — {total} thing{plural} worth a look this week"
             sent = send_email(
                 smtp_host=secrets.smtp_host,
                 smtp_port=secrets.smtp_port,

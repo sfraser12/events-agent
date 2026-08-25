@@ -3,7 +3,13 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from events_agent.db import get_connection, init_db, upsert_raw_event
-from events_agent.delivery.alert import find_alertable_changes, mark_notified
+from events_agent.delivery.alert import (
+    AlertItem,
+    build_alert_html,
+    build_alert_plain,
+    find_alertable_changes,
+    mark_notified,
+)
 from events_agent.models import RawEvent
 
 
@@ -154,3 +160,63 @@ def test_household_scoping_excludes_out_of_range_events(conn):
     narrow_household = make_household(home_latitude=55.9410, home_longitude=-4.3170, radius_miles=1)
 
     assert find_alertable_changes(conn, datetime.now(UTC), narrow_household) == []
+
+
+def test_find_alertable_changes_sets_kind_and_on_sale_date(conn):
+    upsert_raw_event(conn, make_raw_event(status="on_sale"))
+    upsert_raw_event(conn, make_raw_event(status="low_availability"))
+
+    items = find_alertable_changes(conn, datetime.now(UTC), make_household())
+
+    assert items[0].kind == "low_availability"
+    assert items[0].on_sale_date is None
+
+
+def test_build_alert_html_shows_urgent_eyebrow_and_low_availability_badge():
+    item = AlertItem(
+        change_id=1, event_id=1, title="Test Gig", venue_name="Test Venue",
+        url="https://example.com/gig", kind="low_availability", reason="selling fast — low availability",
+    )
+    now = datetime(2026, 8, 25, 12, 0, tzinfo=UTC)
+
+    out = build_alert_html({"label": "Milngavie"}, [item], now)
+
+    assert "Act now" in out
+    assert "Selling fast" in out
+    assert "Test Gig" in out
+    assert "https://example.com/gig" in out
+
+
+def test_build_alert_html_shows_on_sale_soon_countdown():
+    on_sale = datetime(2026, 8, 25, 18, 0, tzinfo=UTC)
+    item = AlertItem(
+        change_id=1, event_id=1, title="Test Gig", venue_name="Test Venue", url=None,
+        kind="on_sale_soon", reason="on sale ... (within 48h)", on_sale_date=on_sale.isoformat(),
+    )
+    now = datetime(2026, 8, 25, 12, 0, tzinfo=UTC)  # 6 hours before on_sale
+
+    out = build_alert_html({"label": "Milngavie"}, [item], now)
+
+    assert "On sale soon" in out
+    assert "in 6 hours" in out
+
+
+def test_build_alert_html_empty_state():
+    out = build_alert_html({"label": "Milngavie"}, [], datetime.now(UTC))
+
+    assert "No urgent alerts." in out
+
+
+def test_build_alert_plain_includes_countdown_and_url():
+    on_sale = datetime(2026, 8, 25, 13, 0, tzinfo=UTC)
+    item = AlertItem(
+        change_id=1, event_id=1, title="Test Gig", venue_name="Test Venue", url="https://example.com/gig",
+        kind="on_sale_soon", reason="on sale ... (within 48h)", on_sale_date=on_sale.isoformat(),
+    )
+    now = datetime(2026, 8, 25, 12, 0, tzinfo=UTC)  # 1 hour before
+
+    out = build_alert_plain({"label": "Milngavie"}, [item], now)
+
+    assert "Test Gig @ Test Venue" in out
+    assert "in 1 hour" in out
+    assert "https://example.com/gig" in out
