@@ -49,7 +49,7 @@ style="width:600px; max-width:100%; margin:0 auto; background:{CARD}; border-rad
     <tr>
       <td style="padding:28px 32px 8px;">
         {eyebrow_html}
-        <div style="font-family:{SERIF}; font-size:22px; font-weight:700; color:{INK};">{BRAND}</div>
+        <div style="border-left:4px solid {ACCENT}; padding-left:12px; font-family:{SERIF}; font-size:20px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:{INK};">{BRAND}</div>
         <div style="font-size:13px; color:{MUTED}; margin-top:4px;">{subtitle}</div>
       </td>
     </tr>
