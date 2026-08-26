@@ -50,9 +50,9 @@ def build_ics(household: dict[str, Any], events: list[CalendarEvent]) -> str:
     lines = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",
-        "PRODID:-//Marquee//events-agent//EN",
+        "PRODID:-//Roundup//events-agent//EN",
         "CALSCALE:GREGORIAN",
-        f"X-WR-CALNAME:Marquee \u2014 {household['label']}",
+        f"X-WR-CALNAME:Roundup \u2014 {household['label']}",
     ]
     for event in events:
         lines.extend(_vevent(event))
@@ -67,7 +67,7 @@ def _vevent(event: CalendarEvent) -> list[str]:
 
     lines = [
         "BEGIN:VEVENT",
-        f"UID:events-agent-{event.event_id}@marquee.local",
+        f"UID:events-agent-{event.event_id}@roundup.local",
         f"DTSTAMP:{_fmt(datetime.now(UTC))}",
         f"DTSTART:{_fmt(start)}",
         f"DTEND:{_fmt(end)}",

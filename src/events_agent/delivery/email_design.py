@@ -1,4 +1,4 @@
-"""Shared design tokens + outer shell for every Marquee email.
+"""Shared design tokens + outer shell for every Roundup email.
 
 Email-safe: inline styles only (Gmail/Outlook strip <style> blocks and won't
 load external fonts), table-based layout for client compatibility, web-safe
@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import html
 
-BRAND = "Marquee"
+BRAND = "Roundup"
 
 BG = "#F4F5F2"
 CARD = "#FFFFFF"
@@ -32,7 +32,7 @@ SANS = "Helvetica,Arial,sans-serif"
 
 def shell(*, eyebrow: str | None, eyebrow_color: str, eyebrow_bg: str, subtitle: str, body_rows: str, footer: str) -> str:
     """The card every email is built from: optional colored eyebrow badge,
-    the Marquee wordmark, a subtitle line, then caller-supplied <tr> rows,
+    the Roundup wordmark, a subtitle line, then caller-supplied <tr> rows,
     then a footer row. Callers pass fully-built <tr> markup for body_rows —
     this only owns the outer shape."""
     eyebrow_html = ""
