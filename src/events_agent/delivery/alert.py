@@ -130,7 +130,7 @@ def build_alert_html(household: dict[str, Any], items: list[AlertItem], now: dat
     subtitle = f"For {html.escape(household['label'])} &middot; {len(items)} thing{plural} need a decision today"
     rows = "".join(_alert_card_html(item, now) for item in items) if items else empty_row("No urgent alerts.")
     footer = "Fires only on a status flip to low availability, or an on-sale date landing within 48 hours — nothing else."
-    return shell(eyebrow="Act now", eyebrow_color=URGENT, eyebrow_bg=URGENT_BG, subtitle=subtitle, body_rows=rows, footer=footer)
+    return shell(mark_suffix="Act now", mark_color=URGENT, subtitle=subtitle, body_rows=rows, footer=footer)
 
 
 def _alert_card_html(item: AlertItem, now: datetime) -> str:

@@ -92,9 +92,8 @@ def build_lookahead_html(household: dict[str, Any], events: list[LookaheadEvent]
         "so a moderate match doesn't quietly expire unseen just because its event date crept up."
     )
     return shell(
-        eyebrow="Heads up",
-        eyebrow_color=LOOKAHEAD,
-        eyebrow_bg=LOOKAHEAD_BG,
+        mark_suffix="Heads up",
+        mark_color=LOOKAHEAD,
         subtitle=subtitle,
         body_rows=rows,
         footer=footer,
