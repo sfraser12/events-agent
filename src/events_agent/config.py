@@ -35,6 +35,17 @@ class Home(BaseModel):
 class Search(BaseModel):
     radius_miles: float
     horizons: Horizons
+    # "Worth a special trip" tier — optional, NULL/absent means off. An event
+    # beyond radius_miles but within far_radius_miles isn't hard-rejected; it
+    # still reaches scoring, but only surfaces in the digest if it also
+    # clears Scoring.far_threshold. See constraints.py.
+    far_radius_miles: float | None = None
+    # A plain circle is the wrong shape for "the rest of Scotland" (Skye is
+    # roughly as far from Glasgow as North West England is) -- this is a
+    # rough "north of about here" latitude floor applied only within the far
+    # tier, so far_radius_miles points at Scotland rather than Blackpool.
+    # See constraints.py for the full reasoning.
+    far_min_latitude: float | None = None
 
 
 class BlackoutRange(BaseModel):
@@ -55,6 +66,11 @@ class Constraints(BaseModel):
 class Scoring(BaseModel):
     digest_threshold: int
     alert_threshold: int
+    # The score bar a far-flung event (see Search.far_radius_miles) must
+    # clear before it can surface at all — deliberately higher than
+    # digest_threshold, since "great, but 3 hours away" shouldn't clutter
+    # the digest the way "great, 20 minutes away" does.
+    far_threshold: int | None = None
 
 
 class Delivery(BaseModel):

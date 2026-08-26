@@ -31,6 +31,8 @@ def event_matches_household(
     radius_miles: float,
     price_ceiling: float | None,
     blackout_dates_json: str | None,
+    far_radius_miles: float | None = None,
+    far_min_latitude: float | None = None,
 ) -> bool:
     """True if the event clears every hard constraint for this household.
 
@@ -39,13 +41,40 @@ def event_matches_household(
     through to the model rather than being silently dropped by a filter that
     can't evaluate it. Same principle as elsewhere in the codebase: an
     unknown price is treated as unknown, not as free or as over-budget.
+
+    far_radius_miles (optional, "worth a special trip" tier): when set, an
+    event beyond radius_miles is no longer a hard reject as long as it's
+    within far_radius_miles — it still reaches scoring. The tighter bar for
+    those events (far_threshold instead of digest_threshold) is applied at
+    digest-selection time, not here — this function only decides whether an
+    event is even worth scoring, never how good a score it needs. See
+    is_far_flung() and delivery/digest.py.
+
+    far_min_latitude (optional): a plain circle is the wrong shape for "the
+    rest of Scotland" — confirmed against real data, a 200mi circle around
+    Milngavie is ~70% Blackpool/Manchester/Scarborough/Belfast (the last of
+    which isn't even reachable by road), not Highlands/Skye/Argyll & Bute,
+    because Scotland's north-south extent puts places like Skye roughly as
+    far from Glasgow as North West England is. far_min_latitude is a rough
+    "north of about here" floor (Scott's config uses 55.0, just north of
+    Carlisle/the England border) applied only within the far-flung branch,
+    to keep the wider net pointed at Scotland instead of a literal circle.
+    It's an approximation, not a real border lookup — a handful of
+    borderline towns either way is an acceptable trade for not needing a
+    geocoding/region API.
     """
     if venue_latitude is not None and venue_longitude is not None:
         distance_miles = haversine_meters(home_latitude, home_longitude, venue_latitude, venue_longitude) * (
             MILES_PER_METER
         )
         if distance_miles > radius_miles:
-            return False
+            far_tier_applies = (
+                far_radius_miles is not None
+                and distance_miles <= far_radius_miles
+                and (far_min_latitude is None or venue_latitude >= far_min_latitude)
+            )
+            if not far_tier_applies:
+                return False
 
     if price_ceiling is not None and price_min is not None and price_min > price_ceiling:
         return False
@@ -57,6 +86,28 @@ def event_matches_household(
                 return False
 
     return True
+
+
+def is_far_flung(
+    *,
+    venue_latitude: float | None,
+    venue_longitude: float | None,
+    home_latitude: float,
+    home_longitude: float,
+    radius_miles: float,
+) -> bool:
+    """True if the event is outside the household's normal radius_miles —
+    meaning it only got this far because far_radius_miles let it through,
+    and it needs to clear far_threshold rather than digest_threshold before
+    it can surface. Missing coordinates are never far-flung: there's no
+    distance to compare, and event_matches_household already let them
+    through unconditionally for the same reason."""
+    if venue_latitude is None or venue_longitude is None:
+        return False
+    distance_miles = haversine_meters(home_latitude, home_longitude, venue_latitude, venue_longitude) * (
+        MILES_PER_METER
+    )
+    return distance_miles > radius_miles
 
 
 def estimate_drive_minutes(

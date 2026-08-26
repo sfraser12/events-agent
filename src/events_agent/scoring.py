@@ -129,6 +129,8 @@ def run_scoring_for_household(conn: sqlite3.Connection, client: LLMClient, house
             radius_miles=household["radius_miles"],
             price_ceiling=household["price_ceiling"],
             blackout_dates_json=household["blackout_dates"],
+            far_radius_miles=household["far_radius_miles"],
+            far_min_latitude=household["far_min_latitude"],
         ):
             to_score.append(event_id)
         else:

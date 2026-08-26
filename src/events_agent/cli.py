@@ -85,11 +85,20 @@ def cmd_init(args: argparse.Namespace) -> int:
                 digest_threshold=config.scoring.digest_threshold,
                 alert_threshold=config.scoring.alert_threshold,
                 email_to=config.delivery.email_to,
+                far_radius_miles=config.search.far_radius_miles,
+                far_threshold=config.scoring.far_threshold,
+                far_min_latitude=config.search.far_min_latitude,
             )
             conn.commit()
+            far_note = (
+                f", far tier to {config.search.far_radius_miles}mi @ score>={config.scoring.far_threshold}"
+                f"{f' (lat>={config.search.far_min_latitude})' if config.search.far_min_latitude else ''}"
+                if config.search.far_radius_miles
+                else ""
+            )
             print(
                 f"Household '{name}' seeded from households/{name}/config.yaml "
-                f"(home={config.home.label}, radius={config.search.radius_miles}mi)."
+                f"(home={config.home.label}, radius={config.search.radius_miles}mi{far_note})."
             )
     finally:
         conn.close()
@@ -130,6 +139,26 @@ def cmd_harvest(args: argparse.Namespace) -> int:
                 cache_dir=REPO_ROOT / ".cache" / "ticketmaster",
             )
         )
+        if config.search.far_radius_miles:
+            # Second, wider pass for the "worth a special trip" tier (see
+            # constraints.py). Ticketmaster only, not Skiddle: Ticketmaster
+            # skews toward bigger, more "worth a special trip" caliber acts,
+            # while Skiddle skews toward small club nights/local promoters —
+            # widening Skiddle's net too would mostly add noise, not signal,
+            # for a tier whose whole point is a much higher score bar.
+            # Same real-world events already caught by the normal-radius
+            # pass just upsert again here (idempotent, harmless, dedupe is
+            # by fingerprint) — this pass only adds the ones beyond
+            # radius_miles that it exists to reach.
+            far_adapter = TicketmasterAdapter(
+                api_key=secrets.ticketmaster_api_key,
+                latitude=config.home.latitude,
+                longitude=config.home.longitude,
+                radius_miles=config.search.far_radius_miles,
+                cache_dir=REPO_ROOT / ".cache" / "ticketmaster_wide",
+            )
+            far_adapter.name = "ticketmaster_wide"
+            adapters.append(far_adapter)
     else:
         print("TICKETMASTER_API_KEY not set in .env — skipping Ticketmaster.", file=sys.stderr)
 

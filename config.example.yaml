@@ -6,6 +6,12 @@ home:
 
 search:
   radius_miles: 25
+  # Optional "worth a special trip" tier -- leave both commented out to keep
+  # it off. When set, an event beyond radius_miles but within
+  # far_radius_miles isn't rejected outright; it only surfaces if its score
+  # also clears scoring.far_threshold below. See CLAUDE.md.
+  # far_radius_miles: 200
+  # far_min_latitude: 55.0
   horizons:
     near_days: 7
     month_days: 31
@@ -22,6 +28,7 @@ constraints:
 scoring:
   digest_threshold: 60
   alert_threshold: 45
+  # far_threshold: 85
 
 delivery:
   email_to: ""

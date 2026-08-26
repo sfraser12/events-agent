@@ -26,6 +26,8 @@ URGENT = "#B4423A"
 URGENT_BG = "#F6E4E2"
 LOOKAHEAD = "#3D5A80"
 LOOKAHEAD_BG = "#E6EBF3"
+FARFLUNG = "#6B4C8A"
+FARFLUNG_BG = "#EEE7F3"
 SERIF = "Georgia,'Times New Roman',serif"
 SANS = "Helvetica,Arial,sans-serif"
 

@@ -114,7 +114,22 @@ Four outputs:
 - **Weekly digest** — Sunday morning email. Grouped by horizon (this week / this month / on sale soon / announced for later). Only events with `score >= digest_threshold` and `verdict IS NULL`. Include a one-line reason per event and a direct booking link. Re-sends the full standing shortlist every run, not a delta — an event keeps reappearing until a verdict is set on it, re-bucketing into a nearer horizon as its date approaches.
 - **Fortnight look-ahead** — a separate weekly email (own accent color, distinct from both the digest and the alert), covering events in the next 14 days scoring between `alert_threshold` and `digest_threshold`. Exists because the digest's score bar is permanent regardless of how soon the event is — without this, a moderate match could expire completely unseen just because its event date crept up while it stayed under the digest bar. Kept as its own email rather than a digest section specifically so it doesn't clutter the digest.
 - **Urgent alert** — runs daily. Fires only for anything with an `on_sale_date` in the next 48 hours, or a status flip to `low_availability`. This is the highest-value output in the whole system; it should be short and hard to ignore.
-- **ICS export** — shortlisted (`verdict` = `interested`/`booked`) events written as a plain `.ics` file via `events-agent calendar`, not a Google Calendar push — either household member imports it into whatever calendar app they use, with no OAuth flow to set up or maintain in a cron job. Provisional (`interested`) entries marked `STATUS:TENTATIVE`.
+- **ICS export** — shortlisted (`verdict` = `interested`/`booked`) events written as a plain `.ics` file via `events-agent calendar`, not a Google Calendar push — either household member imports it into whatever calendar app they use, with no OAuth flow to set up or maintain in a cron job. Provisional (`interested`) entries marked `STATUS:TENTATIVE`. One file per household once there's more than one (`curtainup-<label-slug>.ics`); the plain `curtainup.ics` default only applies with a single household, to avoid one household's file silently overwriting another's.
+
+### The "worth a special trip" tier (added 2026-08-26)
+
+Added after the user said he'd travel to Argyll & Bute, Skye, or "elsewhere in Scotland" for a genuinely good event — `radius_miles` as a flat hard cutoff can't express that; anything past it was discarded before scoring ever saw it. Two new **optional** household fields, both `NULL` by default (feature off unless configured):
+
+- `far_radius_miles` (config: `search.far_radius_miles`) — an outer boundary. An event beyond `radius_miles` but within this is no longer a hard reject in `constraints.event_matches_household()` — it still reaches scoring.
+- `far_threshold` (config: `scoring.far_threshold`) — the score bar a far-flung event must clear to actually surface, applied in Python at digest-selection time, deliberately higher than `digest_threshold` (Scott: 60 → 85). Routine-good three hours away shouldn't clutter the digest the way routine-good twenty minutes away does.
+
+**A plain circle is the wrong shape for "the rest of Scotland."** Confirmed against real harvested data: a 200mi circle around Milngavie is ~70% North West England/Northern Ireland (Blackpool, Manchester, Scarborough, even Belfast — which isn't reachable by road at all, haversine doesn't know about the Irish Sea), because Scotland's north-south extent puts Skye at roughly the same straight-line distance as Blackpool. A third optional field, `far_min_latitude` (config: `search.far_min_latitude`, Scott: `55.0`), is a rough "north of about here" floor applied only within the far-flung branch — an approximation of the England border, not a real region lookup, chosen because it cut the real would-reach-the-LLM candidate count from **4,076 to 318** on first run against live data (verified, not just reasoned about — see [[project_cost_sensitivity]] pattern in memory).
+
+**Harvest**: `cmd_harvest` adds a second Ticketmaster-only pass at `far_radius_miles` when configured (`sources/ticketmaster.py` reused as-is, no new adapter — instance's `.name` overridden to `"ticketmaster_wide"` for clean log/status output). Ticketmaster only, not Skiddle: Ticketmaster skews toward bigger, more "worth a special trip" caliber acts; Skiddle skews toward small club nights/local promoters that would just be noise at this radius. Same real event caught by both passes upserts once (fingerprint dedupe) — harmless.
+
+**Digest**: far-flung events that clear the bar get a distinct purple "worth the trip · ~Nh drive" badge (`FARFLUNG`/`FARFLUNG_BG` in `email_design.py`) inside their normal horizon section — not a separate email, not a separate horizon grouping, just a visual tag so it doesn't read as an ordinary local pick.
+
+**Known one-time cost**: the first wide-radius harvest pulled in ~5,600 new event rows; the constraint filter (with `far_min_latitude`) keeps the actual LLM-scoring hit to a bounded ~318 for that first run. Subsequent runs settle back near baseline — the `last_seen`-only-advances-on-real-change fix (see [[project_cost_sensitivity]]) means already-scored/already-excluded events don't get rescored for free.
 
 ---
 
@@ -179,7 +194,7 @@ CREATE INDEX idx_event_fingerprint ON event(fingerprint);
 CREATE INDEX idx_event_date        ON event(event_date);
 CREATE INDEX idx_event_onsale      ON event(on_sale_date);
 
--- One row per household (today: just the one). config.yaml stays the
+-- One row per household. households/<name>/config.yaml stays the
 -- human-edited source of truth; this row is a queryable materialization of
 -- it, re-synced on every `events-agent init`.
 CREATE TABLE household (
@@ -197,6 +212,9 @@ CREATE TABLE household (
     digest_threshold    INTEGER,
     alert_threshold     INTEGER,
     email_to            TEXT,
+    far_radius_miles    REAL,             -- "worth a special trip" tier, NULL = off — see Architecture
+    far_threshold       INTEGER,          -- score bar for the far tier, above digest_threshold
+    far_min_latitude    REAL,             -- rough Scotland-vs-England floor for the far tier
     created_at          TEXT NOT NULL
 );
 
@@ -274,7 +292,10 @@ reaches the model, never left to the prompt.
 
 ## Configuration
 
-`config.yaml` — checked into git, no secrets:
+`households/<name>/config.yaml` — one per household (`households/scott/`,
+`households/brother/`, ...), gitignored (personal, not checked in — see
+"Multi-household split" in Data model below). `config.example.yaml` at the
+repo root is the checked-in template to copy from:
 
 ```yaml
 home:
@@ -283,6 +304,8 @@ home:
   label: "Milngavie"
 search:
   radius_miles: 25
+  # far_radius_miles: 200      # optional "worth a special trip" tier, off by default — see Architecture
+  # far_min_latitude: 55.0     # optional companion floor — a plain radius circle isn't shaped like Scotland
   horizons:
     near_days: 7
     month_days: 31
@@ -294,6 +317,7 @@ constraints:
 scoring:
   digest_threshold: 60
   alert_threshold: 45          # lower bar for on-sale alerts
+  # far_threshold: 85          # score bar for the far tier, deliberately above digest_threshold
 delivery:
   email_to: ""
 ```
@@ -414,7 +438,44 @@ backlog** — a real feature (free-text parsing + a new LLM prompt), not a
 quick add-on, and not requested yet.
 
 ### Phase 6 — Venue feeds
-Add ICS/RSS adapters for the venue shortlist. Deliberately last: it is the most fiddly and the least reusable work, and by this point the pipeline around it is stable.
+**Status: researched (2026-08-26), no adapters built — a deliberate outcome, not an abandoned phase.**
+
+Checked all 15 shortlisted venues for an ICS/RSS/JSON feed (per the "prefer
+an official feed over a scraper" principle) plus a second round on See
+Tickets, Eventim, Glasgow Life, and local cinemas (Omniplex Clydebank,
+Everyman, Vue St Enoch's, GSC IMAX) after the user asked about them
+directly. Findings:
+
+- **Only one real feed exists: Òran Mór** (RSS 2.0, `oran-mor.co.uk/events/feed/`,
+  WordPress Modern Events Calendar plugin — real title/date/price/blurb/
+  category fields, confirmed working). But it's **already covered** by the
+  existing Ticketmaster/Skiddle harvest (176 events already in the DB) — an
+  adapter here would mostly duplicate data already flowing in.
+- **Theatre Royal Glasgow and King's Theatre Glasgow are on ATG's platform,
+  which blanket-blocks Claude-class bots in `robots.txt`** — off-limits
+  regardless of ambition. (Theatre Royal is separately already covered by
+  Ticketmaster/Skiddle; King's Theatre Glasgow is a genuine gap with no
+  legal way to close it via a feed.)
+- Everything else on the shortlist (Hydro, Armadillo, Barrowland, SWG3, King
+  Tut's, St Luke's, Pavilion, Tron [feed exists but the Events post type
+  isn't wired into WP's output — zero `<item>`s], Glasgow Film Theatre
+  [GraphQL exists but robots.txt-disallowed], East Dunbartonshire Council,
+  Lillie Art Gallery) has **no usable feed** — most are already covered by
+  Ticketmaster/Skiddle anyway; the genuine gaps are Armadillo, King's
+  Theatre Glasgow, Tron, Pavilion, GFT, and the hyperlocal council/gallery
+  listings, none of which have a clean source to build against.
+- **See Tickets and Eventim** both gate their APIs behind a partner/
+  affiliate application — no open self-serve tier like Ticketmaster's
+  Discovery API. **Glasgow Life** and Glasgow's open-data portal have no
+  events feed. **Cinema showtimes** (the TMDB gap — release dates only, no
+  showtimes) have no free public API for Omniplex/Everyman/Vue; only paid
+  commercial aggregators (MovieGlu etc.) or account-scoped platforms (Ticket
+  Tailor for GSC's IMAX, wrong ownership) exist.
+
+**Net result:** nothing to build right now without either violating
+robots.txt/ToS, paying for a commercial API, or duplicating existing
+coverage. Revisit only if a venue changes platforms or a partner
+application becomes worth pursuing.
 
 ### Phase 7 — Beyond the build (backlog, not started)
 Not a build phase with a concrete "done when" like 0–6 — a standing checklist
@@ -440,15 +501,55 @@ rather than picking any of these off ad hoc mid-build.
   Skiddle/Ticketmaster/venue feeds reliably cover: spa/sauna/wellness deals
   and openings (agreed direction — Google Alerts → RSS, reusing the Phase 6
   venue-feed adapter pattern rather than a bespoke scraper); Eventbrite
-  (tech/space/environment talks); Facebook Events (one-off local screenings);
+  (tech/space/environment talks); Facebook Events (one-off local
+  screenings — **researched 2026-08-26: essentially a dead end**, Facebook
+  locked down public RSS/API access to Groups and Events years ago, no
+  ToS-compliant way to pull listings without being a logged-in member);
   major one-off speaker/celebrity-talk platforms, Fane Productions-style
-  (wants on-sale dates treated with the same urgency as a gig on-sale).
+  (wants on-sale dates treated with the same urgency as a gig on-sale). Also
+  now confirmed gaps (see Phase 6 above): See Tickets, Eventim, Glasgow
+  Life, and cinema showtimes (Omniplex/Everyman/Vue) — all partner-gated or
+  feedless, not self-serve buildable.
 - **`events-agent ask`.** The free-text query command left over from Phase 5
   — a real feature (parsing + a new LLM prompt), not a quick add-on.
 - **A real domain + "from" address.** Emails are Curtainup-branded now;
   `curtainup.io` and `curtainup.co` were both unregistered as of 2026-08-26
   if a proper domain/mailbox is ever wanted instead of a personal Gmail
   "from" address.
+- **"Worth a special trip" tier: done (2026-08-26).** See "The 'worth a
+  special trip' tier" under Architecture above for the full design — the
+  short version: `far_radius_miles`/`far_threshold`/`far_min_latitude` on
+  `household`, a second Ticketmaster-only wide-radius harvest pass, and a
+  stricter score bar applied at digest time so a genuinely exceptional
+  event in Skye or Argyll & Bute can surface without flooding the digest
+  with routine events hours away. Live in Scott's config now
+  (`far_radius_miles: 200`, `far_threshold: 85`, `far_min_latitude: 55.0`).
+- **Council/regional listings for Argyll & Bute, Highland (incl. Skye), and
+  similar — planned, not yet researched.** The far-flung tier above only
+  reaches events that Ticketmaster already lists; small local
+  council-run or community listings (a village hall event, a small local
+  festival) in these regions wouldn't appear there at all, the same way
+  East Dunbartonshire Council/Lillie Art Gallery don't. Plan, mirroring the
+  Phase 6 venue-research methodology (WebSearch/WebFetch, check robots.txt,
+  look for ICS/RSS/JSON, check for a common council CMS platform before
+  assuming no feed exists):
+  1. **Argyll & Bute Council** — events/what's-on section, same checks as
+     East Dunbartonshire got (which turned out to have no feed on an
+     Umbraco CMS — Argyll & Bute may be on the same or a different
+     platform, don't assume).
+  2. **Highland Council** — same checks; Highland is a huge area (includes
+     Skye, Fort William, Inverness), so also worth checking whether their
+     events listings are centralized or split by area/ward.
+  3. **VisitScotland regional pages** and any surviving Scotland-wide
+     listings magazine/site (e.g. what became of The List) — broader net,
+     lower expected hit rate, but cheap to check alongside the council
+     sites in the same research pass.
+  4. **Skye-specific**: An Lanntair (Stornoway, Outer Hebrides arts centre)
+     and any dedicated Skye/Lochalsh community listings site, if one
+     exists, as a supplement to Highland Council's own page.
+  Same bar as Phase 6: only build against a real feed, never a scraper, and
+  only if it adds genuinely new coverage rather than duplicating what the
+  far-flung Ticketmaster pass already reaches.
 
 **Why:** avoids scope-creep mid-build — Phase 6 is the last phase with a
 fixed deliverable; everything here is open-ended tool evolution, not a
@@ -457,6 +558,8 @@ build step.
 ---
 
 ## Venue shortlist (for Phase 6)
+
+**Already checked — see Phase 6 above for the per-venue findings** (2026-08-26). Kept here as the historical record of what was checked, not a to-do list.
 
 Check each for an ICS, RSS, or JSON listings feed before writing any scraper. Respect `robots.txt` and terms of service; prefer an official feed even where it is less complete.
 

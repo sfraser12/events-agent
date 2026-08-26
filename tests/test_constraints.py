@@ -1,10 +1,12 @@
 import json
 
-from events_agent.constraints import estimate_drive_minutes, event_matches_household
+from events_agent.constraints import estimate_drive_minutes, event_matches_household, is_far_flung
 
 HOME_LAT, HOME_LON = 55.9410, -4.3170  # Milngavie
 HYDRO_LAT, HYDRO_LON = 55.859881, -4.285367  # ~5 miles from home
 BARROWLAND_LAT, BARROWLAND_LON = 55.8550553, -4.2369184  # further out
+SKYE_LAT, SKYE_LON = 57.4126, -6.1953  # Portree, ~170 miles from home
+BLACKPOOL_LAT, BLACKPOOL_LON = 53.8175, -3.0357  # England, ~170mi -- similar distance to Skye
 
 
 def make_household(**overrides) -> dict:
@@ -116,3 +118,93 @@ def test_estimate_drive_minutes_is_a_positive_int_for_a_real_distance():
     minutes = estimate_drive_minutes(HOME_LAT, HOME_LON, BARROWLAND_LAT, BARROWLAND_LON)
     assert isinstance(minutes, int)
     assert 0 < minutes < 60  # ~2.5 miles at an approximated 40mph, sanity bound
+
+
+def test_event_beyond_radius_but_within_far_radius_is_not_excluded():
+    # far_radius_miles set: no longer a hard reject just because it's
+    # outside radius_miles -- it still needs to reach far_threshold at
+    # digest time (see test_digest.py), but that's not this function's job.
+    assert event_matches_household(
+        venue_latitude=SKYE_LAT,
+        venue_longitude=SKYE_LON,
+        price_min=50,
+        price_max=50,
+        event_date="2026-09-01T19:00:00+00:00",
+        **make_household(radius_miles=25),
+        far_radius_miles=200,
+    )
+
+
+def test_event_beyond_far_radius_is_still_excluded():
+    assert not event_matches_household(
+        venue_latitude=SKYE_LAT,
+        venue_longitude=SKYE_LON,
+        price_min=50,
+        price_max=50,
+        event_date="2026-09-01T19:00:00+00:00",
+        **make_household(radius_miles=25),
+        far_radius_miles=100,  # Skye is ~170mi -- still beyond this
+    )
+
+
+def test_event_beyond_radius_with_no_far_radius_configured_is_excluded():
+    # far_radius_miles is None (the default/off state) -- behaves exactly
+    # like before this feature existed.
+    assert not event_matches_household(
+        venue_latitude=SKYE_LAT,
+        venue_longitude=SKYE_LON,
+        price_min=50,
+        price_max=50,
+        event_date="2026-09-01T19:00:00+00:00",
+        **make_household(radius_miles=25),
+    )
+
+
+def test_far_tier_admits_event_north_of_far_min_latitude():
+    assert event_matches_household(
+        venue_latitude=SKYE_LAT,
+        venue_longitude=SKYE_LON,
+        price_min=50,
+        price_max=50,
+        event_date="2026-09-01T19:00:00+00:00",
+        **make_household(radius_miles=25),
+        far_radius_miles=200,
+        far_min_latitude=55.0,
+    )
+
+
+def test_far_tier_rejects_event_south_of_far_min_latitude_despite_being_in_range():
+    # The whole point of far_min_latitude: Blackpool is within far_radius_miles
+    # (similar distance to Skye) but is England, not "the rest of Scotland" --
+    # confirmed against real data that a plain circle pulls in ~70% England/NI.
+    assert not event_matches_household(
+        venue_latitude=BLACKPOOL_LAT,
+        venue_longitude=BLACKPOOL_LON,
+        price_min=50,
+        price_max=50,
+        event_date="2026-09-01T19:00:00+00:00",
+        **make_household(radius_miles=25),
+        far_radius_miles=200,
+        far_min_latitude=55.0,
+    )
+
+
+def test_is_far_flung_true_beyond_radius():
+    assert is_far_flung(
+        venue_latitude=SKYE_LAT, venue_longitude=SKYE_LON,
+        home_latitude=HOME_LAT, home_longitude=HOME_LON, radius_miles=25,
+    )
+
+
+def test_is_far_flung_false_within_radius():
+    assert not is_far_flung(
+        venue_latitude=HYDRO_LAT, venue_longitude=HYDRO_LON,
+        home_latitude=HOME_LAT, home_longitude=HOME_LON, radius_miles=25,
+    )
+
+
+def test_is_far_flung_false_with_no_venue_coordinates():
+    assert not is_far_flung(
+        venue_latitude=None, venue_longitude=None,
+        home_latitude=HOME_LAT, home_longitude=HOME_LON, radius_miles=25,
+    )

@@ -77,6 +77,16 @@ CREATE TABLE IF NOT EXISTS household (
     digest_threshold    INTEGER,
     alert_threshold     INTEGER,
     email_to            TEXT,
+    -- "Worth a special trip" tier (both optional, NULL = feature off): an
+    -- event beyond radius_miles but within far_radius_miles is no longer a
+    -- hard reject — it still reaches scoring, but only surfaces in the
+    -- digest if its score also clears far_threshold (deliberately higher
+    -- than digest_threshold). Lets a genuinely exceptional event in Skye or
+    -- Argyll & Bute get noticed without flooding the digest with routine
+    -- events hours away. See constraints.py.
+    far_radius_miles    REAL,
+    far_threshold       INTEGER,
+    far_min_latitude    REAL,          -- rough "north of about here" floor; see constraints.py
     created_at          TEXT NOT NULL
 );
 
@@ -207,6 +217,15 @@ def _migrate(conn: sqlite3.Connection) -> None:
         conn.execute("ALTER TABLE household DROP COLUMN digest_day")
     if "digest_hour" in household_columns:
         conn.execute("ALTER TABLE household DROP COLUMN digest_hour")
+
+    # "Worth a special trip" tier (Phase 6 follow-up) — both nullable,
+    # absent means the feature is off for that household.
+    if "far_radius_miles" not in household_columns:
+        conn.execute("ALTER TABLE household ADD COLUMN far_radius_miles REAL")
+    if "far_threshold" not in household_columns:
+        conn.execute("ALTER TABLE household ADD COLUMN far_threshold INTEGER")
+    if "far_min_latitude" not in household_columns:
+        conn.execute("ALTER TABLE household ADD COLUMN far_min_latitude REAL")
 
 
 def upsert_venue(
@@ -487,6 +506,9 @@ def upsert_household(
     digest_threshold: int | None,
     alert_threshold: int | None,
     email_to: str | None,
+    far_radius_miles: float | None = None,
+    far_threshold: int | None = None,
+    far_min_latitude: float | None = None,
 ) -> int:
     """Idempotent upsert by explicit id — config.yaml stays the source of
     truth, this row is a queryable materialization of it, re-synced on every
@@ -499,9 +521,9 @@ def upsert_household(
         INSERT INTO household (
             id, label, home_latitude, home_longitude, radius_miles, near_days, month_days,
             max_drive_minutes, price_ceiling, blackout_dates, taste_profile_path,
-            digest_threshold, alert_threshold, email_to,
-            created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            digest_threshold, alert_threshold, email_to, far_radius_miles, far_threshold,
+            far_min_latitude, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
             label = excluded.label,
             home_latitude = excluded.home_latitude,
@@ -515,7 +537,10 @@ def upsert_household(
             taste_profile_path = excluded.taste_profile_path,
             digest_threshold = excluded.digest_threshold,
             alert_threshold = excluded.alert_threshold,
-            email_to = excluded.email_to
+            email_to = excluded.email_to,
+            far_radius_miles = excluded.far_radius_miles,
+            far_threshold = excluded.far_threshold,
+            far_min_latitude = excluded.far_min_latitude
         """,
         (
             household_id,
@@ -532,6 +557,9 @@ def upsert_household(
             digest_threshold,
             alert_threshold,
             email_to,
+            far_radius_miles,
+            far_threshold,
+            far_min_latitude,
             now,
         ),
     )
@@ -553,6 +581,9 @@ HOUSEHOLD_COLUMNS = (
     "digest_threshold",
     "alert_threshold",
     "email_to",
+    "far_radius_miles",
+    "far_threshold",
+    "far_min_latitude",
 )
 
 

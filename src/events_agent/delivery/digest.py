@@ -11,10 +11,13 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
+from events_agent.constraints import estimate_drive_minutes, is_far_flung
 from events_agent.delivery.email_design import (
     ACCENT,
     ACCENT_BG,
     BORDER,
+    FARFLUNG,
+    FARFLUNG_BG,
     INK,
     MUTED,
     SERIF,
@@ -42,16 +45,25 @@ class DigestEvent:
     audience: str | None
     reason: str | None
     urgency: str | None
+    far_flung: bool = False
+    drive_minutes: int | None = None  # only set when far_flung — see build_digest
 
 
 def build_digest(conn: sqlite3.Connection, household: dict[str, Any], today: date | None = None) -> dict[str, list[DigestEvent]]:
     today = today or datetime.now(UTC).date()
     now_iso = datetime.now(UTC).isoformat()
 
+    # score >= digest_threshold is deliberately the only SQL-level bar, even
+    # though far-flung events need to clear the stricter far_threshold too —
+    # far_threshold is always >= digest_threshold (see config.py), so
+    # anything that could pass far_threshold already passes this query;
+    # far-flung events that clear digest_threshold but not far_threshold get
+    # filtered out below, in Python, where far_flung can actually be
+    # computed (it needs venue coordinates, not just a column comparison).
     rows = conn.execute(
         """
         SELECT e.id, e.title, v.name, e.event_date, e.on_sale_date, e.price_min, e.price_max, e.currency,
-               e.url, hes.score, hes.audience, hes.score_reason, hes.urgency
+               e.url, hes.score, hes.audience, hes.score_reason, hes.urgency, v.latitude, v.longitude
         FROM household_event_state hes
         JOIN event e ON e.id = hes.event_id
         LEFT JOIN venue v ON v.id = e.venue_id
@@ -69,7 +81,29 @@ def build_digest(conn: sqlite3.Connection, household: dict[str, Any], today: dat
     month_days = household["month_days"] or 31
 
     for row in rows:
-        event = DigestEvent(*row)
+        (event_id, title, venue_name, event_date, on_sale_date, price_min, price_max, currency,
+         url, score, audience, reason, urgency, venue_latitude, venue_longitude) = row
+
+        far_flung = is_far_flung(
+            venue_latitude=venue_latitude,
+            venue_longitude=venue_longitude,
+            home_latitude=household["home_latitude"],
+            home_longitude=household["home_longitude"],
+            radius_miles=household["radius_miles"],
+        )
+        drive_minutes = None
+        if far_flung:
+            far_threshold = household["far_threshold"]
+            if far_threshold is None or score < far_threshold:
+                continue  # doesn't clear the stricter "worth the trip" bar
+            drive_minutes = estimate_drive_minutes(
+                household["home_latitude"], household["home_longitude"], venue_latitude, venue_longitude
+            )
+
+        event = DigestEvent(
+            event_id, title, venue_name, event_date, on_sale_date, price_min, price_max, currency,
+            url, score, audience, reason, urgency, far_flung, drive_minutes,
+        )
         horizon = _classify_horizon(event.event_date, event.on_sale_date, today, near_days, month_days)
         horizons[horizon].append(event)
 
@@ -136,6 +170,12 @@ def _event_card_html(event: DigestEvent) -> str:
     venue = html.escape(event.venue_name) if event.venue_name else "venue TBC"
     title = html.escape(event.title)
     reason = f'<div style="font-size:13px; color:#3E453F; font-style:italic; margin:2px 0 6px;">{html.escape(event.reason)}</div>' if event.reason else ""
+    far_flung_badge = (
+        f'<span style="background:{FARFLUNG_BG}; color:{FARFLUNG}; padding:2px 8px; border-radius:10px; \
+font-weight:600;">worth the trip &middot; {_format_drive_minutes(event.drive_minutes)}</span> &nbsp;&middot;&nbsp; '
+        if event.far_flung
+        else ""
+    )
 
     return f"""\
     <tr>
@@ -146,7 +186,7 @@ def _event_card_html(event: DigestEvent) -> str:
               <div style="font-size:12px; color:{MUTED};">{date_str} &middot; {venue}</div>
               <div style="font-size:16px; font-weight:700; color:{INK}; margin:2px 0 2px;">{title}</div>
               {reason}
-              <div style="font-size:12px; color:{MUTED};">{price} &nbsp;&middot;&nbsp; \
+              <div style="font-size:12px; color:{MUTED};">{far_flung_badge}{price} &nbsp;&middot;&nbsp; \
 <span style="background:{ACCENT_BG}; color:{ACCENT}; padding:2px 8px; border-radius:10px; font-weight:600;">\
 score {event.score}</span> &nbsp;&middot;&nbsp; <code style="color:{MUTED};">id {event.event_id}</code></div>
             </td>
@@ -155,6 +195,15 @@ score {event.score}</span> &nbsp;&middot;&nbsp; <code style="color:{MUTED};">id 
         </table>
       </td>
     </tr>"""
+
+
+def _format_drive_minutes(drive_minutes: int | None) -> str:
+    if drive_minutes is None:
+        return "far"
+    hours, minutes = divmod(drive_minutes, 60)
+    if hours == 0:
+        return f"~{minutes}min drive"
+    return f"~{hours}h{minutes:02d}m drive" if minutes else f"~{hours}h drive"
 
 
 def _format_event_date(event_date: str | None) -> str:
@@ -175,9 +224,10 @@ def build_digest_plain(household: dict[str, Any], horizons: dict[str, list[Diges
         for event in events:
             price = format_price(event.price_min, event.price_max, event.currency)
             date_str = event.event_date[:10] if event.event_date else "TBC"
+            far_flung_tag = f" [WORTH THE TRIP, {_format_drive_minutes(event.drive_minutes)}]" if event.far_flung else ""
             lines.append(
                 f"- {date_str}  {event.title} @ {event.venue_name or '?'}  {price}  "
-                f"(score {event.score}, id {event.event_id})"
+                f"(score {event.score}, id {event.event_id}){far_flung_tag}"
             )
             if event.reason:
                 lines.append(f"    {event.reason}")

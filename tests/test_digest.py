@@ -217,3 +217,79 @@ def test_build_digest_plain_says_nothing_new_when_empty(household):
     plain = build_digest_plain(household, empty_horizons)
 
     assert "Nothing new this week." in plain
+
+
+SKYE_LAT, SKYE_LON = 57.4126, -6.1953  # Portree, ~170 miles from Milngavie
+
+
+@pytest.fixture
+def household_with_far_tier(conn, tmp_path):
+    taste_path = tmp_path / "taste-profile.md"
+    taste_path.write_text("test")
+    upsert_household(
+        conn,
+        household_id=1,
+        label="Test household",
+        home_latitude=55.9410,
+        home_longitude=-4.3170,
+        radius_miles=25,
+        near_days=7,
+        month_days=31,
+        max_drive_minutes=90,
+        price_ceiling=200,
+        blackout_dates=[],
+        taste_profile_path=str(taste_path),
+        digest_threshold=60,
+        alert_threshold=45,
+        email_to="test@example.com",
+        far_radius_miles=200,
+        far_threshold=85,
+    )
+    conn.commit()
+    return get_household_as_dict(conn, 1)
+
+
+def test_far_flung_event_above_far_threshold_appears_tagged(conn, household_with_far_tier):
+    event_id, _ = upsert_raw_event(
+        conn, make_raw_event(venue_name="An Lanntair", venue_latitude=SKYE_LAT, venue_longitude=SKYE_LON)
+    )
+    score_event(conn, household_with_far_tier["id"], event_id, 90)  # clears far_threshold=85
+    conn.commit()
+
+    horizons = build_digest(conn, household_with_far_tier)
+    all_events = [e for events in horizons.values() for e in events]
+
+    assert len(all_events) == 1
+    assert all_events[0].far_flung is True
+    assert all_events[0].drive_minutes is not None and all_events[0].drive_minutes > 0
+
+
+def test_far_flung_event_between_digest_and_far_threshold_is_excluded(conn, household_with_far_tier):
+    # Clears digest_threshold (60) but not the stricter far_threshold (85) --
+    # this is the whole point of the tier: routine-good isn't enough when
+    # it's three hours away.
+    event_id, _ = upsert_raw_event(
+        conn, make_raw_event(venue_name="An Lanntair", venue_latitude=SKYE_LAT, venue_longitude=SKYE_LON)
+    )
+    score_event(conn, household_with_far_tier["id"], event_id, 70)
+    conn.commit()
+
+    horizons = build_digest(conn, household_with_far_tier)
+
+    assert sum(len(e) for e in horizons.values()) == 0
+
+
+def test_local_event_unaffected_by_far_tier_configuration(conn, household_with_far_tier):
+    # A household with the far tier configured should still show ordinary
+    # local events exactly as before -- far_flung=False, digest_threshold
+    # still the only bar that applies.
+    event_id, _ = upsert_raw_event(conn, make_raw_event())  # Oran Mor, well within radius_miles=25
+    score_event(conn, household_with_far_tier["id"], event_id, 70)
+    conn.commit()
+
+    horizons = build_digest(conn, household_with_far_tier)
+    all_events = [e for events in horizons.values() for e in events]
+
+    assert len(all_events) == 1
+    assert all_events[0].far_flung is False
+    assert all_events[0].drive_minutes is None
