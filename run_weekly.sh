@@ -5,12 +5,17 @@ LOG_DIR="$PROJECT_DIR/logs"
 BIN="$PROJECT_DIR/.venv/bin/events-agent"
 LOG="$LOG_DIR/weekly.log"
 MARKER="$LOG_DIR/.last_attempt_weekly"
-CATCHUP_HOURS=192  # ~8 days -- a week plus a bit of slack
+CATCHUP_HOURS=150  # must stay below the 168h (7-day) schedule interval -- see run_daily.sh
 
 mkdir -p "$LOG_DIR"
 cd "$PROJECT_DIR" || exit 1
 
 # Same RunAtLoad catch-up logic as run_daily.sh -- see comments there.
+# CATCHUP_HOURS must be LESS than the 168h weekly interval, for the same
+# reason: 192h (the old value) is longer than a week, so every Sunday's
+# real run looked like a recent duplicate and was skipped forever after
+# the first one. 150h (~6.25 days) leaves slack for a same-week reboot
+# without swallowing the next Sunday's real run.
 if [ -f "$MARKER" ]; then
   LAST_ATTEMPT=$(cat "$MARKER")
   NOW=$(date +%s)

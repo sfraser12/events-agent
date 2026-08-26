@@ -5,7 +5,7 @@ LOG_DIR="$PROJECT_DIR/logs"
 BIN="$PROJECT_DIR/.venv/bin/events-agent"
 LOG="$LOG_DIR/daily.log"
 MARKER="$LOG_DIR/.last_attempt_daily"
-CATCHUP_HOURS=36
+CATCHUP_HOURS=20  # must stay below the 24h schedule interval -- see note below
 
 mkdir -p "$LOG_DIR"
 cd "$PROJECT_DIR" || exit 1
@@ -16,6 +16,13 @@ cd "$PROJECT_DIR" || exit 1
 # happened, or right after `launchctl load`). Only actually run if it's
 # been longer than CATCHUP_HOURS since the last attempt, meaning the
 # 06:40 slot was genuinely missed (Mac off/asleep through it).
+#
+# CATCHUP_HOURS must be LESS than the 24h schedule interval. If it isn't,
+# every day's legitimate 06:40 StartCalendarInterval firing looks exactly
+# like a duplicate RunAtLoad fire (marker is always <24h old) and gets
+# skipped forever after the very first run -- this happened for real on
+# 2026-08-26 with CATCHUP_HOURS=36. 20h leaves plenty of slack to absorb a
+# same-day reboot without swallowing the next day's real run.
 if [ -f "$MARKER" ]; then
   LAST_ATTEMPT=$(cat "$MARKER")
   NOW=$(date +%s)
