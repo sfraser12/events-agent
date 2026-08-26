@@ -18,3 +18,4 @@ dist/
 households/*/config.yaml
 households/*/taste-profile.md
 annual-anchors.yaml
+google_alerts_todo.csv
