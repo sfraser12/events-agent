@@ -80,12 +80,28 @@ class Delivery(BaseModel):
     email_to: str
 
 
+class GoogleAlertFeed(BaseModel):
+    """One Google Alert, set up manually (no public API to create one — see
+    sources/google_alerts.py) and configured with the venue it covers.
+    latitude/longitude matter: db.upsert_venue() unconditionally overwrites
+    an existing venue's coordinates on an exact name match, so an entry
+    missing them could silently null out a venue's real coordinates from
+    Ticketmaster/Skiddle. feed_url left blank means "alert not created yet"
+    — cmd_harvest skips it rather than failing the whole harvest."""
+
+    venue_name: str
+    feed_url: str = ""
+    latitude: float | None = None
+    longitude: float | None = None
+
+
 class Config(BaseModel):
     home: Home
     search: Search
     constraints: Constraints
     scoring: Scoring
     delivery: Delivery
+    google_alerts: list[GoogleAlertFeed] = []
 
 
 class Secrets(BaseModel):

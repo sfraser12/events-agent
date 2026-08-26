@@ -27,6 +27,7 @@ from events_agent.delivery.email import send_email
 from events_agent.delivery.ics import build_ics, select_calendar_events
 from events_agent.delivery.lookahead import build_lookahead_html, build_lookahead_plain, select_lookahead_events
 from events_agent.scoring import AnthropicLLMClient, run_scoring
+from events_agent.sources.google_alerts import GoogleAlertsAdapter
 from events_agent.sources.skiddle import SkiddleAdapter
 from events_agent.sources.ticketmaster import TicketmasterAdapter
 
@@ -161,6 +162,25 @@ def cmd_harvest(args: argparse.Namespace) -> int:
             adapters.append(far_adapter)
     else:
         print("TICKETMASTER_API_KEY not set in .env — skipping Ticketmaster.", file=sys.stderr)
+
+    for alert in config.google_alerts:
+        if not alert.feed_url:
+            # Not a failure — the Google Alert just hasn't been created yet
+            # (no public API to do that automatically). See
+            # sources/google_alerts.py for setup instructions.
+            print(
+                f"Note: no feed_url configured for Google Alert '{alert.venue_name}' — skipping.",
+                file=sys.stderr,
+            )
+            continue
+        adapters.append(
+            GoogleAlertsAdapter(
+                feed_url=alert.feed_url,
+                venue_name=alert.venue_name,
+                venue_latitude=alert.latitude,
+                venue_longitude=alert.longitude,
+            )
+        )
 
     if not adapters:
         print("No source API keys configured — copy .env.example and fill in at least one.", file=sys.stderr)

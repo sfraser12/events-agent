@@ -32,3 +32,15 @@ scoring:
 
 delivery:
   email_to: ""
+
+# Optional: Google Alerts RSS feeds for content that doesn't fit a ticketed-
+# event API (e.g. spa/wellness deals). No public API creates an alert for
+# you -- go to google.com/alerts, create one, choose "RSS feed" under
+# "Deliver to", and paste the resulting feed URL below. Leave feed_url blank
+# (or omit the entry) until then -- harvest skips it with a note rather than
+# failing. latitude/longitude matter: see sources/google_alerts.py for why.
+# google_alerts:
+#   - venue_name: "Portavadie"
+#     feed_url: ""
+#     latitude: 0.0
+#     longitude: 0.0

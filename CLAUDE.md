@@ -59,9 +59,10 @@ Every adapter run is logged to a `source_run` table (see schema) with a status a
 |---|---|---|
 | 1 | Ticketmaster Discovery API | Free key from developer.ticketmaster.com. 5,000 calls/day, 5 req/sec, and deep paging is capped at 1,000 items (`size * page < 1000`) — so page carefully and slice by date window rather than trying to pull everything at once. Covers OVO Hydro, Armadillo, and most large theatre. |
 | 2 | Skiddle | Free key from skiddle.com/api/join.php. UK-specific, better for smaller venues. Geo-search with `latitude` / `longitude` / `radius` (miles) — all three required together. Filter with `eventcode`: LIVE, FEST, THEATRE, COMEDY, CLUB. Note the promoter chooses the code, so it is unreliable — treat it as a hint, not a fact. |
-| 3 | Venue ICS/RSS feeds | Many venues publish an iCalendar or RSS feed off their listings page. Cheap to add, high signal, no rate limits. See "Venue shortlist" below. |
+| 3 | Venue ICS/RSS feeds | Many venues publish an iCalendar or RSS feed off their listings page. Cheap to add, high signal, no rate limits. See "Venue shortlist" below — researched 2026-08-26, nothing buildable found (see Phase 6). |
 | 4 | TMDB | Free API. Film release dates for the cinema horizon. Not showtimes — those come from venue feeds. |
 | 5 | Annual anchors | Not a fetcher at all. A hand-maintained YAML file of recurring fixtures (see below). |
+| 6 | Google Alerts (`sources/google_alerts.py`) | Added 2026-08-26 for content that doesn't fit a ticketed-event API — spa/wellness deals per taste-profile.md's Wellness section. No public API creates an alert; set one up manually at google.com/alerts (RSS delivery), configure it under `google_alerts:` in `households/<name>/config.yaml` with the venue it covers and that venue's real coordinates. Yields undated, priceless RawEvents by design — taste-profile.md tells the scoring LLM to score this category generously given the thin data. |
 
 **Rate limiting:** a single shared token-bucket limiter, configured per adapter. Cache raw responses to disk for the duration of a run so re-running during development does not burn quota.
 
@@ -391,8 +392,7 @@ events-agent/
 │       ├── base.py            # SourceAdapter protocol
 │       ├── ticketmaster.py
 │       ├── skiddle.py
-│       ├── venue_ics.py
-│       └── tmdb.py
+│       └── google_alerts.py   # not venue_ics.py/tmdb.py — see Phase 6 (no venue feed was buildable) and note below (TMDB never built)
 └── tests/
     ├── fixtures/              # saved JSON responses, one per source
     ├── test_normalise.py
@@ -499,8 +499,14 @@ rather than picking any of these off ad hoc mid-build.
   radius/price ceiling/digest thresholds/email once that happens.
 - **Source gaps surfaced while writing `taste-profile.md`.** None of
   Skiddle/Ticketmaster/venue feeds reliably cover: spa/sauna/wellness deals
-  and openings (agreed direction — Google Alerts → RSS, reusing the Phase 6
-  venue-feed adapter pattern rather than a bespoke scraper); Eventbrite
+  and openings — **built 2026-08-26**, `sources/google_alerts.py`, see the
+  Stage 1 adapter table above. Live in Scott's config with one entry
+  (Portavadie, real coordinates filled in) but **not yet active**: no
+  public API creates a Google Alert, so this is blocked on the user
+  actually going to google.com/alerts, creating the alert(s), and sending
+  back the resulting RSS feed URL(s) — also still need the exact venue
+  name for the "Loch Tay" example from taste-profile.md (ambiguous which
+  specific venue that refers to). Eventbrite
   (tech/space/environment talks); Facebook Events (one-off local
   screenings — **researched 2026-08-26: essentially a dead end**, Facebook
   locked down public RSS/API access to Groups and Events years ago, no
