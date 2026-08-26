@@ -137,4 +137,4 @@ def test_build_ics_folds_long_lines_per_rfc5545():
 def test_build_ics_empty_state():
     out = build_ics({"id": 1, "label": "Milngavie"}, [])
 
-    assert out == "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Roundup//events-agent//EN\r\nCALSCALE:GREGORIAN\r\nX-WR-CALNAME:Roundup — Milngavie\r\nEND:VCALENDAR\r\n"
+    assert out == "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Curtainup//events-agent//EN\r\nCALSCALE:GREGORIAN\r\nX-WR-CALNAME:Curtainup — Milngavie\r\nEND:VCALENDAR\r\n"

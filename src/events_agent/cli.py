@@ -218,7 +218,7 @@ def cmd_alert(args: argparse.Namespace) -> int:
                 smtp_password=secrets.smtp_password,
                 from_email=secrets.smtp_user,
                 to_email=household["email_to"],
-                subject=f"Roundup — {len(items)} thing{plural} need a decision today",
+                subject=f"Curtainup Act Now — {len(items)} thing{plural} need a decision today",
                 html_body=build_alert_html(household, items, now),
                 plain_body=build_alert_plain(household, items, now),
             )
@@ -281,7 +281,7 @@ def cmd_digest(args: argparse.Namespace) -> int:
             html_body = build_digest_html(household, horizons)
             plain_body = build_digest_plain(household, horizons)
             plural = "" if total == 1 else "s"
-            subject = f"Roundup — {total} thing{plural} worth a look this week"
+            subject = f"Curtainup Roundup — {total} thing{plural} worth a look this week"
             sent = send_email(
                 smtp_host=secrets.smtp_host,
                 smtp_port=secrets.smtp_port,
@@ -323,7 +323,7 @@ def cmd_fortnight(args: argparse.Namespace) -> int:
             html_body = build_lookahead_html(household, events)
             plain_body = build_lookahead_plain(household, events)
             plural = "" if len(events) == 1 else "s"
-            subject = f"Roundup — {len(events)} thing{plural} in the next fortnight worth a second look"
+            subject = f"Curtainup Heads Up — {len(events)} thing{plural} in the next fortnight worth a second look"
             sent = send_email(
                 smtp_host=secrets.smtp_host,
                 smtp_port=secrets.smtp_port,
@@ -358,7 +358,7 @@ def cmd_calendar(args: argparse.Namespace) -> int:
             print("No household configured — run 'events-agent init' first.", file=sys.stderr)
             return 1
 
-        out_path = args.out or (REPO_ROOT / "roundup.ics")
+        out_path = args.out or (REPO_ROOT / "curtainup.ics")
         for household in households:
             events = select_calendar_events(conn, household)
             out_path.write_text(build_ics(household, events), encoding="utf-8")

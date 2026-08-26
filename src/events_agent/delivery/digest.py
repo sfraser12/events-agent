@@ -114,7 +114,7 @@ def build_digest_html(household: dict[str, Any], horizons: dict[str, list[Digest
         "Scored against your taste profile — not for you? Reply, or run "
         f'<code style="background:{ACCENT_BG}; padding:1px 5px; border-radius:3px;">events-agent verdict &lt;id&gt; no</code>.'
     )
-    return shell(eyebrow=None, eyebrow_color="", eyebrow_bg="", subtitle=subtitle, body_rows=sections, footer=footer)
+    return shell(eyebrow="Roundup", eyebrow_color=ACCENT, eyebrow_bg=ACCENT_BG, subtitle=subtitle, body_rows=sections, footer=footer)
 
 
 def _horizon_section_html(horizon: str, events: list[DigestEvent]) -> str:
@@ -164,7 +164,7 @@ def _format_event_date(event_date: str | None) -> str:
 
 
 def build_digest_plain(household: dict[str, Any], horizons: dict[str, list[DigestEvent]]) -> str:
-    lines = [f"ROUNDUP — for {household['label']}", ""]
+    lines = [f"CURTAINUP ROUNDUP — for {household['label']}", ""]
     any_events = False
     for horizon in HORIZONS:
         events = horizons[horizon]

@@ -1,4 +1,4 @@
-"""Shared design tokens + outer shell for every Roundup email.
+"""Shared design tokens + outer shell for every Curtainup email.
 
 Email-safe: inline styles only (Gmail/Outlook strip <style> blocks and won't
 load external fonts), table-based layout for client compatibility, web-safe
@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import html
 
-BRAND = "Roundup"
+BRAND = "Curtainup"
 
 BG = "#F4F5F2"
 CARD = "#FFFFFF"
@@ -32,7 +32,7 @@ SANS = "Helvetica,Arial,sans-serif"
 
 def shell(*, eyebrow: str | None, eyebrow_color: str, eyebrow_bg: str, subtitle: str, body_rows: str, footer: str) -> str:
     """The card every email is built from: optional colored eyebrow badge,
-    the Roundup wordmark, a subtitle line, then caller-supplied <tr> rows,
+    the Curtainup wordmark, a subtitle line, then caller-supplied <tr> rows,
     then a footer row. Callers pass fully-built <tr> markup for body_rows —
     this only owns the outer shape."""
     eyebrow_html = ""
@@ -49,7 +49,8 @@ style="width:600px; max-width:100%; margin:0 auto; background:{CARD}; border-rad
     <tr>
       <td style="padding:28px 32px 8px;">
         {eyebrow_html}
-        <div style="border-left:4px solid {ACCENT}; padding-left:12px; font-family:{SERIF}; font-size:20px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:{INK};">{BRAND}</div>
+        <div style="display:inline-block; background:{ACCENT}; color:#FFFFFF; font-family:{SANS}; font-size:13px; \
+font-weight:800; letter-spacing:0.14em; text-transform:uppercase; padding:6px 12px; border-radius:3px;">{BRAND}</div>
         <div style="font-size:13px; color:{MUTED}; margin-top:4px;">{subtitle}</div>
       </td>
     </tr>
