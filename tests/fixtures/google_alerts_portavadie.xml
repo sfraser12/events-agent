@@ -1,29 +1,29 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0">
-<channel>
-<title>Google Alert - Portavadie spa offer</title>
-<link>https://www.google.com/alerts/feeds/01234567890123456789/01234567890123456789</link>
-<description>Google Alert - Portavadie spa offer</description>
-<item>
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:idx="urn:atom-extension:indexing">
+<id>tag:google.com,2005:reader/user/08741192182451604273/state/com.google/alerts/14134234268978678974</id>
+<title>Google Alert - portavadie</title>
+<link href="https://www.google.com/alerts/feeds/08741192182451604273/14134234268978678974" rel="self"></link>
+<entry>
 <title>Portavadie launches winter spa <b>offer</b> with 20% off midweek breaks</title>
-<link>https://www.google.com/url?rct=j&amp;sa=t&amp;url=https://www.portavadie.com/news/winter-spa-offer&amp;ct=ga&amp;cd=CAIyGmMxN2</link>
-<pubDate>Tue, 25 Aug 2026 09:14:00 GMT</pubDate>
-<guid>tag:google.com,2026:alert/0000000000000000001</guid>
-<description>Portavadie has launched a new winter &lt;b&gt;spa&lt;/b&gt; &lt;b&gt;offer&lt;/b&gt;, giving guests 20% off midweek day-spa passes through March.</description>
-</item>
-<item>
+<link href="https://www.google.com/url?rct=j&amp;sa=t&amp;url=https://www.portavadie.com/news/winter-spa-offer&amp;ct=ga&amp;cd=CAIyGmMxN2" type="text/html"/>
+<published>2026-08-25T09:14:00Z</published>
+<updated>2026-08-25T09:14:00Z</updated>
+<id>tag:google.com,2026:alert/0000000000000000001</id>
+<content type="html">Portavadie has launched a new winter &lt;b&gt;spa&lt;/b&gt; &lt;b&gt;offer&lt;/b&gt;, giving guests 20% off midweek day-spa passes through March.</content>
+</entry>
+<entry>
 <title>Portavadie Loch Fyne named among Scotland's top spa retreats</title>
-<link>https://www.google.com/url?rct=j&amp;sa=t&amp;url=https://www.example-travel-blog.co.uk/scotland-spas&amp;ct=ga&amp;cd=CAIyGmMxN2</link>
-<pubDate>Mon, 24 Aug 2026 15:02:00 GMT</pubDate>
-<guid>tag:google.com,2026:alert/0000000000000000002</guid>
-<description>A roundup of the best &lt;b&gt;spa&lt;/b&gt; retreats in Scotland features Portavadie's marina and hydrotherapy pool.</description>
-</item>
-<item>
+<link href="https://www.google.com/url?rct=j&amp;sa=t&amp;url=https://www.example-travel-blog.co.uk/scotland-spas&amp;ct=ga&amp;cd=CAIyGmMxN2" type="text/html"/>
+<published>2026-08-24T15:02:00Z</published>
+<updated>2026-08-24T15:02:00Z</updated>
+<id>tag:google.com,2026:alert/0000000000000000002</id>
+<content type="html">A roundup of the best &lt;b&gt;spa&lt;/b&gt; retreats in Scotland features Portavadie's marina and hydrotherapy pool.</content>
+</entry>
+<entry>
 <title></title>
-<link>https://www.google.com/url?rct=j&amp;sa=t&amp;url=https://www.example.com/empty-title&amp;ct=ga</link>
-<pubDate>Sun, 23 Aug 2026 11:00:00 GMT</pubDate>
-<guid>tag:google.com,2026:alert/0000000000000000003</guid>
-<description>Should be skipped -- no title.</description>
-</item>
-</channel>
-</rss>
+<link href="https://www.google.com/url?rct=j&amp;sa=t&amp;url=https://www.example.com/empty-title&amp;ct=ga" type="text/html"/>
+<published>2026-08-23T11:00:00Z</published>
+<id>tag:google.com,2026:alert/0000000000000000003</id>
+<content type="html">Should be skipped -- no title.</content>
+</entry>
+</feed>

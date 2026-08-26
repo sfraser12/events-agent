@@ -3,8 +3,17 @@
 Covers a real gap flagged in taste-profile.md's Wellness section: spa/sauna/
 hot-tub deals and new openings don't fit the ticketed-event API model (no
 booking system to query), but a Google Alert on a search term ("Portavadie
-spa offer") turns into a plain RSS feed of matching articles/pages, which
-does fit this project's "prefer a feed over a scraper" principle.
+spa offer") turns into a feed of matching articles/pages, which does fit
+this project's "prefer a feed over a scraper" principle.
+
+Format note, confirmed against a real feed (2026-08-27) rather than assumed:
+despite "RSS feed" being the label in the Google Alerts UI, what Google
+actually serves is Atom (`<feed>`/`<entry>`, `xmlns="http://www.w3.org/2005/
+Atom"`, plus a `urn:atom-extension:indexing` namespace that marks it as the
+legacy Google Reader-style Atom variant), not RSS 2.0 (`<rss>`/`<item>`). The
+first version of this adapter assumed RSS 2.0 and would have silently
+parsed zero items from every real feed -- caught by testing against the
+user's actual feed URL, not by reasoning about it.
 
 Setup isn't automatable — there's no public API to create a Google Alert.
 For each search term you want covered: go to google.com/alerts, create the
@@ -12,7 +21,9 @@ alert, and under "Deliver to" choose "RSS feed" instead of email. Google
 gives you a feed URL for that alert; put it in config.yaml (see
 Config.google_alerts in config.py) alongside the venue that search term
 covers and that venue's real coordinates -- see the note on venue_latitude/
-venue_longitude below for why supplying them matters.
+venue_longitude below for why supplying them matters. Note a freshly
+created alert's feed may show zero entries for a while -- it surfaces new
+matches going forward, not necessarily a backfill.
 
 Shape mismatch with every other adapter, and why: this yields RawEvents
 with no event_date (undated -- these are article mentions of a deal or
@@ -36,6 +47,12 @@ import requests
 from events_agent.models import RawEvent
 
 REQUEST_TIMEOUT_SECONDS = 15
+
+ATOM_NS = "http://www.w3.org/2005/Atom"
+
+
+def _atom(tag: str) -> str:
+    return f"{{{ATOM_NS}}}{tag}"
 
 
 class GoogleAlertsAdapter:
@@ -71,20 +88,30 @@ class GoogleAlertsAdapter:
 
     def _parse_feed(self, xml_text: str) -> Iterator[RawEvent]:
         root = ElementTree.fromstring(xml_text)
-        for item in root.findall(".//item"):
-            title = _text_content(item.find("title"))
+        for entry in root.findall(_atom("entry")):
+            title = _text_content(entry.find(_atom("title")))
             if not title:
                 continue
 
-            raw_link = (item.findtext("link") or "").strip()
+            raw_link = _first_link_href(entry)
             url = _unwrap_google_redirect(raw_link)
-            description = _strip_html(_text_content(item.find("description")))
-            guid = (item.findtext("guid") or "").strip()
-            # Prefer the real guid Google assigns (stable per article) --
-            # fall back to hashing the resolved URL only when a feed item
-            # is missing one, so re-fetching the same feed doesn't create
+            # Atom allows either <content> (full body) or <summary>
+            # (excerpt) -- Google Alerts is expected to use <content>, but
+            # this feed is currently empty (fresh alert, no matches yet) so
+            # that couldn't be confirmed against a real populated entry.
+            # Falling back to <summary> costs nothing if <content> is
+            # always what's actually there.
+            body = entry.find(_atom("content"))
+            if body is None:
+                body = entry.find(_atom("summary"))
+            description = _strip_html(_text_content(body))
+
+            entry_id = (entry.findtext(_atom("id")) or "").strip()
+            # Prefer the real id Google assigns (stable per article) --
+            # fall back to hashing the resolved URL only when an entry is
+            # missing one, so re-fetching the same feed doesn't create
             # duplicate rows.
-            source_event_id = guid or hashlib.sha256(url.encode("utf-8")).hexdigest()
+            source_event_id = entry_id or hashlib.sha256(url.encode("utf-8")).hexdigest()
 
             yield RawEvent(
                 source_name=self.name,
@@ -100,6 +127,13 @@ class GoogleAlertsAdapter:
             )
 
 
+def _first_link_href(entry: ElementTree.Element) -> str:
+    link = entry.find(_atom("link"))
+    if link is None:
+        return ""
+    return (link.get("href") or "").strip()
+
+
 def _unwrap_google_redirect(link: str) -> str:
     """Google Alerts wraps result links in a google.com/url?...&url=<real>
     redirect -- extract the real article URL. Returns the link unchanged if
@@ -113,10 +147,10 @@ def _unwrap_google_redirect(link: str) -> str:
 
 def _text_content(element: ElementTree.Element | None) -> str:
     """Google Alerts embeds unescaped <b> tags directly inside <title> (and
-    sometimes <description>) to bold the matched search term -- element.text
-    alone only returns the text before the first such tag. itertext() walks
-    every text node regardless of nesting, so the bolded portion isn't
-    silently dropped."""
+    possibly <content>/<summary>) to bold the matched search term --
+    element.text alone only returns text before the first such tag.
+    itertext() walks every text node regardless of nesting, so the bolded
+    portion isn't silently dropped."""
     if element is None:
         return ""
     return "".join(element.itertext()).strip()

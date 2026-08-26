@@ -64,21 +64,53 @@ def test_fetch_maps_real_fields():
     assert event.event_date is None  # undated by design — see module docstring
 
 
-def test_fetch_falls_back_to_url_hash_when_guid_missing():
+def test_fetch_falls_back_to_url_hash_when_id_missing():
     xml_text = """<?xml version="1.0"?>
-<rss version="2.0"><channel>
-<item>
-<title>No guid here</title>
-<link>https://www.google.com/url?rct=j&amp;sa=t&amp;url=https://example.com/no-guid&amp;ct=ga</link>
-<description>test</description>
-</item>
-</channel></rss>"""
+<feed xmlns="http://www.w3.org/2005/Atom">
+<entry>
+<title>No id here</title>
+<link href="https://www.google.com/url?rct=j&amp;sa=t&amp;url=https://example.com/no-id&amp;ct=ga" type="text/html"/>
+<content type="html">test</content>
+</entry>
+</feed>"""
     adapter = make_adapter(FakeSession(xml_text))
 
     event = list(adapter.fetch())[0]
 
     assert event.source_event_id  # non-empty
     assert event.source_event_id != ""
+
+
+def test_fetch_falls_back_to_summary_when_content_missing():
+    xml_text = """<?xml version="1.0"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+<entry>
+<title>Summary-only entry</title>
+<link href="https://www.google.com/url?rct=j&amp;sa=t&amp;url=https://example.com/summary&amp;ct=ga" type="text/html"/>
+<id>tag:google.com,2026:alert/summary-test</id>
+<summary>Uses summary, not content</summary>
+</entry>
+</feed>"""
+    adapter = make_adapter(FakeSession(xml_text))
+
+    event = list(adapter.fetch())[0]
+
+    assert event.blurb == "Uses summary, not content"
+
+
+def test_fetch_returns_nothing_for_a_real_empty_alert_feed():
+    # A freshly created alert with no matches yet -- exact shape confirmed
+    # against a live feed (2026-08-27), not assumed.
+    xml_text = (
+        '<?xml version="1.0" encoding="utf-8"?> '
+        '<feed xmlns="http://www.w3.org/2005/Atom" xmlns:idx="urn:atom-extension:indexing"> '
+        '<id>tag:google.com,2005:reader/user/1/state/com.google/alerts/2</id> '
+        '<title>Google Alert - portavadie</title> '
+        '<link href="https://www.google.com/alerts/feeds/1/2" rel="self"></link>   </feed>'
+    )
+    adapter = make_adapter(FakeSession(xml_text))
+
+    assert list(adapter.fetch()) == []
 
 
 def test_custom_name_overrides_the_default_slug():
