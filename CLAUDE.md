@@ -416,6 +416,39 @@ quick add-on, and not requested yet.
 ### Phase 6 — Venue feeds
 Add ICS/RSS adapters for the venue shortlist. Deliberately last: it is the most fiddly and the least reusable work, and by this point the pipeline around it is stable.
 
+### Phase 7 — Beyond the build (backlog, not started)
+Not a build phase with a concrete "done when" like 0–6 — a standing checklist
+for how the tool keeps evolving once the core pipeline is stable. Deliberately
+not started; revisit as a group once Phase 6 is done and running cleanly,
+rather than picking any of these off ad hoc mid-build.
+
+- **Second household.** Brother (Edinburgh) becomes household #2. Layout
+  already decided: a `households/` directory, one subdirectory per household
+  (`households/scott/`, `households/brother/`), each with its own
+  `config.yaml`/`taste-profile.md` — chosen over a single `config.yaml` with
+  a `households:` list. Not yet built: the `cli.py`/`config.py` migration off
+  single-file config, and the brother's own taste-profile Q&A session (he
+  writes his own, not drafted secondhand). Harvest coverage should need no
+  change — the existing 90-mile Milngavie-centered radius already reaches
+  Edinburgh venues.
+- **Source gaps surfaced while writing `taste-profile.md`.** None of
+  Skiddle/Ticketmaster/venue feeds reliably cover: spa/sauna/wellness deals
+  and openings (agreed direction — Google Alerts → RSS, reusing the Phase 6
+  venue-feed adapter pattern rather than a bespoke scraper); Eventbrite
+  (tech/space/environment talks); Facebook Events (one-off local screenings);
+  major one-off speaker/celebrity-talk platforms, Fane Productions-style
+  (wants on-sale dates treated with the same urgency as a gig on-sale).
+- **`events-agent ask`.** The free-text query command left over from Phase 5
+  — a real feature (parsing + a new LLM prompt), not a quick add-on.
+- **A real domain + "from" address.** Emails are Curtainup-branded now;
+  `curtainup.io` and `curtainup.co` were both unregistered as of 2026-08-26
+  if a proper domain/mailbox is ever wanted instead of a personal Gmail
+  "from" address.
+
+**Why:** avoids scope-creep mid-build — Phase 6 is the last phase with a
+fixed deliverable; everything here is open-ended tool evolution, not a
+build step.
+
 ---
 
 ## Venue shortlist (for Phase 6)
