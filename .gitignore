@@ -14,7 +14,7 @@ __pycache__/
 build/
 dist/
 
-# Local-only: personal config and preferences
-config.yaml
-taste-profile.md
+# Local-only: personal config and preferences (one dir per household)
+households/*/config.yaml
+households/*/taste-profile.md
 annual-anchors.yaml

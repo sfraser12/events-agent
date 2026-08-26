@@ -8,7 +8,7 @@ import pytest
 
 from events_agent import cli
 from events_agent.config import Config, Constraints, Delivery, Home, Horizons, Scoring, Search, Secrets
-from events_agent.db import get_connection, init_db, upsert_raw_event
+from events_agent.db import get_connection, init_db, upsert_household, upsert_raw_event
 from events_agent.models import RawEvent
 from events_agent.sources.skiddle import SkiddleAdapter
 from events_agent.sources.ticketmaster import TicketmasterAdapter
@@ -69,10 +69,21 @@ def wired_cli(tmp_path, monkeypatch):
     init_db(db_path)
     monkeypatch.setattr(cli, "DEFAULT_DB_PATH", db_path)
     monkeypatch.setattr(cli, "SkiddleAdapter", FakeSkiddleAdapter)
+
+    # Only "scott" gets real files on disk -- mirrors production, where
+    # cmd_init must skip a household whose households/<name>/ files aren't
+    # there yet rather than failing the whole run.
+    households_dir = tmp_path / "households"
+    scott_dir = households_dir / "scott"
+    scott_dir.mkdir(parents=True)
+    (scott_dir / "config.yaml").write_text("placeholder — load_config is monkeypatched below")
+    (scott_dir / "taste-profile.md").write_text("placeholder")
+    monkeypatch.setattr(cli, "HOUSEHOLDS_DIR", households_dir)
+
     monkeypatch.setattr(
         cli,
         "load_config",
-        lambda: Config(
+        lambda *_args, **_kwargs: Config(
             home=Home(latitude=55.9410, longitude=-4.3170, label="Milngavie"),
             search=Search(radius_miles=25, horizons=Horizons(near_days=7, month_days=31, long_days=270)),
             constraints=Constraints(max_drive_minutes=60, price_ceiling=120),
@@ -195,6 +206,35 @@ def test_init_seeds_household_from_config(wired_cli):
     assert row == ("Milngavie", 55.9410, 25, 60, "test@example.com")
 
 
+def test_init_skips_household_whose_files_are_not_present_yet(wired_cli, capsys):
+    # wired_cli only puts real files under households/scott/ -- households/
+    # brother/ doesn't exist at all, same as before he's sent his config.
+    exit_code = cli.cmd_init(argparse_namespace())
+
+    assert exit_code == 0  # not a failure -- the rest of the run still works
+    conn = get_connection(wired_cli)
+    count = conn.execute("SELECT COUNT(*) FROM household").fetchone()[0]
+    conn.close()
+    assert count == 1  # only scott seeded
+
+    err = capsys.readouterr().err
+    assert "households/brother/config.yaml and taste-profile.md not both present yet" in err
+
+
+def test_init_seeds_second_household_once_its_files_exist(wired_cli):
+    brother_dir = cli.HOUSEHOLDS_DIR / "brother"
+    brother_dir.mkdir(parents=True)
+    (brother_dir / "config.yaml").write_text("placeholder")
+    (brother_dir / "taste-profile.md").write_text("placeholder")
+
+    cli.cmd_init(argparse_namespace())
+
+    conn = get_connection(wired_cli)
+    ids = {row[0] for row in conn.execute("SELECT id FROM household").fetchall()}
+    conn.close()
+    assert ids == {1, 2}  # stable ids from HOUSEHOLD_IDS, not autoincrement order
+
+
 def test_alert_requires_a_household(wired_cli, capsys):
     # wired_cli's init_db creates the schema but doesn't seed a household —
     # only cmd_init does that, and this test deliberately hasn't run it.
@@ -272,6 +312,40 @@ def test_calendar_command_writes_only_shortlisted_events(wired_cli, tmp_path):
     text = out_path.read_text()
     assert "SUMMARY:Shortlisted Gig" in text
     assert "Undecided Gig" not in text
+
+
+def test_calendar_command_writes_separate_files_per_household(wired_cli, monkeypatch, tmp_path):
+    # Regression test: with args.out unset, writing every household's .ics
+    # to the same default path would silently overwrite the first
+    # household's file with the second's.
+    cli.cmd_init(argparse_namespace())  # seeds household 1 ("Milngavie")
+    conn = get_connection(wired_cli)
+    upsert_household(
+        conn,
+        2,
+        label="Edinburgh",
+        home_latitude=55.9533,
+        home_longitude=-3.1883,
+        radius_miles=25,
+        near_days=7,
+        month_days=31,
+        max_drive_minutes=60,
+        price_ceiling=120,
+        blackout_dates=[],
+        taste_profile_path="unused",
+        digest_threshold=60,
+        alert_threshold=45,
+        email_to="brother@example.com",
+    )
+    conn.commit()
+    conn.close()
+
+    monkeypatch.setattr(cli, "REPO_ROOT", tmp_path)
+    exit_code = cli.cmd_calendar(calendar_namespace())
+
+    assert exit_code == 0
+    written = sorted(p.name for p in tmp_path.glob("curtainup-*.ics"))
+    assert written == ["curtainup-edinburgh.ics", "curtainup-milngavie.ics"]
 
 
 def test_verdict_command_writes_to_household_event_state(wired_cli):

@@ -11,8 +11,13 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CONFIG_PATH = REPO_ROOT / "config.yaml"
 DEFAULT_DB_PATH = REPO_ROOT / "events.db"
+
+# One subdirectory per household (households/scott/, households/brother/),
+# each with its own config.yaml + taste-profile.md. Replaces the old
+# single-file config.yaml/taste-profile.md at the repo root now that a
+# second household actually exists.
+HOUSEHOLDS_DIR = REPO_ROOT / "households"
 
 
 class Horizons(BaseModel):
@@ -78,13 +83,10 @@ class Secrets(BaseModel):
     smtp_password: str = ""
 
 
-def load_config(path: Path | None = None) -> Config:
-    config_path = path or DEFAULT_CONFIG_PATH
-    if not config_path.exists():
-        raise FileNotFoundError(
-            f"{config_path} not found. Copy config.example.yaml to config.yaml and fill it in."
-        )
-    with config_path.open() as f:
+def load_config(path: Path) -> Config:
+    if not path.exists():
+        raise FileNotFoundError(f"{path} not found. Copy config.example.yaml to {path} and fill it in.")
+    with path.open() as f:
         raw = yaml.safe_load(f)
     return Config.model_validate(raw)
 

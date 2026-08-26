@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from events_agent.config import DEFAULT_DB_PATH, REPO_ROOT, load_config, load_secrets
+from events_agent.config import DEFAULT_DB_PATH, HOUSEHOLDS_DIR, REPO_ROOT, load_config, load_secrets
 from events_agent.db import (
     finish_source_run,
     get_connection,
@@ -29,25 +30,46 @@ from events_agent.scoring import AnthropicLLMClient, run_scoring
 from events_agent.sources.skiddle import SkiddleAdapter
 from events_agent.sources.ticketmaster import TicketmasterAdapter
 
-# Single-file today, deliberately (see CLAUDE.md build notes) — a households/
-# directory with one config + taste profile per household is the cheap way
-# to extend this later; not built until a second household actually exists.
-TASTE_PROFILE_PATH = REPO_ROOT / "taste-profile.md"
-HOUSEHOLD_ID = 1
+# Stable per-household ids, keyed by households/<name>/ directory name.
+# Deliberately an explicit map, not auto-numbered from directory listing
+# order: upsert_household() upserts by this id, so if it ever shifted for
+# an existing household (e.g. a new household sorting earlier), that
+# household's whole scoring/verdict/snooze history in household_event_state
+# would silently detach from a different id. Add one line here per new
+# household; never reassign an existing one.
+HOUSEHOLD_IDS: dict[str, int] = {
+    "scott": 1,
+    "brother": 2,
+}
+HOUSEHOLD_ID = HOUSEHOLD_IDS["scott"]  # CLI default for `verdict` when --household isn't passed
 
 
 def cmd_init(args: argparse.Namespace) -> int:
     init_db(DEFAULT_DB_PATH)
     print(f"Database ready at {DEFAULT_DB_PATH}")
-    try:
-        config = load_config()
-        print(f"Config loaded: home={config.home.label}, radius={config.search.radius_miles}mi")
 
-        conn = get_connection(DEFAULT_DB_PATH)
-        try:
+    conn = get_connection(DEFAULT_DB_PATH)
+    try:
+        for name, household_id in HOUSEHOLD_IDS.items():
+            household_dir = HOUSEHOLDS_DIR / name
+            config_path = household_dir / "config.yaml"
+            taste_profile_path = household_dir / "taste-profile.md"
+            if not config_path.exists() or not taste_profile_path.exists():
+                # Not a failure — a household simply hasn't sent their config/
+                # taste profile yet. Every other household still seeds and the
+                # pipeline still runs for them; re-running init later picks
+                # this one up once both files exist.
+                print(
+                    f"Note: households/{name}/config.yaml and taste-profile.md not both present yet — "
+                    "skipping (re-run 'events-agent init' once they're added).",
+                    file=sys.stderr,
+                )
+                continue
+
+            config = load_config(config_path)
             upsert_household(
                 conn,
-                HOUSEHOLD_ID,
+                household_id,
                 label=config.home.label,
                 home_latitude=config.home.latitude,
                 home_longitude=config.home.longitude,
@@ -59,22 +81,29 @@ def cmd_init(args: argparse.Namespace) -> int:
                 blackout_dates=[
                     (r.start.isoformat(), r.end.isoformat()) for r in config.constraints.blackout_dates
                 ],
-                taste_profile_path=str(TASTE_PROFILE_PATH),
+                taste_profile_path=str(taste_profile_path),
                 digest_threshold=config.scoring.digest_threshold,
                 alert_threshold=config.scoring.alert_threshold,
                 email_to=config.delivery.email_to,
             )
             conn.commit()
-        finally:
-            conn.close()
-        print(f"Household seeded from config.yaml (taste profile: {TASTE_PROFILE_PATH.name}).")
-    except FileNotFoundError as exc:
-        print(f"Note: {exc}", file=sys.stderr)
+            print(
+                f"Household '{name}' seeded from households/{name}/config.yaml "
+                f"(home={config.home.label}, radius={config.search.radius_miles}mi)."
+            )
+    finally:
+        conn.close()
     return 0
 
 
 def cmd_harvest(args: argparse.Namespace) -> int:
-    config = load_config()
+    # Harvest is a single shared fetch, not one per household — every
+    # household's own radius/home just filters the same catalog later, at
+    # scoring/constraint time. Anchored on Scott's config specifically
+    # because its radius (90mi from Milngavie) is already wide enough to
+    # reach every other household's area (e.g. Edinburgh); if a future
+    # household needed coverage outside that, this would need revisiting.
+    config = load_config(HOUSEHOLDS_DIR / "scott" / "config.yaml")
     secrets = load_secrets()
 
     adapters: list = []
@@ -358,9 +387,18 @@ def cmd_calendar(args: argparse.Namespace) -> int:
             print("No household configured — run 'events-agent init' first.", file=sys.stderr)
             return 1
 
-        out_path = args.out or (REPO_ROOT / "curtainup.ics")
         for household in households:
             events = select_calendar_events(conn, household)
+            if args.out:
+                out_path = args.out
+            elif len(households) == 1:
+                out_path = REPO_ROOT / "curtainup.ics"
+            else:
+                # One household per file once there's more than one --
+                # otherwise the second household's write would silently
+                # overwrite the first's.
+                slug = re.sub(r"[^a-z0-9]+", "-", household["label"].lower()).strip("-")
+                out_path = REPO_ROOT / f"curtainup-{slug}.ics"
             out_path.write_text(build_ics(household, events), encoding="utf-8")
             print(f"{household['label']}: {len(events)} shortlisted event(s) written to {out_path}")
     finally:
