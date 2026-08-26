@@ -422,15 +422,20 @@ for how the tool keeps evolving once the core pipeline is stable. Deliberately
 not started; revisit as a group once Phase 6 is done and running cleanly,
 rather than picking any of these off ad hoc mid-build.
 
-- **Second household.** Brother (Edinburgh) becomes household #2. Layout
-  already decided: a `households/` directory, one subdirectory per household
-  (`households/scott/`, `households/brother/`), each with its own
-  `config.yaml`/`taste-profile.md` — chosen over a single `config.yaml` with
-  a `households:` list. Not yet built: the `cli.py`/`config.py` migration off
-  single-file config, and the brother's own taste-profile Q&A session (he
-  writes his own, not drafted secondhand). Harvest coverage should need no
-  change — the existing 90-mile Milngavie-centered radius already reaches
-  Edinburgh venues.
+- **Second household.** Brother (Edinburgh) becomes household #2.
+  **`households/` directory migration: done.** `cli.py`/`config.py` moved off
+  single-file config — `households/<name>/config.yaml` +
+  `households/<name>/taste-profile.md`, one subdirectory per household,
+  stable ids from an explicit `HOUSEHOLD_IDS` map in `cli.py` (`scott` = 1,
+  `brother` = 2) so a new household can never reassign an existing one's id.
+  `cmd_init` skips any household whose files aren't both present yet —
+  everything keeps running for whichever households *are* configured.
+  Harvest stays a single shared fetch anchored on `households/scott/
+  config.yaml`, whose 90-mile Milngavie-centered radius already reaches
+  Edinburgh. **Still not done:** the actual `households/brother/config.yaml`
+  + `taste-profile.md` — waiting on the brother's own taste-profile Q&A
+  session (he writes his own, not drafted secondhand) — and deciding his
+  radius/price ceiling/digest thresholds/email once that happens.
 - **Source gaps surfaced while writing `taste-profile.md`.** None of
   Skiddle/Ticketmaster/venue feeds reliably cover: spa/sauna/wellness deals
   and openings (agreed direction — Google Alerts → RSS, reusing the Phase 6
