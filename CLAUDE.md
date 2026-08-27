@@ -518,7 +518,9 @@ rather than picking any of these off ad hoc mid-build.
   feedless, not self-serve buildable.
 - **`events-agent ask`.** The free-text query command left over from Phase 5
   — a real feature (parsing + a new LLM prompt), not a quick add-on.
-- **A real domain + "from" address.** Emails are Curtainup-branded now;
+- **A real domain + "from" address.** Emails are Curtain Up-branded now
+  (display text; the domain itself stays the compact "curtainup", no
+  space);
   `curtainup.io` and `curtainup.co` were both unregistered as of 2026-08-26
   if a proper domain/mailbox is ever wanted instead of a personal Gmail
   "from" address.

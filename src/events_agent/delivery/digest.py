@@ -213,7 +213,7 @@ def _format_event_date(event_date: str | None) -> str:
 
 
 def build_digest_plain(household: dict[str, Any], horizons: dict[str, list[DigestEvent]]) -> str:
-    lines = [f"CURTAINUP ROUNDUP — for {household['label']}", ""]
+    lines = [f"CURTAIN UP ROUNDUP — for {household['label']}", ""]
     any_events = False
     for horizon in HORIZONS:
         events = horizons[horizon]

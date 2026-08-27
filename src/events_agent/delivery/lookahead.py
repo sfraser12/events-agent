@@ -137,7 +137,7 @@ def _lookahead_card_html(event: LookaheadEvent) -> str:
 
 
 def build_lookahead_plain(household: dict[str, Any], events: list[LookaheadEvent], today: date | None = None) -> str:
-    lines = [f"CURTAINUP HEADS UP — next fortnight for {household['label']}", ""]
+    lines = [f"CURTAIN UP HEADS UP — next fortnight for {household['label']}", ""]
     if not events:
         lines.append("Nothing in the next fortnight that the weekly digest hasn't already caught.")
         return "\n".join(lines)

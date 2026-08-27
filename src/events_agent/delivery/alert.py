@@ -165,7 +165,7 @@ text-transform:uppercase; letter-spacing:0.04em; padding:2px 8px; border-radius:
 
 
 def build_alert_plain(household: dict[str, Any], items: list[AlertItem], now: datetime) -> str:
-    lines = [f"CURTAINUP ACT NOW — for {household['label']}", ""]
+    lines = [f"CURTAIN UP ACT NOW — for {household['label']}", ""]
     if not items:
         lines.append("No urgent alerts.")
         return "\n".join(lines)

@@ -50,9 +50,9 @@ def build_ics(household: dict[str, Any], events: list[CalendarEvent]) -> str:
     lines = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",
-        "PRODID:-//Curtainup//events-agent//EN",
+        "PRODID:-//Curtain Up//events-agent//EN",
         "CALSCALE:GREGORIAN",
-        f"X-WR-CALNAME:Curtainup \u2014 {household['label']}",
+        f"X-WR-CALNAME:Curtain Up \u2014 {household['label']}",
     ]
     for event in events:
         lines.extend(_vevent(event))
