@@ -531,31 +531,35 @@ rather than picking any of these off ad hoc mid-build.
   with routine events hours away. Live in Scott's config now
   (`far_radius_miles: 200`, `far_threshold: 85`, `far_min_latitude: 55.0`).
 - **Council/regional listings for Argyll & Bute, Highland (incl. Skye), and
-  similar — planned, not yet researched.** The far-flung tier above only
-  reaches events that Ticketmaster already lists; small local
-  council-run or community listings (a village hall event, a small local
-  festival) in these regions wouldn't appear there at all, the same way
-  East Dunbartonshire Council/Lillie Art Gallery don't. Plan, mirroring the
-  Phase 6 venue-research methodology (WebSearch/WebFetch, check robots.txt,
-  look for ICS/RSS/JSON, check for a common council CMS platform before
-  assuming no feed exists):
-  1. **Argyll & Bute Council** — events/what's-on section, same checks as
-     East Dunbartonshire got (which turned out to have no feed on an
-     Umbraco CMS — Argyll & Bute may be on the same or a different
-     platform, don't assume).
-  2. **Highland Council** — same checks; Highland is a huge area (includes
-     Skye, Fort William, Inverness), so also worth checking whether their
-     events listings are centralized or split by area/ward.
-  3. **VisitScotland regional pages** and any surviving Scotland-wide
-     listings magazine/site (e.g. what became of The List) — broader net,
-     lower expected hit rate, but cheap to check alongside the council
-     sites in the same research pass.
-  4. **Skye-specific**: An Lanntair (Stornoway, Outer Hebrides arts centre)
-     and any dedicated Skye/Lochalsh community listings site, if one
-     exists, as a supplement to Highland Council's own page.
-  Same bar as Phase 6: only build against a real feed, never a scraper, and
-  only if it adds genuinely new coverage rather than duplicating what the
-  far-flung Ticketmaster pass already reaches.
+  similar — researched 2026-08-27, no adapter built.** Same conclusion as
+  Phase 6: real content, no feed anywhere.
+  - **Argyll & Bute Council**: only a general news RSS (`/news`), nothing
+    events-specific. Their culture/arts page just links out to third
+    parties (Wild About Argyll, Live Argyll) — both real, both list actual
+    dated events, neither has a feed (Live Argyll's `robots.txt` is fully
+    open, so not blocked, just nothing machine-readable).
+  - **Highland Council**: an `/events` page exists (Drupal-style, has a
+    "submit event" form) but currently has no content and no feed.
+  - **An Lanntair** (Stornoway): real site, real dated events, no feed.
+    Confirmed via the database this isn't already covered by
+    Skiddle/Ticketmaster — a genuine gap, just not a closeable one.
+  - **VisitScotland / The List**: The List is still operating in 2026
+    (festival guides), no public events feed found.
+  - **Data Thistle (datathistle.com) — found, deliberately not pursued.** A
+    real UK-wide events aggregator (10,000+ venues) with a genuine free
+    self-serve tier (RSS/iCal feeds, API, no sales call). Would plausibly
+    cover small Highland/Argyll & Bute venues. **Its `robots.txt`
+    specifically blanket-blocks ClaudeBot, GPTBot, and CCBot by name** —
+    not a generic bot rule, a deliberate one. Declined on the same
+    principle as everything else here: respect what the operator's
+    `robots.txt` is actually saying, even when the data would be useful and
+    even though the block is arguably more about the site itself than an
+    API endpoint. Don't revisit this without the operator's explicit
+    permission through some other channel.
+  Google Alerts (already built, see Architecture above) remains the only
+  feed-respecting way to get signal on any of these regions — several
+  candidate search terms are in `google_alerts_todo.csv` (gitignored,
+  local only).
 
 **Why:** avoids scope-creep mid-build — Phase 6 is the last phase with a
 fixed deliverable; everything here is open-ended tool evolution, not a
