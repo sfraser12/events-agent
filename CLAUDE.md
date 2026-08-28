@@ -562,6 +562,22 @@ rather than picking any of these off ad hoc mid-build.
   feed-respecting way to get signal on any of these regions — several
   candidate search terms are in `google_alerts_todo.csv` (gitignored,
   local only).
+- **`annual-anchors.yaml` checking — documented, never actually built.**
+  Discovered 2026-08-28: the "Configuration" section above and
+  `annual-anchors.example.yaml` describe a real feature (the agent checks
+  this file each run and, in the month before a `programme_announced`
+  value, adds a digest reminder) but `annual-anchors.yaml` itself was never
+  created and no code in `src/events_agent/` reads it — `grep -rn
+  "annual.anchor" src/` returns nothing. Not a bug (nothing is silently
+  failing), just documentation for a feature that was never implemented.
+  Prompted by trying to slot Scottish fire/Viking festivals (Up Helly Aa,
+  Beltane, Stonehaven Fireballs, Flambeaux — see `google_alerts_todo.csv`,
+  added 2026-08-28) in as anchors, since several have fixed, well-known
+  annual dates — a better fit for this mechanism than a Google Alert. To
+  actually build it: create `annual-anchors.yaml` from the example, add a
+  loader + the "within a month of `programme_announced`" check, and a
+  digest line for it. Fire/Viking festivals worth reconsidering as the
+  first real anchors once this exists.
 
 **Why:** avoids scope-creep mid-build — Phase 6 is the last phase with a
 fixed deliverable; everything here is open-ended tool evolution, not a
