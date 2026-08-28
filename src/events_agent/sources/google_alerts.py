@@ -25,6 +25,16 @@ venue_longitude below for why supplying them matters. Note a freshly
 created alert's feed may show zero entries for a while -- it surfaces new
 matches going forward, not necessarily a backfill.
 
+Entity-encoding note, confirmed against a real populated entry (2026-08-28,
+a throwaway "Glasgow news" alert used to sanity-check the pipeline while the
+real spa/hotel alerts were still returning zero matches): Google
+double-escapes entities inside <title>/<content> — e.g. the raw feed
+contains literal `&amp;#39;` and `&amp;middot;`. A single XML-parse decode
+(via ElementTree) only unwraps the outer `&amp;`, leaving `&#39;`/`&middot;`
+as literal text. html.unescape() is applied on top of the XML decode to fix
+this — without it, titles like "What&#39;s new..." would leak straight into
+scoring input and the digest.
+
 Shape mismatch with every other adapter, and why: this yields RawEvents
 with no event_date (undated -- these are article mentions of a deal or
 opening, not a ticketed date the way a gig is) and no price (would need to
@@ -36,6 +46,7 @@ data. This is a deliberate, documented gap, not an oversight.
 from __future__ import annotations
 
 import hashlib
+import html
 import re
 from collections.abc import Iterator
 from datetime import datetime
@@ -89,22 +100,19 @@ class GoogleAlertsAdapter:
     def _parse_feed(self, xml_text: str) -> Iterator[RawEvent]:
         root = ElementTree.fromstring(xml_text)
         for entry in root.findall(_atom("entry")):
-            title = _text_content(entry.find(_atom("title")))
+            title = html.unescape(_strip_html(_text_content(entry.find(_atom("title")))))
             if not title:
                 continue
 
             raw_link = _first_link_href(entry)
             url = _unwrap_google_redirect(raw_link)
             # Atom allows either <content> (full body) or <summary>
-            # (excerpt) -- Google Alerts is expected to use <content>, but
-            # this feed is currently empty (fresh alert, no matches yet) so
-            # that couldn't be confirmed against a real populated entry.
-            # Falling back to <summary> costs nothing if <content> is
-            # always what's actually there.
+            # (excerpt) -- confirmed against a real populated entry
+            # (2026-08-28) that Google Alerts uses <content>.
             body = entry.find(_atom("content"))
             if body is None:
                 body = entry.find(_atom("summary"))
-            description = _strip_html(_text_content(body))
+            description = html.unescape(_strip_html(_text_content(body)))
 
             entry_id = (entry.findtext(_atom("id")) or "").strip()
             # Prefer the real id Google assigns (stable per article) --
