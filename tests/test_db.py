@@ -1,13 +1,15 @@
 import sqlite3
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 
 from events_agent.db import (
+    DELIST_AFTER_DAYS,
     get_connection,
     get_household_as_dict,
     init_db,
     list_households_as_dicts,
+    mark_delisted_events,
     mark_past_events,
     upsert_household,
     upsert_raw_event,
@@ -309,6 +311,121 @@ def test_mark_past_events_ignores_undated_events(conn):
     marked = mark_past_events(conn, today=date(2026, 8, 24))
 
     assert marked == 0
+
+
+def test_upsert_raw_event_advances_last_confirmed_at_even_when_nothing_changed(conn):
+    # Contrast with last_seen (which deliberately does NOT advance on an
+    # unchanged re-fetch, see the test above) — last_confirmed_at exists
+    # specifically to answer "did a source still return this?" regardless of
+    # whether its content changed, so it must advance on every touch.
+    event_id, _ = upsert_raw_event(conn, make_raw_event())
+    first = conn.execute("SELECT last_confirmed_at FROM event WHERE id = ?", (event_id,)).fetchone()[0]
+
+    upsert_raw_event(conn, make_raw_event())  # identical re-fetch, nothing differs
+
+    second = conn.execute("SELECT last_confirmed_at FROM event WHERE id = ?", (event_id,)).fetchone()[0]
+    assert second >= first
+
+
+def test_mark_delisted_events_flips_status_when_not_reconfirmed(conn):
+    event_id, _ = upsert_raw_event(
+        conn, make_raw_event(event_date=datetime(2026, 9, 5, 19, 0, tzinfo=UTC), status="on_sale")
+    )
+    stale_touch = datetime(2026, 8, 1, tzinfo=UTC).isoformat()
+    conn.execute("UPDATE event SET last_confirmed_at = ? WHERE id = ?", (stale_touch, event_id))
+
+    now = datetime(2026, 8, 29, tzinfo=UTC).isoformat()  # well over DELIST_AFTER_DAYS past the stale touch
+    marked = mark_delisted_events(conn, today=date(2026, 8, 29), now=now)
+
+    assert marked == 1
+    status = conn.execute("SELECT status FROM event WHERE id = ?", (event_id,)).fetchone()[0]
+    assert status == "cancelled"
+
+
+def test_mark_delisted_events_logs_an_event_change(conn):
+    event_id, _ = upsert_raw_event(
+        conn, make_raw_event(event_date=datetime(2026, 9, 5, 19, 0, tzinfo=UTC), status="on_sale")
+    )
+    conn.execute(
+        "UPDATE event SET last_confirmed_at = ? WHERE id = ?",
+        (datetime(2026, 8, 1, tzinfo=UTC).isoformat(), event_id),
+    )
+
+    mark_delisted_events(conn, today=date(2026, 8, 29), now=datetime(2026, 8, 29, tzinfo=UTC).isoformat())
+
+    row = conn.execute(
+        "SELECT old_value, new_value FROM event_change WHERE event_id = ? AND field = 'status'", (event_id,)
+    ).fetchone()
+    assert row == ("on_sale", "cancelled")
+
+
+def test_mark_delisted_events_ignores_recently_confirmed_events(conn):
+    event_id, _ = upsert_raw_event(
+        conn, make_raw_event(event_date=datetime(2026, 9, 5, 19, 0, tzinfo=UTC), status="on_sale")
+    )
+    recent_touch = (
+        datetime(2026, 8, 29, tzinfo=UTC) - timedelta(days=DELIST_AFTER_DAYS - 1)
+    ).isoformat()
+    conn.execute("UPDATE event SET last_confirmed_at = ? WHERE id = ?", (recent_touch, event_id))
+
+    marked = mark_delisted_events(
+        conn, today=date(2026, 8, 29), now=datetime(2026, 8, 29, tzinfo=UTC).isoformat()
+    )
+
+    assert marked == 0
+    status = conn.execute("SELECT status FROM event WHERE id = ?", (event_id,)).fetchone()[0]
+    assert status == "on_sale"
+
+
+def test_mark_delisted_events_does_not_overwrite_cancelled(conn):
+    event_id, _ = upsert_raw_event(
+        conn, make_raw_event(event_date=datetime(2026, 9, 5, 19, 0, tzinfo=UTC), status="cancelled")
+    )
+    conn.execute(
+        "UPDATE event SET last_confirmed_at = ? WHERE id = ?",
+        (datetime(2026, 8, 1, tzinfo=UTC).isoformat(), event_id),
+    )
+
+    marked = mark_delisted_events(
+        conn, today=date(2026, 8, 29), now=datetime(2026, 8, 29, tzinfo=UTC).isoformat()
+    )
+
+    assert marked == 0
+
+
+def test_mark_delisted_events_ignores_undated_events(conn):
+    # Google Alerts events are undated by design (see CLAUDE.md) — they must
+    # never be auto-cancelled just for going unconfirmed, since a single
+    # feed pull was never a stable full-catalog re-fetch to begin with.
+    event_id, _ = upsert_raw_event(conn, make_raw_event(event_date=None, status="on_sale"))
+    conn.execute(
+        "UPDATE event SET last_confirmed_at = ? WHERE id = ?",
+        (datetime(2026, 8, 1, tzinfo=UTC).isoformat(), event_id),
+    )
+
+    marked = mark_delisted_events(
+        conn, today=date(2026, 8, 29), now=datetime(2026, 8, 29, tzinfo=UTC).isoformat()
+    )
+
+    assert marked == 0
+
+
+def test_mark_delisted_events_leaves_already_past_events_to_mark_past_events(conn):
+    event_id, _ = upsert_raw_event(
+        conn, make_raw_event(event_date=datetime(2026, 8, 1, 19, 0, tzinfo=UTC), status="on_sale")
+    )
+    conn.execute(
+        "UPDATE event SET last_confirmed_at = ? WHERE id = ?",
+        (datetime(2026, 8, 1, tzinfo=UTC).isoformat(), event_id),
+    )
+
+    marked = mark_delisted_events(
+        conn, today=date(2026, 8, 29), now=datetime(2026, 8, 29, tzinfo=UTC).isoformat()
+    )
+
+    assert marked == 0
+    status = conn.execute("SELECT status FROM event WHERE id = ?", (event_id,)).fetchone()[0]
+    assert status == "on_sale"  # untouched -- mark_past_events' job, not this function's
 
 
 def test_upsert_household_seeds_a_new_row(conn, tmp_path):

@@ -10,6 +10,7 @@ web and email.
 from __future__ import annotations
 
 import html
+from urllib.parse import quote_plus
 
 BRAND = "Curtain Up"
 
@@ -71,12 +72,30 @@ def empty_row(message: str) -> str:
     return f'<tr><td style="padding:24px 32px 32px; font-size:14px; color:{MUTED}; font-family:{SANS};">{html.escape(message)}</td></tr>'
 
 
-def cta_cell(url: str | None) -> str:
+def cta_cell(url: str | None, title: str | None = None, venue_name: str | None = None) -> str:
+    """The "Book" button, plus a small fallback search link underneath when
+    a title is available -- booking links do go dead (sold out and pulled,
+    or just a stale/misfiring page on the source's end; confirmed
+    2026-08-29, see mark_delisted_events in db.py for the harvest-side half
+    of this fix), and a dead link with no way out is a bad surprise days or
+    weeks after the email was sent. The search fallback works regardless of
+    *why* the direct link failed, which a source-specific "try again" link
+    couldn't."""
     if not url:
         return ""
+    search_link = _search_fallback_link(title, venue_name) if title else ""
     return f"""\
         <td style="vertical-align:top; text-align:right; padding-left:12px; width:96px;">
           <a href="{html.escape(url)}" style="display:inline-block; background:{ACCENT}; color:#FFFFFF; \
 text-decoration:none; font-size:13px; font-weight:600; padding:8px 14px; border-radius:6px; white-space:nowrap;">\
 Book &rarr;</a>
+          {search_link}
         </td>"""
+
+
+def _search_fallback_link(title: str, venue_name: str | None) -> str:
+    query = f"{title} {venue_name} tickets" if venue_name else f"{title} tickets"
+    search_url = f"https://www.google.com/search?q={quote_plus(query)}"
+    return f"""\
+<div style="margin-top:6px;"><a href="{search_url}" style="font-size:11px; color:{MUTED}; \
+text-decoration:underline;">link not working?</a></div>"""

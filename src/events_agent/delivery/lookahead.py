@@ -129,7 +129,7 @@ def _lookahead_card_html(event: LookaheadEvent) -> str:
               <div style="font-size:12px; color:{MUTED};">{price} &nbsp;&middot;&nbsp; \
 {score_badge}<code style="color:{MUTED};">id {event.event_id}</code></div>
             </td>
-{cta_cell(event.url)}
+{cta_cell(event.url, event.title, event.venue_name)}
           </tr>
         </table>
       </td>

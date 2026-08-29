@@ -563,6 +563,30 @@ rather than picking any of these off ad hoc mid-build.
   feed-respecting way to get signal on any of these regions — several
   candidate search terms are in `google_alerts_todo.csv` (gitignored,
   local only).
+- **Delisting detection: done (2026-08-29).** Triggered by a user report of a
+  dead Ticketmaster booking link (`.../armand-van-helden-.../event/...`
+  returned a bot-detection 401 for curl — confirmed universal across every
+  Ticketmaster URL tested, including known-good ones, so not the actual root
+  cause). The real gap: nothing ever re-checked whether a previously-seen
+  event was still actually listed by its source — an event sold out and
+  pulled from Ticketmaster/Skiddle just sat in the DB as `on_sale` forever,
+  since neither source reliably flags removal via a status code. Fixed with
+  a new `event.last_confirmed_at` column (unlike `last_seen`, advances on
+  every successful upsert regardless of content change) and
+  `mark_delisted_events()` in `db.py`, run at the end of `cmd_harvest`
+  alongside `mark_past_events` — an active, dated event not reconfirmed by
+  any source for `DELIST_AFTER_DAYS` (4) gets flipped to `cancelled` (reused
+  rather than a new status value, since digest/lookahead/alert already
+  exclude it). Guarded to only run when at least one full-catalog source
+  (ticketmaster/skiddle) actually succeeded that run, so an API outage can
+  never masquerade as mass delisting. Verified live against production data
+  the same day: 173 events correctly flagged, all with `last_seen` several
+  days stale, several dated that same day for small club nights Skiddle had
+  clearly pulled — no false positives. Paired with a UX-side fix in
+  `email_design.py`'s `cta_cell()`: every Book button now also gets a small
+  "link not working?" fallback (a Google search for title + venue), so a
+  dead link — from this cause or any other — always has an escape hatch
+  rather than a dead end.
 - **`annual-anchors.yaml` checking — documented, never actually built.**
   Discovered 2026-08-28: the "Configuration" section above and
   `annual-anchors.example.yaml` describe a real feature (the agent checks

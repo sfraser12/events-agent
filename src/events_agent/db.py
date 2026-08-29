@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from math import asin, cos, radians, sin, sqrt
 from pathlib import Path
 
@@ -51,7 +51,10 @@ CREATE TABLE IF NOT EXISTS event (
     blurb           TEXT,
 
     first_seen      TEXT NOT NULL,
-    last_seen       TEXT NOT NULL
+    last_seen       TEXT NOT NULL,
+    last_confirmed_at TEXT      -- every successful upsert touches this, even
+                                 -- when nothing changed (unlike last_seen) —
+                                 -- see mark_delisted_events
 );
 
 CREATE INDEX IF NOT EXISTS idx_event_fingerprint ON event(fingerprint);
@@ -227,6 +230,17 @@ def _migrate(conn: sqlite3.Connection) -> None:
     if "far_min_latitude" not in household_columns:
         conn.execute("ALTER TABLE household ADD COLUMN far_min_latitude REAL")
 
+    # Delisting detection (2026-08-29): lets mark_delisted_events tell "source
+    # stopped returning this" apart from "nothing changed" (last_seen only
+    # advances on real content changes). Backfill from last_seen rather than
+    # leaving NULL, so every pre-existing row starts from its last known
+    # touch instead of looking unconfirmed-since-forever and getting
+    # cancelled on the very next harvest.
+    event_columns = {row[1] for row in conn.execute("PRAGMA table_info(event)")}
+    if "last_confirmed_at" not in event_columns:
+        conn.execute("ALTER TABLE event ADD COLUMN last_confirmed_at TEXT")
+        conn.execute("UPDATE event SET last_confirmed_at = last_seen WHERE last_confirmed_at IS NULL")
+
 
 def upsert_venue(
     conn: sqlite3.Connection,
@@ -314,7 +328,8 @@ def upsert_raw_event(conn: sqlite3.Connection, raw: RawEvent) -> tuple[int, bool
     row = conn.execute(
         """
         SELECT id, title, category, venue_id, event_date, event_date_end, status,
-               price_min, price_max, currency, on_sale_date, url, blurb, last_seen
+               price_min, price_max, currency, on_sale_date, url, blurb, last_seen,
+               last_confirmed_at
         FROM event WHERE fingerprint = ?
         """,
         (fp,),
@@ -323,7 +338,7 @@ def upsert_raw_event(conn: sqlite3.Connection, raw: RawEvent) -> tuple[int, bool
         (
             event_id, old_title, old_category, old_venue_id, old_event_date, old_event_date_end,
             old_status, old_price_min, old_price_max, old_currency, old_on_sale_date, old_url,
-            old_blurb, old_last_seen,
+            old_blurb, old_last_seen, _old_last_confirmed_at,
         ) = row
         created = False
         new_event_date = _iso_or_none(raw.event_date)
@@ -360,7 +375,7 @@ def upsert_raw_event(conn: sqlite3.Connection, raw: RawEvent) -> tuple[int, bool
                 title = ?, title_normalised = ?, category = ?, venue_id = ?,
                 event_date = ?, event_date_end = ?, status = ?,
                 price_min = ?, price_max = ?, currency = ?, on_sale_date = ?, url = ?, blurb = ?,
-                last_seen = ?
+                last_seen = ?, last_confirmed_at = ?
             WHERE id = ?
             """,
             (
@@ -378,6 +393,7 @@ def upsert_raw_event(conn: sqlite3.Connection, raw: RawEvent) -> tuple[int, bool
                 raw.url,
                 raw.blurb,
                 new_last_seen,
+                now,  # unlike last_seen, this advances on every upsert regardless of content_changed — see mark_delisted_events
                 event_id,
             ),
         )
@@ -400,8 +416,8 @@ def upsert_raw_event(conn: sqlite3.Connection, raw: RawEvent) -> tuple[int, bool
                 fingerprint, title, title_normalised, category, venue_id,
                 event_date, event_date_end, status,
                 price_min, price_max, currency, on_sale_date, url, blurb,
-                first_seen, last_seen
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                first_seen, last_seen, last_confirmed_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 fp,
@@ -418,6 +434,7 @@ def upsert_raw_event(conn: sqlite3.Connection, raw: RawEvent) -> tuple[int, bool
                 new_on_sale_date,
                 raw.url,
                 raw.blurb,
+                now,
                 now,
                 now,
             ),
@@ -487,6 +504,62 @@ def mark_past_events(conn: sqlite3.Connection, today: date) -> int:
                 (event_id, old_status, now),
             )
             marked += 1
+    return marked
+
+
+DELIST_AFTER_DAYS = 4  # generous buffer over the daily harvest's ~36h RunAtLoad catch-up window, so one missed/failed run never falsely delists a still-live event
+
+
+def mark_delisted_events(conn: sqlite3.Connection, today: date, now: str | None = None) -> int:
+    """Flip status to 'cancelled' for upcoming events a source used to return
+    but has quietly stopped listing.
+
+    Ticketmaster/Skiddle both re-fetch their full date-windowed catalog on
+    every harvest, so an active event that goes DELIST_AFTER_DAYS without
+    being re-confirmed by *any* source (last_confirmed_at, which unlike
+    last_seen advances on every successful upsert regardless of content
+    change) has almost certainly been pulled there -- sold out and removed,
+    or delisted -- even though neither source's API tells us via a status
+    code. Confirmed real-world trigger: a user-reported "dead" Ticketmaster
+    booking link, 2026-08-29 -- the URL itself was correctly stored (came
+    straight from Ticketmaster's own API `url` field), but nothing in the
+    pipeline ever re-checked whether a previously-seen event was still
+    actually there.
+
+    Reuses 'cancelled' rather than inventing a new status: every digest/
+    lookahead/alert query already excludes it (`status NOT IN ('past',
+    'cancelled')`), which is exactly the behaviour wanted here -- stop
+    recommending a booking link that no longer resolves to a live listing.
+
+    Undated events (Google Alerts, by design -- see CLAUDE.md) are naturally
+    exempt: event_date IS NULL for those, so they never match this query.
+    Caller is responsible for only invoking this when at least one full-
+    catalog source (ticketmaster/skiddle) actually succeeded this run --
+    see cmd_harvest -- otherwise a total outage would look identical to
+    everything being delisted at once.
+    """
+    now = now or datetime.now(UTC).isoformat()
+    cutoff = (datetime.fromisoformat(now) - timedelta(days=DELIST_AFTER_DAYS)).isoformat()
+    rows = conn.execute(
+        """
+        SELECT id, status, event_date FROM event
+        WHERE event_date IS NOT NULL
+          AND status NOT IN ('past', 'cancelled')
+          AND (last_confirmed_at IS NULL OR last_confirmed_at < ?)
+        """,
+        (cutoff,),
+    ).fetchall()
+
+    marked = 0
+    for event_id, old_status, event_date in rows:
+        if datetime.fromisoformat(event_date).date() < today:
+            continue  # mark_past_events already owns this case
+        conn.execute("UPDATE event SET status = 'cancelled' WHERE id = ?", (event_id,))
+        conn.execute(
+            "INSERT INTO event_change (event_id, field, old_value, new_value, detected_at) VALUES (?, 'status', ?, 'cancelled', ?)",
+            (event_id, old_status, now),
+        )
+        marked += 1
     return marked
 
 

@@ -14,6 +14,7 @@ from events_agent.db import (
     get_connection,
     init_db,
     list_households_as_dicts,
+    mark_delisted_events,
     mark_past_events,
     mark_surfaced,
     set_verdict,
@@ -213,6 +214,15 @@ def cmd_harvest(args: argparse.Namespace) -> int:
 
         past_count = mark_past_events(conn, datetime.now(UTC).date())
         conn.commit()
+
+        # Only trust "not re-confirmed" as "delisted" when at least one
+        # full-catalog source actually ran successfully this time — a total
+        # outage across ticketmaster/skiddle would otherwise look identical
+        # to every upcoming event having been pulled at once.
+        catalog_sources = {"ticketmaster", "ticketmaster_wide", "skiddle"}
+        catalog_ok = any(name in catalog_sources and error is None for name, _, _, error in summaries)
+        delisted_count = mark_delisted_events(conn, datetime.now(UTC).date()) if catalog_ok else 0
+        conn.commit()
     finally:
         conn.close()
 
@@ -225,6 +235,8 @@ def cmd_harvest(args: argparse.Namespace) -> int:
             print(f"{name}: {new_count + updated_count} events ({new_count} new, {updated_count} updated)")
     if past_count:
         print(f"{past_count} event(s) marked past.")
+    if delisted_count:
+        print(f"{delisted_count} event(s) marked cancelled — no longer confirmed by any source (likely sold out/pulled).")
 
     if all(error for _, _, _, error in summaries):
         return 1

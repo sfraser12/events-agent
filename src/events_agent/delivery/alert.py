@@ -157,7 +157,7 @@ text-transform:uppercase; letter-spacing:0.04em; padding:2px 8px; border-radius:
               <div style="font-size:12px; color:{MUTED};">{venue}</div>
               <div style="font-size:13px; color:{badge_color}; font-weight:600; margin-top:4px;">{detail}</div>
             </td>
-{cta_cell(item.url)}
+{cta_cell(item.url, item.title, item.venue_name)}
           </tr>
         </table>
       </td>

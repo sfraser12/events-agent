@@ -198,7 +198,7 @@ font-weight:600;">worth the trip &middot; {_format_drive_minutes(event.drive_min
 <span style="background:{ACCENT_BG}; color:{ACCENT}; padding:2px 8px; border-radius:10px; font-weight:600;">\
 score {event.score}</span> &nbsp;&middot;&nbsp; <code style="color:{MUTED};">id {event.event_id}</code></div>
             </td>
-{cta_cell(event.url)}
+{cta_cell(event.url, event.title, event.venue_name)}
           </tr>
         </table>
       </td>

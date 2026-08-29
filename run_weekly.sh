@@ -30,18 +30,20 @@ echo "===== Weekly run started: $(date) =====" >> "$LOG"
 # Deliver-only, deliberately -- no harvest/score here. The daily job already
 # refreshed the database that morning; re-harvesting and re-scoring in the
 # evening too would just be a second LLM bill for the same data.
+#
+# Roundup only (2026-08-29): fortnight/Heads Up moved to its own script
+# (run_fortnight.sh) on its own Wednesday schedule -- having both land in
+# the same Sunday run meant two emails at once, right on top of each other,
+# which felt like too much in one sitting. See CLAUDE.md "Scheduling".
 "$BIN" digest >> "$LOG" 2>&1
 DIGEST_EXIT=$?
 
-"$BIN" fortnight >> "$LOG" 2>&1
-FORTNIGHT_EXIT=$?
-
-echo "===== Weekly run finished: $(date), digest exit: $DIGEST_EXIT, fortnight exit: $FORTNIGHT_EXIT =====" >> "$LOG"
+echo "===== Weekly run finished: $(date), digest exit: $DIGEST_EXIT =====" >> "$LOG"
 echo >> "$LOG"
 
 date +%s > "$MARKER"
 
-if [ $DIGEST_EXIT -ne 0 ] || [ $FORTNIGHT_EXIT -ne 0 ]; then
+if [ $DIGEST_EXIT -ne 0 ]; then
   exit 1
 fi
 exit 0
