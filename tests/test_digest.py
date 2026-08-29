@@ -119,6 +119,29 @@ def test_snoozed_event_is_excluded_until_snooze_expires(conn, household):
     assert sum(len(e) for e in build_digest(conn, household).values()) == 0
 
 
+def test_past_event_is_excluded_even_if_still_scored_high(conn, household):
+    # Regression: an event scored while upcoming, then left with no verdict,
+    # used to keep reappearing in every digest forever after its date
+    # passed -- misclassified as "this week" because _classify_horizon had
+    # no lower bound (any past event_date is trivially <= today + near_days).
+    today = datetime.now(UTC)
+    event_id, _ = upsert_raw_event(
+        conn,
+        make_raw_event(
+            title="Last week's gig",
+            event_date=today - timedelta(days=5),
+            status="past",
+        ),
+    )
+    score_event(conn, household["id"], event_id, 90)
+    conn.commit()
+
+    horizons = build_digest(conn, household, today=today.date())
+
+    assert sum(len(e) for e in horizons.values()) == 0
+    assert horizons["this week"] == []
+
+
 def test_events_are_grouped_by_horizon(conn, household):
     today = datetime.now(UTC)
     near_id, _ = upsert_raw_event(

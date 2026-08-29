@@ -71,6 +71,7 @@ def build_digest(conn: sqlite3.Connection, household: dict[str, Any], today: dat
           AND hes.score IS NOT NULL AND hes.score >= ?
           AND hes.verdict IS NULL
           AND (hes.snoozed_until IS NULL OR hes.snoozed_until < ?)
+          AND e.status NOT IN ('past', 'cancelled')
         ORDER BY hes.score DESC
         """,
         (household["id"], household["digest_threshold"], now_iso),
@@ -123,6 +124,13 @@ def _classify_horizon(event_date: str | None, on_sale_date: str | None, today: d
         return "announced for later"
 
     event_day = datetime.fromisoformat(event_date).date()
+    # A past event_date should already be excluded upstream (the query's
+    # e.status NOT IN ('past', 'cancelled') filter) -- this lower bound is a
+    # second, independent guard against the same failure mode, since without
+    # it a past event_day is trivially <= today + near_days and silently
+    # gets bucketed into "this week" alongside genuinely upcoming events.
+    if event_day < today:
+        return "announced for later"
     if event_day <= today + _days(near_days):
         return "this week"
     if event_day <= today + _days(month_days):
