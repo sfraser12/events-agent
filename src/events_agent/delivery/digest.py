@@ -148,7 +148,7 @@ def build_digest_html(household: dict[str, Any], horizons: dict[str, list[Digest
         "Scored against your taste profile — not for you? Reply, or run "
         f'<code style="background:{ACCENT_BG}; padding:1px 5px; border-radius:3px;">events-agent verdict &lt;id&gt; no</code>.'
     )
-    return shell(mark_suffix="Round Up", mark_color=ACCENT, subtitle=subtitle, body_rows=sections, footer=footer)
+    return shell(mark_suffix="Roundup", mark_color=ACCENT, subtitle=subtitle, body_rows=sections, footer=footer)
 
 
 def _horizon_section_html(horizon: str, events: list[DigestEvent]) -> str:

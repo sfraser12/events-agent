@@ -359,7 +359,7 @@ def cmd_digest(args: argparse.Namespace) -> int:
             html_body = build_digest_html(household, horizons)
             plain_body = build_digest_plain(household, horizons)
             plural = "" if total == 1 else "s"
-            subject = f"Curtain Up Round Up — {total} thing{plural} worth a look this week"
+            subject = f"Curtain Up Roundup — {total} thing{plural} worth a look this week"
             sent = send_email(
                 smtp_host=secrets.smtp_host,
                 smtp_port=secrets.smtp_port,
