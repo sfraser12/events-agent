@@ -427,15 +427,14 @@ LLM scoring pass with strict JSON output and validation. Weekly digest email gro
 **Done when:** a week's digest reads like something you would actually open, and marking something `no` keeps it out of next week's.
 
 ### Phase 5 — Calendar and ad-hoc
-ICS export or Google Calendar push for shortlisted events. A `events-agent ask "anything on the last weekend in October?"` command that queries the database and answers in prose.
-**Status: the `.ics` half is done** — `events-agent calendar` writes shortlisted
+ICS export for shortlisted events.
+**Status: done.** `events-agent calendar` writes shortlisted
 (`verdict` = `interested`/`booked`) events to a plain `.ics` file, provisional
 entries marked `STATUS:TENTATIVE`. No Google Calendar OAuth push: a static
 file imports into any calendar app without an auth flow to maintain in a
 cron job, which satisfies the actual goal ("both people can plan around
-them") more simply. **`events-agent ask` is deliberately left for the
-backlog** — a real feature (free-text parsing + a new LLM prompt), not a
-quick add-on, and not requested yet.
+them") more simply. The free-text `events-agent ask` command originally
+scoped for this phase was **dropped (2026-08-29)** — decided not needed.
 
 ### Phase 6 — Venue feeds
 **Status: researched (2026-08-26), no adapters built — a deliberate outcome, not an abandoned phase.**
@@ -483,6 +482,29 @@ for how the tool keeps evolving once the core pipeline is stable. Deliberately
 not started; revisit as a group once Phase 6 is done and running cleanly,
 rather than picking any of these off ad hoc mid-build.
 
+- **Source gaps surfaced while writing `taste-profile.md`.** Currently the
+  top priority — see `google_alerts_todo.csv` (gitignored, local only) for
+  the live, working queue of these. None of Skiddle/Ticketmaster/venue feeds
+  reliably cover: spa/sauna/wellness deals and openings — **built
+  2026-08-26**, `sources/google_alerts.py`, see the Stage 1 adapter table
+  above, now **active with 13 live feeds** as of 2026-08-29 (Portavadie,
+  Taymouth Marina, Cameron House, Fonab Castle Hotel, Crieff Hydro,
+  Gleneagles, Peebles Hydro, Dunblane Hydro, Stobo Castle, Trump Turnberry,
+  Cromlix House Hotel, and two Wowcher deal-site searches) — verified
+  fetching/parsing cleanly, real content not yet confirmed (see
+  [[project_source_gaps]] in memory). Eventbrite
+  (tech/space/environment talks); Facebook Events (one-off local
+  screenings — **researched 2026-08-26: essentially a dead end**, Facebook
+  locked down public RSS/API access to Groups and Events years ago, no
+  ToS-compliant way to pull listings without being a logged-in member);
+  major one-off speaker/celebrity-talk platforms, Fane Productions-style
+  (wants on-sale dates treated with the same urgency as a gig on-sale). Also
+  now confirmed gaps (see Phase 6 above): See Tickets, Eventim, Glasgow
+  Life, and cinema showtimes (Omniplex/Everyman/Vue) — all partner-gated or
+  feedless, not self-serve buildable. Equestrian, Scottish fire/Viking
+  festivals, and classic Mini events (including the Thistle Run) added
+  2026-08-28 — same CSV, same workflow: fill in `feed_url` after creating
+  the alert at google.com/alerts and hand it back.
 - **Second household.** Brother (Edinburgh) becomes household #2.
   **`households/` directory migration: done.** `cli.py`/`config.py` moved off
   single-file config — `households/<name>/config.yaml` +
@@ -497,27 +519,6 @@ rather than picking any of these off ad hoc mid-build.
   + `taste-profile.md` — waiting on the brother's own taste-profile Q&A
   session (he writes his own, not drafted secondhand) — and deciding his
   radius/price ceiling/digest thresholds/email once that happens.
-- **Source gaps surfaced while writing `taste-profile.md`.** None of
-  Skiddle/Ticketmaster/venue feeds reliably cover: spa/sauna/wellness deals
-  and openings — **built 2026-08-26**, `sources/google_alerts.py`, see the
-  Stage 1 adapter table above. Live in Scott's config with one entry
-  (Portavadie, real coordinates filled in) but **not yet active**: no
-  public API creates a Google Alert, so this is blocked on the user
-  actually going to google.com/alerts, creating the alert(s), and sending
-  back the resulting RSS feed URL(s) — also still need the exact venue
-  name for the "Loch Tay" example from taste-profile.md (ambiguous which
-  specific venue that refers to). Eventbrite
-  (tech/space/environment talks); Facebook Events (one-off local
-  screenings — **researched 2026-08-26: essentially a dead end**, Facebook
-  locked down public RSS/API access to Groups and Events years ago, no
-  ToS-compliant way to pull listings without being a logged-in member);
-  major one-off speaker/celebrity-talk platforms, Fane Productions-style
-  (wants on-sale dates treated with the same urgency as a gig on-sale). Also
-  now confirmed gaps (see Phase 6 above): See Tickets, Eventim, Glasgow
-  Life, and cinema showtimes (Omniplex/Everyman/Vue) — all partner-gated or
-  feedless, not self-serve buildable.
-- **`events-agent ask`.** The free-text query command left over from Phase 5
-  — a real feature (parsing + a new LLM prompt), not a quick add-on.
 - **A real domain + "from" address.** Emails are Curtain Up-branded now
   (display text; the domain itself stays the compact "curtainup", no
   space);
