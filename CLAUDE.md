@@ -508,7 +508,12 @@ rather than picking any of these off ad hoc mid-build.
   feedless, not self-serve buildable. Equestrian, Scottish fire/Viking
   festivals, and classic Mini events (including the Thistle Run) added
   2026-08-28 — same CSV, same workflow: fill in `feed_url` after creating
-  the alert at google.com/alerts and hand it back.
+  the alert at google.com/alerts and hand it back. **Waverley (the last
+  seagoing paddle steamer, Clyde/UK-wide sailings) added 2026-08-30** —
+  checked `waverleyexcursions.co.uk` first since real sailing dates/times/
+  prices are a much better fit for a proper feed than a topic-based alert;
+  confirmed no RSS/iCal/API, timetables are PDF-only. Same CSV, same
+  workflow.
 - **Second household.** Brother (Edinburgh) becomes household #2.
   **`households/` directory migration: done.** `cli.py`/`config.py` moved off
   single-file config — `households/<name>/config.yaml` +
