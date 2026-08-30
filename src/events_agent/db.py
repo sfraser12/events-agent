@@ -230,6 +230,14 @@ def _migrate(conn: sqlite3.Connection) -> None:
     if "far_min_latitude" not in household_columns:
         conn.execute("ALTER TABLE household ADD COLUMN far_min_latitude REAL")
 
+    # excluded_venues (2026-08-30): tried as a hard per-venue constraint,
+    # reverted the same day in favour of a taste-profile.md note instead --
+    # too much machinery for what turned out to be a soft preference, not a
+    # hard rule. Dropped rather than left as dead schema if a database
+    # already picked it up during the brief window it existed.
+    if "excluded_venues" in household_columns:
+        conn.execute("ALTER TABLE household DROP COLUMN excluded_venues")
+
     # Delisting detection (2026-08-29): lets mark_delisted_events tell "source
     # stopped returning this" apart from "nothing changed" (last_seen only
     # advances on real content changes). Backfill from last_seen rather than
