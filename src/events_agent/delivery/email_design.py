@@ -33,12 +33,13 @@ SERIF = "Georgia,'Times New Roman',serif"
 SANS = "Helvetica,Arial,sans-serif"
 
 
-def shell(*, mark_suffix: str, mark_color: str, subtitle: str, body_rows: str, footer: str) -> str:
+def shell(*, mark_suffix: str, mark_color: str, strapline: str, subtitle: str, body_rows: str, footer: str) -> str:
     """The card every email is built from: a single color-coded brand mark
     ("Curtain Up — Last call" etc, one chip, one style, colored per email type),
-    a subtitle line, then caller-supplied <tr> rows, then a footer row.
-    Callers pass fully-built <tr> markup for body_rows — this only owns the
-    outer shape."""
+    a fixed marketing strapline (explains what this email type is FOR, same
+    every send), a dynamic functional subtitle (what's actually in THIS
+    send), then caller-supplied <tr> rows, then a footer row. Callers pass
+    fully-built <tr> markup for body_rows — this only owns the outer shape."""
     return f"""\
 <div style="background:{BG}; padding:24px 12px; font-family:{SANS};">
   <table role="presentation" width="600" cellpadding="0" cellspacing="0" \
@@ -47,7 +48,8 @@ style="width:600px; max-width:100%; margin:0 auto; background:{CARD}; border-rad
       <td style="padding:28px 32px 8px;">
         <div style="display:inline-block; background:{mark_color}; color:#FFFFFF; font-family:{SANS}; font-size:13px; \
 font-weight:800; letter-spacing:0.08em; text-transform:uppercase; padding:6px 12px; border-radius:3px;">{BRAND} &mdash; {html.escape(mark_suffix)}</div>
-        <div style="font-size:13px; color:{MUTED}; margin-top:8px;">{subtitle}</div>
+        <div style="font-family:{SERIF}; font-style:italic; font-size:14px; color:{INK}; margin-top:10px;">{html.escape(strapline)}</div>
+        <div style="font-size:13px; color:{MUTED}; margin-top:4px;">{subtitle}</div>
       </td>
     </tr>
     {body_rows}

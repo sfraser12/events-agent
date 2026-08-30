@@ -130,7 +130,14 @@ def build_alert_html(household: dict[str, Any], items: list[AlertItem], now: dat
     subtitle = f"For {html.escape(household['label'])} &middot; {len(items)} thing{plural} need a decision today"
     rows = "".join(_alert_card_html(item, now) for item in items) if items else empty_row("No urgent alerts.")
     footer = "Fires only on a status flip to low availability, or an on-sale date landing within 48 hours — nothing else."
-    return shell(mark_suffix="Last call", mark_color=URGENT, subtitle=subtitle, body_rows=rows, footer=footer)
+    return shell(
+        mark_suffix="Last call",
+        mark_color=URGENT,
+        strapline="On sale soon, selling fast — act today",
+        subtitle=subtitle,
+        body_rows=rows,
+        footer=footer,
+    )
 
 
 def _alert_card_html(item: AlertItem, now: datetime) -> str:
@@ -165,7 +172,11 @@ text-transform:uppercase; letter-spacing:0.04em; padding:2px 8px; border-radius:
 
 
 def build_alert_plain(household: dict[str, Any], items: list[AlertItem], now: datetime) -> str:
-    lines = [f"CURTAIN UP — LAST CALL — for {household['label']}", ""]
+    lines = [
+        f"CURTAIN UP — LAST CALL — for {household['label']}",
+        "On sale soon, selling fast — act today",
+        "",
+    ]
     if not items:
         lines.append("No urgent alerts.")
         return "\n".join(lines)

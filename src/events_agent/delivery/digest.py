@@ -156,7 +156,14 @@ def build_digest_html(household: dict[str, Any], horizons: dict[str, list[Digest
         "Scored against your taste profile — not for you? Reply, or run "
         f'<code style="background:{ACCENT_BG}; padding:1px 5px; border-radius:3px;">events-agent verdict &lt;id&gt; no</code>.'
     )
-    return shell(mark_suffix="Shortlist", mark_color=ACCENT, subtitle=subtitle, body_rows=sections, footer=footer)
+    return shell(
+        mark_suffix="Shortlist",
+        mark_color=ACCENT,
+        strapline="Handpicked for your taste",
+        subtitle=subtitle,
+        body_rows=sections,
+        footer=footer,
+    )
 
 
 def _horizon_section_html(horizon: str, events: list[DigestEvent]) -> str:
@@ -221,7 +228,11 @@ def _format_event_date(event_date: str | None) -> str:
 
 
 def build_digest_plain(household: dict[str, Any], horizons: dict[str, list[DigestEvent]]) -> str:
-    lines = [f"CURTAIN UP — SHORTLIST — for {household['label']}", ""]
+    lines = [
+        f"CURTAIN UP — SHORTLIST — for {household['label']}",
+        "Handpicked for your taste",
+        "",
+    ]
     any_events = False
     for horizon in HORIZONS:
         events = horizons[horizon]

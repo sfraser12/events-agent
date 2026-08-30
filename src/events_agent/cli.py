@@ -413,7 +413,7 @@ def cmd_fortnight(args: argparse.Namespace) -> int:
             html_body = build_lookahead_html(household, events)
             plain_body = build_lookahead_plain(household, events)
             plural = "" if len(events) == 1 else "s"
-            subject = f"Curtain Up — Second Chance — {len(events)} thing{plural} in the next fortnight worth a second look"
+            subject = f"Curtain Up — Understudy — {len(events)} thing{plural} in the next fortnight worth a second look"
             sent = send_email(
                 smtp_host=secrets.smtp_host,
                 smtp_port=secrets.smtp_port,
