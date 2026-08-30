@@ -29,6 +29,8 @@ LOOKAHEAD = "#3D5A80"
 LOOKAHEAD_BG = "#E6EBF3"
 FARFLUNG = "#6B4C8A"
 FARFLUNG_BG = "#EEE7F3"
+NEW = "#0B6E99"
+NEW_BG = "#DFF0F7"
 SERIF = "Georgia,'Times New Roman',serif"
 SANS = "Helvetica,Arial,sans-serif"
 

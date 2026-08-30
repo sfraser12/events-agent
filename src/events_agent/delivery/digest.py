@@ -20,6 +20,8 @@ from events_agent.delivery.email_design import (
     FARFLUNG_BG,
     INK,
     MUTED,
+    NEW,
+    NEW_BG,
     SERIF,
     cta_cell,
     empty_row,
@@ -47,6 +49,7 @@ class DigestEvent:
     urgency: str | None
     far_flung: bool = False
     drive_minutes: int | None = None  # only set when far_flung — see build_digest
+    is_new: bool = False  # never surfaced in a previous digest — see build_digest
 
 
 def build_digest(conn: sqlite3.Connection, household: dict[str, Any], today: date | None = None) -> dict[str, list[DigestEvent]]:
@@ -63,7 +66,8 @@ def build_digest(conn: sqlite3.Connection, household: dict[str, Any], today: dat
     rows = conn.execute(
         """
         SELECT e.id, e.title, v.name, e.event_date, e.on_sale_date, e.price_min, e.price_max, e.currency,
-               e.url, hes.score, hes.audience, hes.score_reason, hes.urgency, v.latitude, v.longitude
+               e.url, hes.score, hes.audience, hes.score_reason, hes.urgency, v.latitude, v.longitude,
+               hes.surfaced_at
         FROM household_event_state hes
         JOIN event e ON e.id = hes.event_id
         LEFT JOIN venue v ON v.id = e.venue_id
@@ -83,7 +87,7 @@ def build_digest(conn: sqlite3.Connection, household: dict[str, Any], today: dat
 
     for row in rows:
         (event_id, title, venue_name, event_date, on_sale_date, price_min, price_max, currency,
-         url, score, audience, reason, urgency, venue_latitude, venue_longitude) = row
+         url, score, audience, reason, urgency, venue_latitude, venue_longitude, surfaced_at) = row
 
         far_flung = is_far_flung(
             venue_latitude=venue_latitude,
@@ -103,7 +107,7 @@ def build_digest(conn: sqlite3.Connection, household: dict[str, Any], today: dat
 
         event = DigestEvent(
             event_id, title, venue_name, event_date, on_sale_date, price_min, price_max, currency,
-            url, score, audience, reason, urgency, far_flung, drive_minutes,
+            url, score, audience, reason, urgency, far_flung, drive_minutes, is_new=surfaced_at is None,
         )
         horizon = _classify_horizon(event.event_date, event.on_sale_date, today, near_days, month_days)
         horizons[horizon].append(event)
@@ -145,8 +149,13 @@ def _days(n: int) -> timedelta:
 def build_digest_html(household: dict[str, Any], horizons: dict[str, list[DigestEvent]]) -> str:
     today_str = datetime.now(UTC).strftime("%A %d %B %Y")
     total = sum(len(events) for events in horizons.values())
+    new_count = sum(1 for events in horizons.values() for e in events if e.is_new)
     plural = "" if total == 1 else "s"
-    subtitle = f"For {html.escape(household['label'])} &middot; {total} thing{plural} worth a look &middot; {today_str}"
+    new_note = f" &middot; {new_count} new since last time" if new_count else ""
+    subtitle = (
+        f"For {html.escape(household['label'])} &middot; {total} thing{plural} worth a look"
+        f"{new_note} &middot; {today_str}"
+    )
 
     sections = "".join(_horizon_section_html(h, horizons[h]) for h in HORIZONS if horizons[h])
     if not sections:
@@ -191,14 +200,21 @@ font-weight:600;">worth the trip &middot; {_format_drive_minutes(event.drive_min
         if event.far_flung
         else ""
     )
+    new_badge = (
+        f'<span style="background:{NEW_BG}; color:{NEW}; padding:2px 8px; border-radius:10px; \
+font-weight:600;">new</span> &nbsp; '
+        if event.is_new
+        else ""
+    )
+    left_border = f"border-left:3px solid {NEW};" if event.is_new else ""
 
     return f"""\
     <tr>
-      <td style="padding:14px 32px; border-bottom:1px solid {BORDER};">
+      <td style="padding:14px 32px 14px 29px; border-bottom:1px solid {BORDER}; {left_border}">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td style="vertical-align:top;">
-              <div style="font-size:12px; color:{MUTED};">{date_str} &middot; {venue}</div>
+              <div style="font-size:12px; color:{MUTED};">{new_badge}{date_str} &middot; {venue}</div>
               <div style="font-size:16px; font-weight:700; color:{INK}; margin:2px 0 2px;">{title}</div>
               {reason}
               <div style="font-size:12px; color:{MUTED};">{far_flung_badge}{price} &nbsp;&middot;&nbsp; \
@@ -228,8 +244,10 @@ def _format_event_date(event_date: str | None) -> str:
 
 
 def build_digest_plain(household: dict[str, Any], horizons: dict[str, list[DigestEvent]]) -> str:
+    new_count = sum(1 for events in horizons.values() for e in events if e.is_new)
+    new_note = f" ({new_count} new since last time)" if new_count else ""
     lines = [
-        f"CURTAIN UP – SHORTLIST – for {household['label']}",
+        f"CURTAIN UP – SHORTLIST – for {household['label']}{new_note}",
         "Handpicked for your taste",
         "",
     ]
@@ -244,8 +262,9 @@ def build_digest_plain(household: dict[str, Any], horizons: dict[str, list[Diges
             price = format_price(event.price_min, event.price_max, event.currency)
             date_str = event.event_date[:10] if event.event_date else "TBC"
             far_flung_tag = f" [WORTH THE TRIP, {_format_drive_minutes(event.drive_minutes)}]" if event.far_flung else ""
+            new_tag = " [NEW]" if event.is_new else ""
             lines.append(
-                f"- {date_str}  {event.title} @ {event.venue_name or '?'}  {price}  "
+                f"-{new_tag} {date_str}  {event.title} @ {event.venue_name or '?'}  {price}  "
                 f"(score {event.score}, id {event.event_id}){far_flung_tag}"
             )
             if event.reason:

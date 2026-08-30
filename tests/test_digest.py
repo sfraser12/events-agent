@@ -6,6 +6,7 @@ from events_agent.db import (
     get_connection,
     get_household_as_dict,
     init_db,
+    mark_surfaced,
     set_verdict,
     upsert_household,
     upsert_raw_event,
@@ -84,6 +85,29 @@ def test_high_scoring_event_appears_in_digest(conn, household):
     all_events = [e for events in horizons.values() for e in events]
     assert len(all_events) == 1
     assert all_events[0].title == "Karine Polwart"
+
+
+def test_never_surfaced_event_is_flagged_new(conn, household):
+    event_id, _ = upsert_raw_event(conn, make_raw_event())
+    score_event(conn, household["id"], event_id, 80)
+    conn.commit()
+
+    horizons = build_digest(conn, household)
+
+    all_events = [e for events in horizons.values() for e in events]
+    assert all_events[0].is_new is True
+
+
+def test_previously_surfaced_event_is_not_flagged_new(conn, household):
+    event_id, _ = upsert_raw_event(conn, make_raw_event())
+    score_event(conn, household["id"], event_id, 80)
+    mark_surfaced(conn, household["id"], [event_id], datetime.now(UTC).isoformat())
+    conn.commit()
+
+    horizons = build_digest(conn, household)
+
+    all_events = [e for events in horizons.values() for e in events]
+    assert all_events[0].is_new is False
 
 
 def test_below_threshold_event_is_excluded(conn, household):
