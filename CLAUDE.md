@@ -641,41 +641,88 @@ Wider: Usher Hall and Festival Theatre (Edinburgh) if the radius is widened.
 
 Runs via `launchd`, mirroring the existing `com.scott.stockpicker` pattern on
 this Mac (a `run_*.sh` wrapper in the project root, invoked by a plist in
-`~/Library/LaunchAgents`, logging to `logs/`). Two jobs:
+`~/Library/LaunchAgents`, logging to `logs/`). Three jobs:
 
 - **`com.scott.eventsagent.daily`** — 06:40 every day. Runs `run_daily.sh`,
   which calls `events-agent run` (harvest → score → alert). Piggybacks on
   the Mac's existing global `pmset repeat wakeorpoweron` wake at 06:25 —
   no separate wake needed for this one.
-- **`com.scott.eventsagent.weekly`** — Sunday 19:00. Runs `run_weekly.sh`,
-  which calls `events-agent digest` then `events-agent fortnight` —
-  deliver-only, deliberately no harvest/score here (that already happened
-  in the same day's 06:40 run; re-running it in the evening would just be a
-  second LLM bill for the same data). No dedicated wake for this one — tried
-  adding a second `pmset repeat` entry (a distinct `wake SU`/`wake U` event
-  alongside the existing `wakeorpoweron`) and confirmed twice on this
-  machine that `pmset repeat` won't hold two wake-family entries at once;
-  the later one silently drops the earlier. Settled on relying on `pmset
-  -g`'s observed `sleep 0` (idle system sleep disabled) instead — if that
-  holds, the Mac never goes back to sleep after the 06:25 wake, so no
-  second wake is needed. Verify by checking `logs/weekly.log` after the
-  first few Sundays; if entries are missing, that assumption was wrong and
-  this needs revisiting (a `poweron`-type entry was the untried fallback).
+- **`com.scott.eventsagent.weekly`** — Sunday **18:45** (not 19:00 — a doc/
+  plist mismatch caught 2026-08-30). Runs `run_weekly.sh`, which calls
+  `events-agent digest` only — deliver-only, deliberately no harvest/score
+  here (that already happened in the same day's 06:40 run; re-running it in
+  the evening would just be a second LLM bill for the same data).
+- **`com.scott.eventsagent.fortnight`** — Wednesday 18:45. Runs
+  `run_fortnight.sh`, which calls `events-agent fortnight`. Split out from
+  the weekly job on 2026-08-29: both used to fire in the same Sunday run,
+  landing two emails (Shortlist and Understudy) at once — moved to its own
+  Wednesday slot instead, maximally spaced from the Sundays either side.
+  Its plist deliberately has **no `RunAtLoad`**: with no prior
+  `.last_attempt_fortnight` marker the first time this loads, the catch-up
+  guard below would have nothing to compare against and would fire an
+  unwanted immediate send. (`run_fortnight.sh` still contains the same
+  catch-up-guard code as the other two scripts, but it's currently inert
+  since nothing triggers `RunAtLoad` for this job — add the key back once a
+  real marker exists from a genuine Wednesday run.)
 
-The known failure mode is the Mac sleeping through the scheduled time —
-`launchd` does not fire missed jobs by default. `pmset -g sched` shows
-what's actually active — currently just the single every-day 06:25 entry.
+**Real hardware wake, not just an idle-sleep assumption (fixed 2026-08-30).**
+The original design for the weekly/fortnight jobs relied on `pmset -g`
+showing `sleep 0` (idle system sleep disabled) to guarantee the Mac stayed
+awake from the 06:25 daily wake through the 18:45 evening slot — no
+dedicated wake mechanism of its own. That assumption broke in practice: on
+2026-08-30 the Mac went into a real system sleep mid-afternoon (confirmed via
+`pmset -g log` — `powerd` restarted at 19:18, hours after the 18:45 slot had
+already silently fired and been dropped by `launchd`) and the weekly job was
+missed. A second `pmset repeat` wake entry was tried as the fix and rejected
+again — confirmed via `man pmset` this time, not just trial and error: *"you
+may only have one pair of repeating events scheduled"*, system-wide, full
+stop.
 
-**`RunAtLoad` catch-up is built.** Both plists set `RunAtLoad`, so each
-wrapper script also runs on every `launchctl load`/reboot/login, not just
-its `StartCalendarInterval`. Each script guards this with a marker file
-(`logs/.last_attempt_daily` / `logs/.last_attempt_weekly`, a plain epoch-
-seconds timestamp) written after every attempt regardless of exit code —
-if the marker is younger than the catch-up window (36h daily, ~8 days
-weekly), the script exits immediately; only a genuinely missed scheduled
-slot (Mac off/asleep through it) is older than that and triggers a real
-run. Marked on attempt rather than success so a persistently failing step
-gets retried once per window rather than on every reboot.
+The actual fix: `pmset schedule` (singular one-time wake events, a different
+subsystem from `repeat` with no such one-pair limit) can hold as many
+future entries as needed alongside the existing daily `repeat` entry. Each
+of `run_weekly.sh` and `run_fortnight.sh` now ends by computing its own
+*next* occurrence (next Sunday / next Wednesday, 18:30 — 15 min before its
+18:45 `StartCalendarInterval`, mirroring the daily job's 06:25→06:40 gap)
+and calling `sudo -n /usr/bin/pmset schedule wakeorpoweron "<that time>"` —
+self-perpetuating, since every real run re-arms the next one. This needs
+root, which normally means an interactive password `launchd` can't supply;
+solved with a narrowly-scoped passwordless sudo rule in
+`/etc/sudoers.d/eventsagent-pmset`:
+```
+scottfraser ALL=(root) NOPASSWD: /usr/bin/pmset schedule wakeorpoweron *
+```
+This grants nothing beyond that one exact subcommand — `pmset schedule
+cancel ...` and everything else still prompts for a password normally. If
+that sudoers file is ever removed, the `pmset schedule` calls in the
+wrapper scripts fail silently under `sudo -n` (the log line still gets
+written, just as a permission error) and the weekly/fortnight jobs quietly
+revert to depending on the Mac happening to be awake — check
+`logs/weekly.log`/`logs/fortnight.log` if either job goes quiet again.
+`pmset -g sched` shows both the daily repeat entry and the live one-time
+entries under "Scheduled power events".
+
+The known failure mode is still the Mac sleeping through a scheduled
+time that nothing wakes it for — now only really a risk if the sudoers
+rule above is ever lost.
+
+**`RunAtLoad` catch-up.** The daily and weekly plists set `RunAtLoad`, so
+each wrapper script also runs on every `launchctl load`/reboot/login, not
+just its `StartCalendarInterval` (the fortnight plist deliberately doesn't,
+see above). Each script guards this with a marker file
+(`logs/.last_attempt_daily` / `.last_attempt_weekly` / `.last_attempt_fortnight`,
+a plain epoch-seconds timestamp) written after every attempt regardless of
+exit code — if the marker is younger than `CATCHUP_HOURS`, the script exits
+immediately; only a genuinely missed scheduled slot (Mac off/asleep through
+it) is older than that and triggers a real run. Marked on attempt rather
+than success so a persistently failing step gets retried once per window
+rather than on every reboot. `CATCHUP_HOURS` is **20** for daily (interval
+24h) and **150** for weekly/fortnight (interval 168h) — deliberately just
+under the real schedule interval in each case; a value equal to or above it
+(36h and 192h were both tried and both wrong) makes every legitimate
+scheduled firing look like a recent duplicate of itself and silently
+suppresses all future real runs after the first one, which is exactly what
+happened before these values were corrected.
 
 Build order change: Skiddle is the Phase 1 adapter. Ticketmaster moves to Phase 2 pending API key access.
 

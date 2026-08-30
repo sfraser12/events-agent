@@ -37,6 +37,14 @@ echo >> "$LOG"
 
 date +%s > "$MARKER"
 
+# Schedule a real hardware wake for next Wednesday 18:30 -- see the matching
+# comment in run_weekly.sh for the full rationale (added 2026-08-30).
+today_dow=$(date +%w)
+days_ahead=$(( (3 - today_dow + 7) % 7 ))
+if [ "$days_ahead" -eq 0 ]; then days_ahead=7; fi
+wake_at=$(date -v+${days_ahead}d -v18H -v30M -v00S '+%m/%d/%y %H:%M:%S')
+sudo -n /usr/bin/pmset schedule wakeorpoweron "$wake_at" >> "$LOG" 2>&1
+
 if [ $FORTNIGHT_EXIT -ne 0 ]; then
   exit 1
 fi

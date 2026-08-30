@@ -43,6 +43,23 @@ echo >> "$LOG"
 
 date +%s > "$MARKER"
 
+# Schedule a real hardware wake for next Sunday 18:30 -- 15min before the
+# 18:45 StartCalendarInterval, mirroring the daily job's 06:25 wake / 06:40
+# run gap. Added 2026-08-30 after the Mac slept through the 18:45 slot and
+# the RunAtLoad catch-up guard (correctly) didn't treat a <150h-old marker
+# as a genuine miss -- `pmset repeat` only allows one wake pair system-wide
+# (confirmed via `man pmset`), so this uses a one-time `pmset schedule`
+# entry instead, re-issued every run so there's always a wake queued for
+# the *next* occurrence. Requires the NOPASSWD sudoers rule in
+# /etc/sudoers.d/eventsagent-pmset -- if that's ever removed, this line
+# fails silently under `sudo -n` and next Sunday reverts to the old
+# sleep-through risk.
+today_dow=$(date +%w)
+days_ahead=$(( (0 - today_dow + 7) % 7 ))
+if [ "$days_ahead" -eq 0 ]; then days_ahead=7; fi
+wake_at=$(date -v+${days_ahead}d -v18H -v30M -v00S '+%m/%d/%y %H:%M:%S')
+sudo -n /usr/bin/pmset schedule wakeorpoweron "$wake_at" >> "$LOG" 2>&1
+
 if [ $DIGEST_EXIT -ne 0 ]; then
   exit 1
 fi
