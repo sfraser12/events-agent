@@ -88,7 +88,7 @@ def build_lookahead_html(household: dict[str, Any], events: list[LookaheadEvent]
         "Nothing in the next fortnight that the weekly digest hasn't already caught."
     )
     footer = (
-        "A second look at anything scoring below the weekly digest's bar but happening within 14 days &mdash; "
+        "A second look at anything scoring below the weekly digest's bar but happening within 14 days &ndash; "
         "so a moderate match doesn't quietly expire unseen just because its event date crept up."
     )
     return shell(

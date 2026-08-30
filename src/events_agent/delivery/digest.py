@@ -153,7 +153,7 @@ def build_digest_html(household: dict[str, Any], horizons: dict[str, list[Digest
         sections = empty_row("Nothing new this week.")
 
     footer = (
-        "Scored against your taste profile — not for you? Reply, or run "
+        "Scored against your taste profile – not for you? Reply, or run "
         f'<code style="background:{ACCENT_BG}; padding:1px 5px; border-radius:3px;">events-agent verdict &lt;id&gt; no</code>.'
     )
     return shell(

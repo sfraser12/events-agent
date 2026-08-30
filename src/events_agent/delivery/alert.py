@@ -100,7 +100,7 @@ def mark_notified(conn: sqlite3.Connection, change_ids: list[int], now: datetime
 
 
 def _low_availability_reason() -> str:
-    return "selling fast — low availability"
+    return "selling fast – low availability"
 
 
 def _on_sale_reason(on_sale_date: str) -> str:
@@ -129,11 +129,11 @@ def build_alert_html(household: dict[str, Any], items: list[AlertItem], now: dat
     plural = "" if len(items) == 1 else "s"
     subtitle = f"For {html.escape(household['label'])} &middot; {len(items)} thing{plural} need a decision today"
     rows = "".join(_alert_card_html(item, now) for item in items) if items else empty_row("No urgent alerts.")
-    footer = "Fires only on a status flip to low availability, or an on-sale date landing within 48 hours — nothing else."
+    footer = "Fires only on a status flip to low availability, or an on-sale date landing within 48 hours – nothing else."
     return shell(
         mark_suffix="Last call",
         mark_color=URGENT,
-        strapline="On sale soon, selling fast — act today",
+        strapline="On sale soon, selling fast – act today",
         subtitle=subtitle,
         body_rows=rows,
         footer=footer,
@@ -146,7 +146,7 @@ def _alert_card_html(item: AlertItem, now: datetime) -> str:
 
     if item.kind == "low_availability":
         badge_color, badge_bg, badge_text = URGENT, URGENT_BG, "Selling fast"
-        detail = "Availability is dropping — don't wait on this one."
+        detail = "Availability is dropping – don't wait on this one."
     else:
         badge_color, badge_bg, badge_text = WARN, WARN_BG, "On sale soon"
         on_sale_dt = datetime.fromisoformat(item.on_sale_date)
@@ -174,7 +174,7 @@ text-transform:uppercase; letter-spacing:0.04em; padding:2px 8px; border-radius:
 def build_alert_plain(household: dict[str, Any], items: list[AlertItem], now: datetime) -> str:
     lines = [
         f"CURTAIN UP – LAST CALL – for {household['label']}",
-        "On sale soon, selling fast — act today",
+        "On sale soon, selling fast – act today",
         "",
     ]
     if not items:
@@ -184,7 +184,7 @@ def build_alert_plain(household: dict[str, Any], items: list[AlertItem], now: da
     for item in items:
         venue = item.venue_name or "venue TBC"
         if item.kind == "low_availability":
-            detail = "Selling fast — availability is dropping. Don't wait on this one."
+            detail = "Selling fast – availability is dropping. Don't wait on this one."
         else:
             on_sale_dt = datetime.fromisoformat(item.on_sale_date)
             detail = f"On sale {on_sale_dt.strftime('%a %d %b, %H:%M')} ({_human_countdown(on_sale_dt, now)})"
