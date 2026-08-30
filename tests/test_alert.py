@@ -181,7 +181,7 @@ def test_build_alert_html_shows_urgent_eyebrow_and_low_availability_badge():
 
     out = build_alert_html({"label": "Milngavie"}, [item], now)
 
-    assert "Act now" in out
+    assert "Last call" in out
     assert "Selling fast" in out
     assert "Test Gig" in out
     assert "https://example.com/gig" in out

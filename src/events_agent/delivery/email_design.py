@@ -35,7 +35,7 @@ SANS = "Helvetica,Arial,sans-serif"
 
 def shell(*, mark_suffix: str, mark_color: str, subtitle: str, body_rows: str, footer: str) -> str:
     """The card every email is built from: a single color-coded brand mark
-    ("Curtain Up — Act now" etc, one chip, one style, colored per email type),
+    ("Curtain Up — Last call" etc, one chip, one style, colored per email type),
     a subtitle line, then caller-supplied <tr> rows, then a footer row.
     Callers pass fully-built <tr> markup for body_rows — this only owns the
     outer shape."""

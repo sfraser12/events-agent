@@ -92,7 +92,7 @@ def build_lookahead_html(household: dict[str, Any], events: list[LookaheadEvent]
         "so a moderate match doesn't quietly expire unseen just because its event date crept up."
     )
     return shell(
-        mark_suffix="Heads up",
+        mark_suffix="Second chance",
         mark_color=LOOKAHEAD,
         subtitle=subtitle,
         body_rows=rows,
@@ -137,7 +137,7 @@ def _lookahead_card_html(event: LookaheadEvent) -> str:
 
 
 def build_lookahead_plain(household: dict[str, Any], events: list[LookaheadEvent], today: date | None = None) -> str:
-    lines = [f"CURTAIN UP HEADS UP — next fortnight for {household['label']}", ""]
+    lines = [f"CURTAIN UP — SECOND CHANCE — next fortnight for {household['label']}", ""]
     if not events:
         lines.append("Nothing in the next fortnight that the weekly digest hasn't already caught.")
         return "\n".join(lines)

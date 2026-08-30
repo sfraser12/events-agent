@@ -160,7 +160,7 @@ def test_build_lookahead_html_shows_eyebrow_and_events():
 
     out = build_lookahead_html(household, events)
 
-    assert "Heads up" in out
+    assert "Second chance" in out
     assert "Near-Miss Gig" in out
     assert "score 50" in out
     assert "id 1" in out
