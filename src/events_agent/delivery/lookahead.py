@@ -139,7 +139,7 @@ def _lookahead_card_html(event: LookaheadEvent) -> str:
 
 def build_lookahead_plain(household: dict[str, Any], events: list[LookaheadEvent], today: date | None = None) -> str:
     lines = [
-        f"CURTAIN UP — UNDERSTUDY — next fortnight for {household['label']}",
+        f"CURTAIN UP – UNDERSTUDY – next fortnight for {household['label']}",
         "Not quite Shortlist material, but worth a peek",
         "",
     ]

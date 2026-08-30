@@ -35,7 +35,7 @@ SANS = "Helvetica,Arial,sans-serif"
 
 def shell(*, mark_suffix: str, mark_color: str, strapline: str, subtitle: str, body_rows: str, footer: str) -> str:
     """The card every email is built from: a single color-coded brand mark
-    ("Curtain Up — Last call" etc, one chip, one style, colored per email type),
+    ("Curtain Up – Last call" etc, one chip, one style, colored per email type),
     a fixed marketing strapline (explains what this email type is FOR, same
     every send), a dynamic functional subtitle (what's actually in THIS
     send), then caller-supplied <tr> rows, then a footer row. Callers pass
@@ -47,7 +47,7 @@ style="width:600px; max-width:100%; margin:0 auto; background:{CARD}; border-rad
     <tr>
       <td style="padding:28px 32px 8px;">
         <div style="display:inline-block; background:{mark_color}; color:#FFFFFF; font-family:{SANS}; font-size:13px; \
-font-weight:800; letter-spacing:0.08em; text-transform:uppercase; padding:6px 12px; border-radius:3px;">{BRAND} &mdash; {html.escape(mark_suffix)}</div>
+font-weight:800; letter-spacing:0.08em; text-transform:uppercase; padding:6px 12px; border-radius:3px;">{BRAND} &ndash; {html.escape(mark_suffix)}</div>
         <div style="font-family:{SERIF}; font-style:italic; font-size:14px; color:{INK}; margin-top:10px;">{html.escape(strapline)}</div>
         <div style="font-size:13px; color:{MUTED}; margin-top:4px;">{subtitle}</div>
       </td>

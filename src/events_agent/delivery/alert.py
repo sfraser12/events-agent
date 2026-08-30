@@ -173,7 +173,7 @@ text-transform:uppercase; letter-spacing:0.04em; padding:2px 8px; border-radius:
 
 def build_alert_plain(household: dict[str, Any], items: list[AlertItem], now: datetime) -> str:
     lines = [
-        f"CURTAIN UP — LAST CALL — for {household['label']}",
+        f"CURTAIN UP – LAST CALL – for {household['label']}",
         "On sale soon, selling fast — act today",
         "",
     ]
