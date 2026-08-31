@@ -103,7 +103,7 @@ def build_lookahead_html(household: dict[str, Any], events: list[LookaheadEvent]
 
 def _lookahead_card_html(event: LookaheadEvent) -> str:
     price = format_price(event.price_min, event.price_max, event.currency)
-    date_str = datetime.fromisoformat(event.event_date).strftime("%a %-d %b")
+    date_str = datetime.fromisoformat(event.event_date).strftime("%a %-d %b %y")
     venue = html.escape(event.venue_name) if event.venue_name else "venue TBC"
     title = html.escape(event.title)
     reason = (
