@@ -162,15 +162,28 @@ def build_status_report(conn: sqlite3.Connection, db_path: Path, lookback_days: 
 
 
 def _stat_row_html(label: str, value: str) -> str:
+    # value is pre-built HTML from this module's own callers (numbers and
+    # internal strings, e.g. "5 runs &middot; 12 rows") -- never escape it
+    # here, or the literal "&middot;" entity gets double-escaped into
+    # "&amp;middot;", which every mail client then renders back out as the
+    # literal on-screen text "&middot;" (confirmed live 2026-08-31, same
+    # double-encoding failure mode as the Google Alerts titles fix). label
+    # is always plain text (no intentional markup), so it's still escaped.
+    # A single flowing line, not a rigid two-column table, so long
+    # label/value pairs wrap naturally on a phone-width screen instead of
+    # a fixed right-aligned column forcing an awkward multi-line break.
     return (
-        f'<tr><td style="padding:6px 0; font-size:13px; color:{MUTED};">{html.escape(label)}</td>'
-        f'<td style="padding:6px 0; font-size:13px; color:{INK}; font-weight:600; text-align:right;">{html.escape(value)}</td></tr>'
+        f'<tr><td style="padding:5px 0; font-size:13px; color:{INK}; line-height:1.5;">'
+        f'<span style="color:{MUTED};">{html.escape(label)}:</span> '
+        f'<span style="font-weight:600;">{value}</span></td></tr>'
     )
 
 
 def _section_html(title: str, rows_html: str) -> str:
     if not rows_html:
-        rows_html = _stat_row_html("(none)", "")
+        rows_html = (
+            f'<tr><td style="padding:5px 0; font-size:13px; color:{MUTED};">(none)</td></tr>'
+        )
     return f"""\
     <tr>
       <td style="padding:20px 32px 4px;">
