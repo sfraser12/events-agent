@@ -8,6 +8,7 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
+from events_agent.annual_anchors import due_reminders, load_annual_anchors
 from events_agent.config import DEFAULT_DB_PATH, HOUSEHOLDS_DIR, REPO_ROOT, load_config, load_secrets
 from events_agent.db import (
     finish_source_run,
@@ -354,6 +355,8 @@ def cmd_score(args: argparse.Namespace) -> int:
 
 def cmd_digest(args: argparse.Namespace) -> int:
     secrets = load_secrets()
+    anchors = load_annual_anchors(REPO_ROOT / "annual-anchors.yaml")
+    reminders = due_reminders(anchors, datetime.now(UTC).date())
     conn = get_connection(DEFAULT_DB_PATH)
     try:
         households = list_households_as_dicts(conn)
@@ -364,12 +367,12 @@ def cmd_digest(args: argparse.Namespace) -> int:
         for household in households:
             horizons = build_digest(conn, household)
             total = sum(len(events) for events in horizons.values())
-            if total == 0:
+            if total == 0 and not reminders:
                 print(f"{household['label']}: nothing to send this week.")
                 continue
 
-            html_body = build_digest_html(household, horizons)
-            plain_body = build_digest_plain(household, horizons)
+            html_body = build_digest_html(household, horizons, reminders)
+            plain_body = build_digest_plain(household, horizons, reminders)
             plural = "" if total == 1 else "s"
             subject = f"Curtain Up – Shortlist – {total} thing{plural} worth a look this week"
             sent = send_email(
