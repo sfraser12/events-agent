@@ -57,9 +57,27 @@ class ModelUsageStat:
 
 
 @dataclass
+class PeriodTotals:
+    """Headline totals over one window — This week (7d) / This month (30d,
+    rolling, not calendar-month-to-date) / All-time (no cutoff). Deliberately
+    just the two numbers that actually answer "how is this scaling, what
+    does it cost" at a glance; the detailed per-source/per-model breakdown
+    below stays at the 7-day window it's always been."""
+
+    label: str
+    llm_calls: int
+    llm_cost_usd: float
+    llm_any_unpriced: bool
+    source_calls_ok: int
+    source_calls_failed: int
+    source_rows_fetched: int
+
+
+@dataclass
 class StatusReport:
     lookback_days: int
     generated_at: datetime
+    periods: list[PeriodTotals] = field(default_factory=list)
     sources: list[SourceStat] = field(default_factory=list)
     usage_by_context: list[tuple[str, int]] = field(default_factory=list)
     models: list[ModelUsageStat] = field(default_factory=list)
@@ -86,9 +104,77 @@ def _estimate_cost_usd(
     )
 
 
-def build_status_report(conn: sqlite3.Connection, db_path: Path, lookback_days: int = 7) -> StatusReport:
-    now = datetime.now(UTC)
+def _compute_period_totals(conn: sqlite3.Connection, label: str, cutoff_iso: str | None) -> PeriodTotals:
+    """cutoff_iso=None means all-time (no WHERE clause) — SQLite has no
+    NULL-safe ">=" shortcut worth relying on here, so branch on it directly
+    rather than passing NULL through and hoping the comparison does the
+    right thing."""
+    if cutoff_iso is None:
+        src_row = conn.execute(
+            """
+            SELECT SUM(CASE WHEN status = 'ok' THEN 1 ELSE 0 END),
+                   SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END),
+                   COALESCE(SUM(rows_fetched), 0)
+            FROM source_run
+            """
+        ).fetchone()
+        llm_rows = conn.execute(
+            """
+            SELECT model, COUNT(*),
+                   COALESCE(SUM(input_tokens), 0), COALESCE(SUM(output_tokens), 0),
+                   COALESCE(SUM(cache_creation_input_tokens), 0), COALESCE(SUM(cache_read_input_tokens), 0)
+            FROM llm_usage
+            GROUP BY model
+            """
+        ).fetchall()
+    else:
+        src_row = conn.execute(
+            """
+            SELECT SUM(CASE WHEN status = 'ok' THEN 1 ELSE 0 END),
+                   SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END),
+                   COALESCE(SUM(rows_fetched), 0)
+            FROM source_run WHERE started_at >= ?
+            """,
+            (cutoff_iso,),
+        ).fetchone()
+        llm_rows = conn.execute(
+            """
+            SELECT model, COUNT(*),
+                   COALESCE(SUM(input_tokens), 0), COALESCE(SUM(output_tokens), 0),
+                   COALESCE(SUM(cache_creation_input_tokens), 0), COALESCE(SUM(cache_read_input_tokens), 0)
+            FROM llm_usage WHERE created_at >= ?
+            GROUP BY model
+            """,
+            (cutoff_iso,),
+        ).fetchall()
+
+    ok, failed, rows_fetched = (src_row[0] or 0, src_row[1] or 0, src_row[2] or 0)
+
+    total_calls = 0
+    total_cost = 0.0
+    any_unpriced = False
+    for model, calls, input_tokens, output_tokens, cache_creation, cache_read in llm_rows:
+        total_calls += calls
+        cost = _estimate_cost_usd(model, input_tokens, output_tokens, cache_creation, cache_read)
+        if cost is None:
+            any_unpriced = True
+        else:
+            total_cost += cost
+
+    return PeriodTotals(label, total_calls, total_cost, any_unpriced, ok, failed, rows_fetched)
+
+
+def build_status_report(
+    conn: sqlite3.Connection, db_path: Path, lookback_days: int = 7, now: datetime | None = None
+) -> StatusReport:
+    now = now or datetime.now(UTC)
     cutoff = (now - timedelta(days=lookback_days)).isoformat()
+
+    periods = [
+        _compute_period_totals(conn, "This week", (now - timedelta(days=7)).isoformat()),
+        _compute_period_totals(conn, "This month", (now - timedelta(days=30)).isoformat()),
+        _compute_period_totals(conn, "All-time", None),
+    ]
 
     source_rows = conn.execute(
         """
@@ -148,6 +234,7 @@ def build_status_report(conn: sqlite3.Connection, db_path: Path, lookback_days: 
     return StatusReport(
         lookback_days=lookback_days,
         generated_at=now,
+        periods=periods,
         sources=sources,
         usage_by_context=[((c or "(unlabeled)"), n) for c, n in context_rows],
         models=models,
@@ -209,8 +296,26 @@ def _bytes_to_human(n: int) -> str:
     return f"{size:.1f}TB"
 
 
+def _period_totals_rows_html(p: PeriodTotals) -> str:
+    heading = (
+        f'<tr><td style="padding:10px 0 2px; font-size:12px; font-weight:700; color:{ADMIN}; '
+        f'text-transform:uppercase; letter-spacing:0.04em;">{html.escape(p.label)}</td></tr>'
+    )
+    cost_text = f"~${p.llm_cost_usd:.2f}" + (" (some models unpriced)" if p.llm_any_unpriced else "")
+    rows = (
+        _stat_row_html("LLM spend", f"{cost_text} across {p.llm_calls} call{'s' if p.llm_calls != 1 else ''}")
+        + _stat_row_html(
+            "Source API calls",
+            f"{p.source_calls_ok} ok / {p.source_calls_failed} failed &middot; {p.source_rows_fetched:,} rows",
+        )
+    )
+    return heading + rows
+
+
 def build_status_html(report: StatusReport) -> str:
     subtitle = f"Last {report.lookback_days} days &middot; generated {report.generated_at.strftime('%a %d %b %Y, %H:%M UTC')}"
+
+    totals_rows = "".join(_period_totals_rows_html(p) for p in report.periods)
 
     source_rows = "".join(
         _stat_row_html(
@@ -248,9 +353,10 @@ def build_status_html(report: StatusReport) -> str:
     )
 
     sections = (
-        _section_html("Source API calls", source_rows or empty_row("No source runs in this window."))
+        _section_html("Totals — this week / this month / all-time", totals_rows)
+        + _section_html("Source API calls (last 7 days)", source_rows or empty_row("No source runs in this window."))
         + _section_html(f"LLM usage — {cost_note}", model_rows)
-        + _section_html("LLM calls by household/context", context_rows)
+        + _section_html("LLM calls by household/context (last 7 days)", context_rows)
         + _section_html("Catalog snapshot (all-time)", catalog_rows)
     )
 
@@ -270,8 +376,15 @@ def build_status_plain(report: StatusReport) -> str:
         f"CURTAIN UP – ADMIN STATS – last {report.lookback_days} days",
         f"generated {report.generated_at.strftime('%a %d %b %Y, %H:%M UTC')}",
         "",
-        "SOURCE API CALLS",
+        "TOTALS",
     ]
+    for p in report.periods:
+        cost = f"~${p.llm_cost_usd:.2f}" + (" (some models unpriced)" if p.llm_any_unpriced else "")
+        lines.append(f"- {p.label}: LLM spend {cost} across {p.llm_calls} calls; "
+                     f"source API calls {p.source_calls_ok} ok / {p.source_calls_failed} failed, "
+                     f"{p.source_rows_fetched} rows fetched")
+
+    lines += ["", "SOURCE API CALLS (last 7 days)"]
     if report.sources:
         for s in report.sources:
             lines.append(f"- {s.name}: {s.ok_runs} ok, {s.failed_runs} failed, {s.rows_fetched} rows")
@@ -292,7 +405,7 @@ def build_status_plain(report: StatusReport) -> str:
     else:
         lines.append("- (none)")
 
-    lines += ["", "LLM CALLS BY HOUSEHOLD/CONTEXT"]
+    lines += ["", "LLM CALLS BY HOUSEHOLD/CONTEXT (last 7 days)"]
     if report.usage_by_context:
         for context, calls in report.usage_by_context:
             lines.append(f"- {context}: {calls}")
