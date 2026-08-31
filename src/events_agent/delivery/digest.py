@@ -13,6 +13,7 @@ from typing import Any
 
 from events_agent.annual_anchors import AnnualAnchor
 from events_agent.constraints import estimate_drive_minutes, is_far_flung
+from events_agent.dedupe import get_suppressed_duplicate_ids
 from events_agent.delivery.email_design import (
     ACCENT,
     ACCENT_BG,
@@ -69,12 +70,13 @@ def build_digest(conn: sqlite3.Connection, household: dict[str, Any], today: dat
     #
     # A resolved-same duplicate_candidate is a catalog fact (same real event,
     # e.g. Ticketmaster's own "X" / "Venue Premium - X" split), not a
-    # household judgment — event_id_a/event_id_b are always stored lo/hi (see
-    # dedupe.py), so event_id_a is whichever side was upserted first and
-    # event_id_b the later duplicate. Excluding event_id_b here is what
-    # duplicate_candidate was built for in the first place; the adjudication
-    # was previously written and never read anywhere, so both sides kept
-    # surfacing independently.
+    # household judgment — see dedupe.get_suppressed_duplicate_ids for which
+    # side gets hidden and why (not simply "the higher id": confirmed live
+    # that Ticketmaster doesn't consistently assign the plain listing the
+    # lower id, so an id-order rule can keep the pricier upsell instead of
+    # the listing actually worth booking).
+    suppressed_ids = get_suppressed_duplicate_ids(conn)
+
     rows = conn.execute(
         """
         SELECT e.id, e.title, v.name, e.event_date, e.on_sale_date, e.price_min, e.price_max, e.currency,
@@ -88,7 +90,6 @@ def build_digest(conn: sqlite3.Connection, household: dict[str, Any], today: dat
           AND hes.verdict IS NULL
           AND (hes.snoozed_until IS NULL OR hes.snoozed_until < ?)
           AND e.status NOT IN ('past', 'cancelled')
-          AND e.id NOT IN (SELECT event_id_b FROM duplicate_candidate WHERE resolution = 'same')
         ORDER BY hes.score DESC
         """,
         (household["id"], household["digest_threshold"], now_iso),
@@ -101,6 +102,9 @@ def build_digest(conn: sqlite3.Connection, household: dict[str, Any], today: dat
     for row in rows:
         (event_id, title, venue_name, event_date, on_sale_date, price_min, price_max, currency,
          url, score, audience, reason, urgency, venue_latitude, venue_longitude, surfaced_at) = row
+
+        if event_id in suppressed_ids:
+            continue
 
         far_flung = is_far_flung(
             venue_latitude=venue_latitude,

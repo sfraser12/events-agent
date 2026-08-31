@@ -111,9 +111,9 @@ def test_previously_surfaced_event_is_not_flagged_new(conn, household):
     assert all_events[0].is_new is False
 
 
-def test_resolved_duplicate_only_surfaces_the_canonical_side(conn, household):
-    # event_id_a is always the lower id (see dedupe.py's sorted lo/hi
-    # insert) -- resolution='same' should suppress event_id_b only.
+def test_resolved_duplicate_only_surfaces_the_plain_listing(conn, household):
+    # The premium/VIP variant is suppressed regardless of which side got the
+    # lower event_id -- see dedupe.get_suppressed_duplicate_ids.
     lower_id, _ = upsert_raw_event(conn, make_raw_event(source_event_id="1", title="Duran Duran"))
     higher_id, _ = upsert_raw_event(
         conn, make_raw_event(source_event_id="2", title="Venue Premium - Duran Duran")
@@ -131,6 +131,30 @@ def test_resolved_duplicate_only_surfaces_the_canonical_side(conn, household):
 
     all_ids = {e.event_id for events in horizons.values() for e in events}
     assert all_ids == {lower_id}
+
+
+def test_resolved_duplicate_suppresses_premium_even_with_the_lower_id(conn, household):
+    # Real production case (2026-08-31): Ticketmaster gave "Venue Premium -
+    # Fontaines D.C." a lower id than the plain "Fontaines D.C." listing --
+    # an id-order suppression rule kept the pricier one and hid the plain
+    # one. Must keep the plain listing regardless of id order.
+    premium_id, _ = upsert_raw_event(
+        conn, make_raw_event(source_event_id="1", title="Venue Premium - Duran Duran")
+    )
+    plain_id, _ = upsert_raw_event(conn, make_raw_event(source_event_id="2", title="Duran Duran"))
+    assert premium_id < plain_id
+    score_event(conn, household["id"], premium_id, 80)
+    score_event(conn, household["id"], plain_id, 80)
+    conn.execute(
+        "INSERT INTO duplicate_candidate (event_id_a, event_id_b, similarity, resolution) VALUES (?, ?, 1.0, 'same')",
+        (premium_id, plain_id),
+    )
+    conn.commit()
+
+    horizons = build_digest(conn, household)
+
+    all_ids = {e.event_id for events in horizons.values() for e in events}
+    assert all_ids == {plain_id}
 
 
 def test_unresolved_duplicate_candidate_still_shows_both(conn, household):

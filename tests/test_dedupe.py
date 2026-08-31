@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 import pytest
 
 from events_agent.db import get_connection, init_db, upsert_raw_event
-from events_agent.dedupe import find_and_flag_candidates
+from events_agent.dedupe import find_and_flag_candidates, get_suppressed_duplicate_ids
 from events_agent.models import RawEvent
 
 
@@ -101,3 +101,71 @@ def test_reflagging_the_same_pair_does_not_duplicate_the_row(conn):
 
     rows_after = conn.execute("SELECT id FROM duplicate_candidate").fetchall()
     assert rows_after == [row_before]
+
+
+def _insert_resolved_pair(conn, id_a, id_b):
+    conn.execute(
+        "INSERT INTO duplicate_candidate (event_id_a, event_id_b, similarity, resolution) VALUES (?, ?, 1.0, 'same')",
+        (id_a, id_b),
+    )
+
+
+def test_premium_variant_suppressed_when_it_has_the_higher_id(conn):
+    plain_id, _ = upsert_raw_event(conn, make_raw_event(source_event_id="1", title="Fontaines D.C."))
+    premium_id, _ = upsert_raw_event(
+        conn, make_raw_event(source_event_id="2", title="Venue Premium - Fontaines D.C.")
+    )
+    assert plain_id < premium_id
+    _insert_resolved_pair(conn, plain_id, premium_id)
+    conn.commit()
+
+    assert get_suppressed_duplicate_ids(conn) == {premium_id}
+
+
+def test_premium_variant_suppressed_even_when_it_has_the_lower_id(conn):
+    # The real bug (2026-08-31): Ticketmaster gave the "Venue Premium"
+    # listing a lower id than its own plain counterpart -- an id-order rule
+    # kept the pricier one. Must resolve the same way regardless of order.
+    premium_id, _ = upsert_raw_event(
+        conn, make_raw_event(source_event_id="1", title="Venue Premium - Fontaines D.C.")
+    )
+    plain_id, _ = upsert_raw_event(conn, make_raw_event(source_event_id="2", title="Fontaines D.C."))
+    assert premium_id < plain_id
+    _insert_resolved_pair(conn, premium_id, plain_id)
+    conn.commit()
+
+    assert get_suppressed_duplicate_ids(conn) == {premium_id}
+
+
+def test_vip_package_variant_is_also_recognised_as_premium(conn):
+    plain_id, _ = upsert_raw_event(conn, make_raw_event(source_event_id="1", title="Fontaines D.C."))
+    vip_id, _ = upsert_raw_event(
+        conn, make_raw_event(source_event_id="2", title="VIP Package - Fontaines D.C.")
+    )
+    _insert_resolved_pair(conn, plain_id, vip_id)
+    conn.commit()
+
+    assert get_suppressed_duplicate_ids(conn) == {vip_id}
+
+
+def test_neither_side_premium_falls_back_to_suppressing_the_higher_id(conn):
+    id_a, _ = upsert_raw_event(conn, make_raw_event(source_event_id="1", title="AEW: Dynamite & Collision"))
+    id_b, _ = upsert_raw_event(conn, make_raw_event(source_event_id="2", title="AEW Dynamite and Collision"))
+    _insert_resolved_pair(conn, id_a, id_b)
+    conn.commit()
+
+    assert get_suppressed_duplicate_ids(conn) == {id_b}
+
+
+def test_unresolved_pair_suppresses_nothing(conn):
+    id_a, _ = upsert_raw_event(conn, make_raw_event(source_event_id="1", title="Fontaines D.C."))
+    id_b, _ = upsert_raw_event(
+        conn, make_raw_event(source_event_id="2", title="Venue Premium - Fontaines D.C.")
+    )
+    conn.execute(
+        "INSERT INTO duplicate_candidate (event_id_a, event_id_b, similarity, resolution) VALUES (?, ?, 1.0, NULL)",
+        (id_a, id_b),
+    )
+    conn.commit()
+
+    assert get_suppressed_duplicate_ids(conn) == set()

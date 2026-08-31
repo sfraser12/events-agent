@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
+from events_agent.dedupe import get_suppressed_duplicate_ids
 from events_agent.delivery.email_design import (
     BORDER,
     INK,
@@ -54,6 +55,8 @@ def select_lookahead_events(
     window_end = today + timedelta(days=LOOKAHEAD_DAYS)
     now_iso = datetime.now(UTC).isoformat()
 
+    suppressed_ids = get_suppressed_duplicate_ids(conn)
+
     rows = conn.execute(
         """
         SELECT e.id, e.title, v.name, e.event_date, e.price_min, e.price_max, e.currency,
@@ -66,12 +69,11 @@ def select_lookahead_events(
           AND (hes.snoozed_until IS NULL OR hes.snoozed_until < ?)
           AND e.event_date IS NOT NULL
           AND (hes.score IS NULL OR (hes.score >= ? AND hes.score < ?))
-          AND e.id NOT IN (SELECT event_id_b FROM duplicate_candidate WHERE resolution = 'same')
         """,
         (household["id"], now_iso, household["alert_threshold"], household["digest_threshold"]),
     ).fetchall()
 
-    events = [LookaheadEvent(*row) for row in rows]
+    events = [LookaheadEvent(*row) for row in rows if row[0] not in suppressed_ids]
     events = [e for e in events if today <= datetime.fromisoformat(e.event_date).date() <= window_end]
     events.sort(key=lambda e: e.event_date)
     return events
