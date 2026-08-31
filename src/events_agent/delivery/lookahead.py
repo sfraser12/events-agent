@@ -66,6 +66,7 @@ def select_lookahead_events(
           AND (hes.snoozed_until IS NULL OR hes.snoozed_until < ?)
           AND e.event_date IS NOT NULL
           AND (hes.score IS NULL OR (hes.score >= ? AND hes.score < ?))
+          AND e.id NOT IN (SELECT event_id_b FROM duplicate_candidate WHERE resolution = 'same')
         """,
         (household["id"], now_iso, household["alert_threshold"], household["digest_threshold"]),
     ).fetchall()

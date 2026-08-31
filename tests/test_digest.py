@@ -12,6 +12,7 @@ from events_agent.db import (
     upsert_raw_event,
     upsert_score,
 )
+from events_agent.annual_anchors import AnnualAnchor
 from events_agent.delivery.digest import build_digest, build_digest_html, build_digest_plain
 from events_agent.models import RawEvent
 
@@ -108,6 +109,47 @@ def test_previously_surfaced_event_is_not_flagged_new(conn, household):
 
     all_events = [e for events in horizons.values() for e in events]
     assert all_events[0].is_new is False
+
+
+def test_resolved_duplicate_only_surfaces_the_canonical_side(conn, household):
+    # event_id_a is always the lower id (see dedupe.py's sorted lo/hi
+    # insert) -- resolution='same' should suppress event_id_b only.
+    lower_id, _ = upsert_raw_event(conn, make_raw_event(source_event_id="1", title="Duran Duran"))
+    higher_id, _ = upsert_raw_event(
+        conn, make_raw_event(source_event_id="2", title="Venue Premium - Duran Duran")
+    )
+    assert lower_id < higher_id
+    score_event(conn, household["id"], lower_id, 80)
+    score_event(conn, household["id"], higher_id, 80)
+    conn.execute(
+        "INSERT INTO duplicate_candidate (event_id_a, event_id_b, similarity, resolution) VALUES (?, ?, 1.0, 'same')",
+        (lower_id, higher_id),
+    )
+    conn.commit()
+
+    horizons = build_digest(conn, household)
+
+    all_ids = {e.event_id for events in horizons.values() for e in events}
+    assert all_ids == {lower_id}
+
+
+def test_unresolved_duplicate_candidate_still_shows_both(conn, household):
+    lower_id, _ = upsert_raw_event(conn, make_raw_event(source_event_id="1", title="Duran Duran"))
+    higher_id, _ = upsert_raw_event(
+        conn, make_raw_event(source_event_id="2", title="Venue Premium - Duran Duran")
+    )
+    score_event(conn, household["id"], lower_id, 80)
+    score_event(conn, household["id"], higher_id, 80)
+    conn.execute(
+        "INSERT INTO duplicate_candidate (event_id_a, event_id_b, similarity, resolution) VALUES (?, ?, 1.0, NULL)",
+        (lower_id, higher_id),
+    )
+    conn.commit()
+
+    horizons = build_digest(conn, household)
+
+    all_ids = {e.event_id for events in horizons.values() for e in events}
+    assert all_ids == {lower_id, higher_id}
 
 
 def test_below_threshold_event_is_excluded(conn, household):
@@ -264,6 +306,27 @@ def test_build_digest_plain_says_nothing_new_when_empty(household):
     plain = build_digest_plain(household, empty_horizons)
 
     assert "Nothing new this week." in plain
+
+
+def test_annual_anchor_reminder_appears_in_html_and_plain(household):
+    empty_horizons = {"on sale soon": [], "this week": [], "this month": [], "announced for later": []}
+    anchor = AnnualAnchor(name="Celtic Connections", typical_month="january", programme_announced="october")
+
+    html_out = build_digest_html(household, empty_horizons, reminders=[anchor])
+    plain_out = build_digest_plain(household, empty_horizons, reminders=[anchor])
+
+    assert "Celtic Connections" in html_out
+    assert "Celtic Connections" in plain_out
+
+
+def test_no_reminders_means_no_reminder_text(household):
+    empty_horizons = {"on sale soon": [], "this week": [], "this month": [], "announced for later": []}
+
+    html_out = build_digest_html(household, empty_horizons, reminders=[])
+    plain_out = build_digest_plain(household, empty_horizons, reminders=[])
+
+    assert "Annual anchor" not in html_out
+    assert "ANNUAL ANCHOR" not in plain_out
 
 
 SKYE_LAT, SKYE_LON = 57.4126, -6.1953  # Portree, ~170 miles from Milngavie

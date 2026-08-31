@@ -87,6 +87,25 @@ def test_below_digest_threshold_within_window_is_included(conn, household):
     assert events[0].title == "Some Gig"
 
 
+def test_resolved_duplicate_only_surfaces_the_canonical_side(conn, household):
+    lower_id, _ = upsert_raw_event(conn, make_raw_event(source_event_id="1", title="Some Gig"))
+    higher_id, _ = upsert_raw_event(
+        conn, make_raw_event(source_event_id="2", title="Venue Premium - Some Gig")
+    )
+    assert lower_id < higher_id
+    score_event(conn, household["id"], lower_id, 50)
+    score_event(conn, household["id"], higher_id, 50)
+    conn.execute(
+        "INSERT INTO duplicate_candidate (event_id_a, event_id_b, similarity, resolution) VALUES (?, ?, 1.0, 'same')",
+        (lower_id, higher_id),
+    )
+    conn.commit()
+
+    events = select_lookahead_events(conn, household)
+
+    assert {e.event_id for e in events} == {lower_id}
+
+
 def test_event_at_or_above_digest_threshold_is_excluded(conn, household):
     # Already covered by the weekly digest — showing it here too is exactly
     # the clutter this email exists to avoid.

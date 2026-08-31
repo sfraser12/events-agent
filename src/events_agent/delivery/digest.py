@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
+from events_agent.annual_anchors import AnnualAnchor
 from events_agent.constraints import estimate_drive_minutes, is_far_flung
 from events_agent.delivery.email_design import (
     ACCENT,
@@ -23,6 +24,8 @@ from events_agent.delivery.email_design import (
     NEW,
     NEW_BG,
     SERIF,
+    WARN,
+    WARN_BG,
     cta_cell,
     empty_row,
     format_price,
@@ -63,6 +66,15 @@ def build_digest(conn: sqlite3.Connection, household: dict[str, Any], today: dat
     # far-flung events that clear digest_threshold but not far_threshold get
     # filtered out below, in Python, where far_flung can actually be
     # computed (it needs venue coordinates, not just a column comparison).
+    #
+    # A resolved-same duplicate_candidate is a catalog fact (same real event,
+    # e.g. Ticketmaster's own "X" / "Venue Premium - X" split), not a
+    # household judgment — event_id_a/event_id_b are always stored lo/hi (see
+    # dedupe.py), so event_id_a is whichever side was upserted first and
+    # event_id_b the later duplicate. Excluding event_id_b here is what
+    # duplicate_candidate was built for in the first place; the adjudication
+    # was previously written and never read anywhere, so both sides kept
+    # surfacing independently.
     rows = conn.execute(
         """
         SELECT e.id, e.title, v.name, e.event_date, e.on_sale_date, e.price_min, e.price_max, e.currency,
@@ -76,6 +88,7 @@ def build_digest(conn: sqlite3.Connection, household: dict[str, Any], today: dat
           AND hes.verdict IS NULL
           AND (hes.snoozed_until IS NULL OR hes.snoozed_until < ?)
           AND e.status NOT IN ('past', 'cancelled')
+          AND e.id NOT IN (SELECT event_id_b FROM duplicate_candidate WHERE resolution = 'same')
         ORDER BY hes.score DESC
         """,
         (household["id"], household["digest_threshold"], now_iso),
@@ -159,7 +172,11 @@ def _days(n: int) -> timedelta:
     return timedelta(days=n)
 
 
-def build_digest_html(household: dict[str, Any], horizons: dict[str, list[DigestEvent]]) -> str:
+def build_digest_html(
+    household: dict[str, Any],
+    horizons: dict[str, list[DigestEvent]],
+    reminders: list[AnnualAnchor] | None = None,
+) -> str:
     today_str = datetime.now(UTC).strftime("%A %d %B %Y")
     total = sum(len(events) for events in horizons.values())
     new_count = sum(1 for events in horizons.values() for e in events if e.is_new)
@@ -170,7 +187,8 @@ def build_digest_html(household: dict[str, Any], horizons: dict[str, list[Digest
         f"{new_note} &middot; {today_str}"
     )
 
-    sections = "".join(_horizon_section_html(h, horizons[h]) for h in HORIZONS if horizons[h])
+    reminder_rows = "".join(_reminder_row_html(a) for a in (reminders or []))
+    sections = reminder_rows + "".join(_horizon_section_html(h, horizons[h]) for h in HORIZONS if horizons[h])
     if not sections:
         sections = empty_row("Nothing new this week.")
 
@@ -186,6 +204,23 @@ def build_digest_html(household: dict[str, Any], horizons: dict[str, list[Digest
         body_rows=sections,
         footer=footer,
     )
+
+
+def _reminder_row_html(anchor: AnnualAnchor) -> str:
+    link = (
+        f' &nbsp;&middot;&nbsp; <a href="{html.escape(anchor.watch_url)}" style="color:{WARN};">watch page</a>'
+        if anchor.watch_url
+        else ""
+    )
+    return f"""\
+    <tr>
+      <td style="padding:14px 32px; border-bottom:1px solid {BORDER}; background:{WARN_BG};">
+        <span style="background:{WARN_BG}; color:{WARN}; font-size:11px; font-weight:700; \
+text-transform:uppercase; letter-spacing:0.04em;">Annual anchor</span>
+        <div style="font-size:14px; color:{INK}; margin-top:4px;">{html.escape(anchor.name)}'s programme is usually \
+announced this month — worth a look{link}.</div>
+      </td>
+    </tr>"""
 
 
 def _horizon_section_html(horizon: str, events: list[DigestEvent]) -> str:
@@ -256,7 +291,11 @@ def _format_event_date(event_date: str | None) -> str:
     return datetime.fromisoformat(event_date).strftime("%a %-d %b %y")
 
 
-def build_digest_plain(household: dict[str, Any], horizons: dict[str, list[DigestEvent]]) -> str:
+def build_digest_plain(
+    household: dict[str, Any],
+    horizons: dict[str, list[DigestEvent]],
+    reminders: list[AnnualAnchor] | None = None,
+) -> str:
     new_count = sum(1 for events in horizons.values() for e in events if e.is_new)
     new_note = f" ({new_count} new since last time)" if new_count else ""
     lines = [
@@ -264,6 +303,11 @@ def build_digest_plain(household: dict[str, Any], horizons: dict[str, list[Diges
         "Handpicked for your taste",
         "",
     ]
+    for anchor in reminders or []:
+        watch = f" — {anchor.watch_url}" if anchor.watch_url else ""
+        lines.append(f"ANNUAL ANCHOR: {anchor.name}'s programme is usually announced this month{watch}")
+    if reminders:
+        lines.append("")
     any_events = False
     for horizon in HORIZONS:
         events = horizons[horizon]
