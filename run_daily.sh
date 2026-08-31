@@ -37,6 +37,12 @@ echo "===== Daily run started: $(date) =====" >> "$LOG"
 "$BIN" run >> "$LOG" 2>&1
 EXIT_CODE=$?
 
+# Admin stats/cost email -- daily for now (2026-08-31) while getting a feel
+# for real spend/scale; drop back to weekly (see run_weekly.sh, where this
+# also still runs) once that's no longer needed. Failure here shouldn't
+# fail the whole daily run -- harvest/score/alert are what actually matter.
+"$BIN" status >> "$LOG" 2>&1
+
 echo "===== Daily run finished: $(date), exit code: $EXIT_CODE =====" >> "$LOG"
 echo >> "$LOG"
 
