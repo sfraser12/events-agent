@@ -112,6 +112,19 @@ def build_digest(conn: sqlite3.Connection, household: dict[str, Any], today: dat
         horizon = _classify_horizon(event.event_date, event.on_sale_date, today, near_days, month_days)
         horizons[horizon].append(event)
 
+    # The SQL query above orders by score DESC (so ties and downstream
+    # processing are deterministic), but that order leaking straight into
+    # the rendered list meant a horizon spanning several months -- most
+    # visibly "announced for later" -- showed dates in no order at all,
+    # e.g. Oct/Nov/Dec/Mar all interleaved purely by score. Sort each
+    # horizon chronologically instead: "on sale soon" by on_sale_date (the
+    # actual reason it's urgent), everything else by event_date, undated
+    # events last since there's no date to place them by. Score remains the
+    # tiebreak for same-date events, not the primary order.
+    horizons["on sale soon"].sort(key=lambda e: (e.on_sale_date is None, e.on_sale_date or "", -e.score))
+    for horizon in ("this week", "this month", "announced for later"):
+        horizons[horizon].sort(key=lambda e: (e.event_date is None, e.event_date or "", -e.score))
+
     return horizons
 
 
@@ -240,7 +253,7 @@ def _format_drive_minutes(drive_minutes: int | None) -> str:
 def _format_event_date(event_date: str | None) -> str:
     if not event_date:
         return "Date TBC"
-    return datetime.fromisoformat(event_date).strftime("%a %-d %b")
+    return datetime.fromisoformat(event_date).strftime("%a %-d %b %y")
 
 
 def build_digest_plain(household: dict[str, Any], horizons: dict[str, list[DigestEvent]]) -> str:
