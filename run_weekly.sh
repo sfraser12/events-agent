@@ -38,6 +38,12 @@ echo "===== Weekly run started: $(date) =====" >> "$LOG"
 "$BIN" digest >> "$LOG" 2>&1
 DIGEST_EXIT=$?
 
+# Admin stats/cost email (added 2026-08-31) -- piggybacks on this job rather
+# than getting its own plist/wake infrastructure, since it's low-urgency and
+# this slot already has a working wake. Failure here shouldn't fail the
+# whole weekly run -- the digest sending is what actually matters.
+"$BIN" status >> "$LOG" 2>&1
+
 echo "===== Weekly run finished: $(date), digest exit: $DIGEST_EXIT =====" >> "$LOG"
 echo >> "$LOG"
 

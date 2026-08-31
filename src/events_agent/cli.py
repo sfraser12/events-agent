@@ -7,6 +7,7 @@ import re
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from events_agent.annual_anchors import due_reminders, load_annual_anchors
 from events_agent.config import DEFAULT_DB_PATH, HOUSEHOLDS_DIR, REPO_ROOT, load_config, load_secrets
@@ -18,6 +19,7 @@ from events_agent.db import (
     mark_delisted_events,
     mark_past_events,
     mark_surfaced,
+    record_llm_usage,
     set_verdict,
     start_source_run,
     upsert_household,
@@ -28,6 +30,7 @@ from events_agent.delivery.digest import build_digest, build_digest_html, build_
 from events_agent.delivery.email import send_email
 from events_agent.delivery.ics import build_ics, select_calendar_events
 from events_agent.delivery.lookahead import build_lookahead_html, build_lookahead_plain, select_lookahead_events
+from events_agent.delivery.status import build_status_html, build_status_plain, build_status_report
 from events_agent.scoring import AnthropicLLMClient, run_scoring
 from events_agent.sources.google_alerts import GoogleAlertsAdapter
 from events_agent.sources.skiddle import SkiddleAdapter
@@ -111,78 +114,111 @@ def cmd_init(args: argparse.Namespace) -> int:
 def cmd_harvest(args: argparse.Namespace) -> int:
     # Harvest is a single shared fetch, not one per household — every
     # household's own radius/home just filters the same catalog later, at
-    # scoring/constraint time. Anchored on Scott's config specifically
-    # because its radius (90mi from Milngavie) is already wide enough to
-    # reach every other household's area (e.g. Edinburgh); if a future
-    # household needed coverage outside that, this would need revisiting.
-    config = load_config(HOUSEHOLDS_DIR / "scott" / "config.yaml")
+    # scoring/constraint time. Was previously anchored on Scott's config
+    # alone (comment removed 2026-08-31): confirmed that meant a second
+    # household's own radius, far tier, and Google Alerts feeds were never
+    # fetched at all — silently, no error, just missing from the shared
+    # catalog. Now loops every household with both config.yaml and
+    # taste-profile.md present (same check as cmd_init). Same real event
+    # upserts idempotently regardless of which household's pass found it
+    # first (dedupe is by fingerprint), so overlapping radii between
+    # households just cost extra API calls, not incorrect data.
     secrets = load_secrets()
 
+    household_configs: list[tuple[str, Any]] = []
+    for name in HOUSEHOLD_IDS:
+        config_path = HOUSEHOLDS_DIR / name / "config.yaml"
+        taste_path = HOUSEHOLDS_DIR / name / "taste-profile.md"
+        if config_path.exists() and taste_path.exists():
+            household_configs.append((name, load_config(config_path)))
+        else:
+            print(
+                f"Note: households/{name}/config.yaml and taste-profile.md not both present yet — "
+                "skipping harvest for this household.",
+                file=sys.stderr,
+            )
+
+    if not household_configs:
+        print("No household configured — run 'events-agent init' first.", file=sys.stderr)
+        return 1
+
+    if not secrets.skiddle_api_key:
+        print("SKIDDLE_API_KEY not set in .env — skipping Skiddle.", file=sys.stderr)
+    if not secrets.ticketmaster_api_key:
+        print("TICKETMASTER_API_KEY not set in .env — skipping Ticketmaster.", file=sys.stderr)
+
+    # Adapter names only get a household suffix once there's more than one
+    # household -- keeps source_run history/log output identical to the
+    # single-household case (same pattern as calendar's curtainup.ics vs
+    # curtainup-<label-slug>.ics once there's more than one household).
+    suffix_names = len(household_configs) > 1
+
     adapters: list = []
-    if secrets.skiddle_api_key:
-        adapters.append(
-            SkiddleAdapter(
+    for name, config in household_configs:
+        suffix = f"_{name}" if suffix_names else ""
+
+        if secrets.skiddle_api_key:
+            skiddle_adapter = SkiddleAdapter(
                 api_key=secrets.skiddle_api_key,
                 latitude=config.home.latitude,
                 longitude=config.home.longitude,
                 radius_miles=config.search.radius_miles,
-                cache_dir=REPO_ROOT / ".cache" / "skiddle",
+                cache_dir=REPO_ROOT / ".cache" / "skiddle" / name,
             )
-        )
-    else:
-        print("SKIDDLE_API_KEY not set in .env — skipping Skiddle.", file=sys.stderr)
+            skiddle_adapter.name = f"skiddle{suffix}"
+            adapters.append(skiddle_adapter)
 
-    if secrets.ticketmaster_api_key:
-        adapters.append(
-            TicketmasterAdapter(
+        if secrets.ticketmaster_api_key:
+            tm_adapter = TicketmasterAdapter(
                 api_key=secrets.ticketmaster_api_key,
                 latitude=config.home.latitude,
                 longitude=config.home.longitude,
                 radius_miles=config.search.radius_miles,
-                cache_dir=REPO_ROOT / ".cache" / "ticketmaster",
+                cache_dir=REPO_ROOT / ".cache" / "ticketmaster" / name,
             )
-        )
-        if config.search.far_radius_miles:
-            # Second, wider pass for the "worth a special trip" tier (see
-            # constraints.py). Ticketmaster only, not Skiddle: Ticketmaster
-            # skews toward bigger, more "worth a special trip" caliber acts,
-            # while Skiddle skews toward small club nights/local promoters —
-            # widening Skiddle's net too would mostly add noise, not signal,
-            # for a tier whose whole point is a much higher score bar.
-            # Same real-world events already caught by the normal-radius
-            # pass just upsert again here (idempotent, harmless, dedupe is
-            # by fingerprint) — this pass only adds the ones beyond
-            # radius_miles that it exists to reach.
-            far_adapter = TicketmasterAdapter(
-                api_key=secrets.ticketmaster_api_key,
-                latitude=config.home.latitude,
-                longitude=config.home.longitude,
-                radius_miles=config.search.far_radius_miles,
-                cache_dir=REPO_ROOT / ".cache" / "ticketmaster_wide",
-            )
-            far_adapter.name = "ticketmaster_wide"
-            adapters.append(far_adapter)
-    else:
-        print("TICKETMASTER_API_KEY not set in .env — skipping Ticketmaster.", file=sys.stderr)
+            tm_adapter.name = f"ticketmaster{suffix}"
+            adapters.append(tm_adapter)
 
-    for alert in config.google_alerts:
-        if not alert.feed_url:
-            # Not a failure — the Google Alert just hasn't been created yet
-            # (no public API to do that automatically). See
-            # sources/google_alerts.py for setup instructions.
-            print(
-                f"Note: no feed_url configured for Google Alert '{alert.venue_name}' — skipping.",
-                file=sys.stderr,
-            )
-            continue
-        adapters.append(
-            GoogleAlertsAdapter(
+            if config.search.far_radius_miles:
+                # Second, wider pass for the "worth a special trip" tier (see
+                # constraints.py). Ticketmaster only, not Skiddle: Ticketmaster
+                # skews toward bigger, more "worth a special trip" caliber acts,
+                # while Skiddle skews toward small club nights/local promoters —
+                # widening Skiddle's net too would mostly add noise, not signal,
+                # for a tier whose whole point is a much higher score bar.
+                # Same real-world events already caught by the normal-radius
+                # pass just upsert again here (idempotent, harmless, dedupe is
+                # by fingerprint) — this pass only adds the ones beyond
+                # radius_miles that it exists to reach.
+                far_adapter = TicketmasterAdapter(
+                    api_key=secrets.ticketmaster_api_key,
+                    latitude=config.home.latitude,
+                    longitude=config.home.longitude,
+                    radius_miles=config.search.far_radius_miles,
+                    cache_dir=REPO_ROOT / ".cache" / "ticketmaster_wide" / name,
+                )
+                far_adapter.name = f"ticketmaster_wide{suffix}"
+                adapters.append(far_adapter)
+
+        for alert in config.google_alerts:
+            if not alert.feed_url:
+                # Not a failure — the Google Alert just hasn't been created yet
+                # (no public API to do that automatically). See
+                # sources/google_alerts.py for setup instructions.
+                print(
+                    f"Note: no feed_url configured for Google Alert '{alert.venue_name}' (household {name}) — skipping.",
+                    file=sys.stderr,
+                )
+                continue
+            ga_adapter = GoogleAlertsAdapter(
                 feed_url=alert.feed_url,
                 venue_name=alert.venue_name,
                 venue_latitude=alert.latitude,
                 venue_longitude=alert.longitude,
             )
-        )
+            if suffix_names:
+                ga_adapter.name = f"{ga_adapter.name}{suffix}"
+            adapters.append(ga_adapter)
 
     if not adapters:
         print("No source API keys configured — copy .env.example and fill in at least one.", file=sys.stderr)
@@ -219,9 +255,14 @@ def cmd_harvest(args: argparse.Namespace) -> int:
         # Only trust "not re-confirmed" as "delisted" when at least one
         # full-catalog source actually ran successfully this time — a total
         # outage across ticketmaster/skiddle would otherwise look identical
-        # to every upcoming event having been pulled at once.
-        catalog_sources = {"ticketmaster", "ticketmaster_wide", "skiddle"}
-        catalog_ok = any(name in catalog_sources and error is None for name, _, _, error in summaries)
+        # to every upcoming event having been pulled at once. startswith,
+        # not an exact-name set, since adapter names now carry a
+        # per-household suffix once there's more than one household
+        # (ticketmaster_brother, ticketmaster_wide_brother, ...).
+        catalog_ok = any(
+            (name.startswith("ticketmaster") or name.startswith("skiddle")) and error is None
+            for name, _, _, error in summaries
+        )
         delisted_count = mark_delisted_events(conn, datetime.now(UTC).date()) if catalog_ok else 0
         conn.commit()
     finally:
@@ -335,8 +376,15 @@ def cmd_score(args: argparse.Namespace) -> int:
         print("ANTHROPIC_API_KEY not set in .env — copy .env.example and fill it in.", file=sys.stderr)
         return 1
 
-    client = AnthropicLLMClient(api_key=secrets.anthropic_api_key)
     conn = get_connection(DEFAULT_DB_PATH)
+
+    def _on_usage(context, model, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens):
+        record_llm_usage(
+            conn, context, model, input_tokens, output_tokens,
+            cache_creation_tokens, cache_read_tokens, datetime.now(UTC).isoformat(),
+        )
+
+    client = AnthropicLLMClient(api_key=secrets.anthropic_api_key, on_usage=_on_usage)
     try:
         households = list_households_as_dicts(conn)
         if not households:
@@ -396,6 +444,40 @@ def cmd_digest(args: argparse.Namespace) -> int:
     finally:
         conn.close()
     return 0
+
+
+def cmd_status(args: argparse.Namespace) -> int:
+    """Admin-only stats/cost email — never sent to a household. Added
+    2026-08-31 to actually answer "how is this scaling, what does it cost"
+    from real data (source_run + llm_usage) instead of scrollback."""
+    secrets = load_secrets()
+    admin_email = secrets.admin_email or secrets.smtp_user
+    conn = get_connection(DEFAULT_DB_PATH)
+    try:
+        report = build_status_report(conn, DEFAULT_DB_PATH, lookback_days=7)
+    finally:
+        conn.close()
+
+    html_body = build_status_html(report)
+    plain_body = build_status_plain(report)
+    sent = send_email(
+        smtp_host=secrets.smtp_host,
+        smtp_port=secrets.smtp_port,
+        smtp_user=secrets.smtp_user,
+        smtp_password=secrets.smtp_password,
+        from_email=secrets.smtp_user,
+        to_email=admin_email,
+        subject=f"Curtain Up – Admin Stats – ~${report.total_estimated_cost_usd:.2f} LLM spend, last 7 days",
+        html_body=html_body,
+        plain_body=plain_body,
+    )
+    print(plain_body)
+    print()
+    if sent:
+        print(f"Status report emailed to {admin_email}.")
+        return 0
+    print("Status report NOT emailed — see error above.", file=sys.stderr)
+    return 1
 
 
 def cmd_fortnight(args: argparse.Namespace) -> int:
@@ -519,6 +601,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     digest_parser = subparsers.add_parser("digest", help="Email the weekly digest of scored events.")
     digest_parser.set_defaults(func=cmd_digest)
+
+    status_parser = subparsers.add_parser(
+        "status", help="Email an admin stats/cost report (API calls, LLM spend, catalog size) — never sent to a household."
+    )
+    status_parser.set_defaults(func=cmd_status)
 
     fortnight_parser = subparsers.add_parser(
         "fortnight", help="Email near-term events (next 14 days) that scored below the digest bar."

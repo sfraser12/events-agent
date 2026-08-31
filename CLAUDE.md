@@ -110,12 +110,13 @@ The LLM also adjudicates the `duplicate_candidate` pairs in a separate, smaller 
 
 ### Stage 4 — Deliver
 
-Four outputs:
+Five outputs:
 
 - **Weekly digest** — Sunday morning email. Grouped by horizon (this week / this month / on sale soon / announced for later). Only events with `score >= digest_threshold` and `verdict IS NULL`. Include a one-line reason per event and a direct booking link. Re-sends the full standing shortlist every run, not a delta — an event keeps reappearing until a verdict is set on it, re-bucketing into a nearer horizon as its date approaches.
 - **Fortnight look-ahead** — a separate weekly email (own accent color, distinct from both the digest and the alert), covering events in the next 14 days scoring between `alert_threshold` and `digest_threshold`. Exists because the digest's score bar is permanent regardless of how soon the event is — without this, a moderate match could expire completely unseen just because its event date crept up while it stayed under the digest bar. Kept as its own email rather than a digest section specifically so it doesn't clutter the digest.
 - **Urgent alert** — runs daily. Fires only for anything with an `on_sale_date` in the next 48 hours, or a status flip to `low_availability`. This is the highest-value output in the whole system; it should be short and hard to ignore.
 - **ICS export** — shortlisted (`verdict` = `interested`/`booked`) events written as a plain `.ics` file via `events-agent calendar`, not a Google Calendar push — either household member imports it into whatever calendar app they use, with no OAuth flow to set up or maintain in a cron job. Provisional (`interested`) entries marked `STATUS:TENTATIVE`. One file per household once there's more than one (`curtainup-<label-slug>.ics`); the plain `curtainup.ics` default only applies with a single household, to avoid one household's file silently overwriting another's.
+- **Admin stats email** (added 2026-08-31, via `events-agent status`) — not household-facing, never sent to `household.email_to`; goes to `Secrets.admin_email` (`ADMIN_EMAIL` in `.env`, falls back to `SMTP_USER`) so it can never accidentally multiply the moment a second household exists. Built to actually answer "how is this scaling, what does it cost, do we need to rearchitect" from real data rather than scrollback: `source_run` counts per adapter over the last 7 days (Ticketmaster/Skiddle/Google Alerts call volume — the practical concern there is the 5,000/day Ticketmaster ceiling, not $ cost, since both APIs are free), `llm_usage` totals per model with an estimated USD cost (Sonnet 5 pricing confirmed via the `claude-api` skill, not guessed — a model missing from the pricing table reports tokens with no cost estimate rather than a wrong number), a same-window breakdown by household/context, and an all-time catalog snapshot (event/venue counts, DB file size). Piggybacks on the Sunday weekly job (`run_weekly.sh`, right after `digest`) rather than getting its own plist/wake — low-urgency, and that slot already has a working wake.
 
 **Marketing names** (2026-08-29, everywhere a household actually sees the email — subject line, colored mark chip, plain-text header): Urgent alert → **Last Call**, Weekly digest → **Shortlist**, Fortnight look-ahead → **Understudy** (briefly named "Second Chance", changed same day — "Understudy" says what it actually is, the near-miss backup pick, rather than a vague "another go"). The names above (Weekly digest/Fortnight look-ahead/Urgent alert) stay as the internal/architectural terms in this doc and in code comments — only the user-facing strings (`cli.py` subject lines, `mark_suffix` in `alert.py`/`digest.py`/`lookahead.py`, plain-text headers) changed. Brand/type separator is always an en dash (`–`/`&ndash;`, not the wider em dash `—` — swapped 2026-08-30, the em dash read too wide at this size), applied consistently in every user-facing string: `Curtain Up – <Type>` (chip), `Curtain Up – <Type> – <description>` (subject line, plain-text header) — previously the subject lines omitted the first dash while the chip had it, an inconsistency the user caught by eye in their inbox.
 
@@ -287,6 +288,21 @@ CREATE TABLE source_run (
     rows_fetched    INTEGER,
     error           TEXT
 );
+
+-- One row per real LLM API call (added 2026-08-31, for cost/scale
+-- monitoring — see "Admin stats email" below). context is the household
+-- label for a scoring call, or the literal 'duplicate_adjudication' for
+-- the catalog-level adjudication pass.
+CREATE TABLE llm_usage (
+    id                          INTEGER PRIMARY KEY,
+    context                     TEXT NOT NULL,
+    model                       TEXT NOT NULL,
+    input_tokens                INTEGER NOT NULL,
+    output_tokens               INTEGER NOT NULL,
+    cache_creation_input_tokens INTEGER NOT NULL DEFAULT 0,
+    cache_read_input_tokens     INTEGER NOT NULL DEFAULT 0,
+    created_at                  TEXT NOT NULL
+);
 ```
 
 Hard constraints (radius, price ceiling, blackout dates) are applied in
@@ -341,7 +357,10 @@ ANTHROPIC_API_KEY=
 SMTP_HOST=
 SMTP_USER=
 SMTP_PASSWORD=
+ADMIN_EMAIL=
 ```
+
+`ADMIN_EMAIL` is optional — falls back to `SMTP_USER` if blank. Only used by `events-agent status` (see "Admin stats email" under Stage 4 — Deliver); deliberately not part of any household's config.
 
 `annual-anchors.yaml` — hand-maintained, the cheapest high-value file in the project:
 
@@ -522,12 +541,25 @@ rather than picking any of these off ad hoc mid-build.
   `brother` = 2) so a new household can never reassign an existing one's id.
   `cmd_init` skips any household whose files aren't both present yet —
   everything keeps running for whichever households *are* configured.
-  Harvest stays a single shared fetch anchored on `households/scott/
-  config.yaml`, whose 90-mile Milngavie-centered radius already reaches
-  Edinburgh. **Still not done:** the actual `households/brother/config.yaml`
-  + `taste-profile.md` — waiting on the brother's own taste-profile Q&A
-  session (he writes his own, not drafted secondhand) — and deciding his
-  radius/price ceiling/digest thresholds/email once that happens.
+  **Harvest is per-household now (fixed 2026-08-31, was a known gap):**
+  `cmd_harvest` used to be a single shared fetch anchored on `households/
+  scott/config.yaml` alone — fine by luck (Scott's 90mi Milngavie radius
+  already reaches Edinburgh) but meant a household's own `far_radius_miles`
+  tier or Google Alerts feeds were silently never fetched at all. Now loops
+  every household with both config.yaml and taste-profile.md present (same
+  presence check as `cmd_init`) and builds each one's own Skiddle/
+  Ticketmaster/Ticketmaster-wide/Google-Alerts adapters from that
+  household's own config — merged into the one shared catalog as before
+  (dedupe is by fingerprint regardless of which household's pass found an
+  event first). Adapter names only pick up a `_<household>` suffix once
+  there's more than one household configured (e.g. `ticketmaster_brother`)
+  — for Scott alone today, names and `source_run` history are unchanged
+  from before this fix; verified live against production, zero behavior
+  change with only one household configured. **Still not done:** the actual
+  `households/brother/config.yaml` + `taste-profile.md` — waiting on the
+  brother's own taste-profile Q&A session (he writes his own, not drafted
+  secondhand) — and deciding his radius/price ceiling/digest
+  thresholds/email once that happens.
 - **A real domain + "from" address.** Emails are Curtain Up-branded now
   (display text; the domain itself stays the compact "curtainup", no
   space);

@@ -154,6 +154,22 @@ CREATE TABLE IF NOT EXISTS source_run (
     rows_fetched    INTEGER,
     error           TEXT
 );
+
+-- One row per real LLM API call (scoring batch or duplicate adjudication
+-- batch) — added 2026-08-31 so cost/scale can actually be monitored instead
+-- of only ever seeing per-run stdout counts. context is the household label
+-- for a scoring call, or the literal string 'duplicate_adjudication' for
+-- the catalog-level adjudication pass (see scoring.py).
+CREATE TABLE IF NOT EXISTS llm_usage (
+    id                          INTEGER PRIMARY KEY,
+    context                     TEXT NOT NULL,
+    model                       TEXT NOT NULL,
+    input_tokens                INTEGER NOT NULL,
+    output_tokens               INTEGER NOT NULL,
+    cache_creation_input_tokens INTEGER NOT NULL DEFAULT 0,
+    cache_read_input_tokens     INTEGER NOT NULL DEFAULT 0,
+    created_at                  TEXT NOT NULL
+);
 """
 
 
@@ -743,6 +759,27 @@ def mark_surfaced(conn: sqlite3.Connection, household_id: int, event_ids: list[i
     conn.executemany(
         "UPDATE household_event_state SET surfaced_at = ? WHERE household_id = ? AND event_id = ?",
         [(surfaced_at, household_id, event_id) for event_id in event_ids],
+    )
+
+
+def record_llm_usage(
+    conn: sqlite3.Connection,
+    context: str,
+    model: str,
+    input_tokens: int,
+    output_tokens: int,
+    cache_creation_input_tokens: int,
+    cache_read_input_tokens: int,
+    created_at: str,
+) -> None:
+    conn.execute(
+        """
+        INSERT INTO llm_usage (
+            context, model, input_tokens, output_tokens,
+            cache_creation_input_tokens, cache_read_input_tokens, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (context, model, input_tokens, output_tokens, cache_creation_input_tokens, cache_read_input_tokens, created_at),
     )
 
 

@@ -31,6 +31,8 @@ FARFLUNG = "#6B4C8A"
 FARFLUNG_BG = "#EEE7F3"
 NEW = "#0B6E99"
 NEW_BG = "#DFF0F7"
+ADMIN = "#4A4A4A"
+ADMIN_BG = "#EAEAEA"
 SERIF = "Georgia,'Times New Roman',serif"
 SANS = "Helvetica,Arial,sans-serif"
 

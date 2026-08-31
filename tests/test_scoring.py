@@ -14,6 +14,7 @@ from events_agent.db import (
 )
 from events_agent.models import RawEvent
 from events_agent.scoring import (
+    AnthropicLLMClient,
     _score_batch,
     adjudicate_duplicates,
     run_scoring_for_household,
@@ -28,7 +29,7 @@ class FakeLLMClient:
         self.responses = list(responses)
         self.calls: list[tuple[str, str | list[dict[str, Any]]]] = []
 
-    def create_message(self, system: str, user_content: str | list[dict[str, Any]]) -> str:
+    def create_message(self, system: str, user_content: str | list[dict[str, Any]], context: str = "") -> str:
         self.calls.append((system, user_content))
         return self.responses.pop(0)
 
@@ -333,3 +334,64 @@ def test_adjudicate_duplicates_leaves_unresolved_on_failure(conn, household):
         "SELECT resolution FROM duplicate_candidate LIMIT 1"
     ).fetchone()[0]
     assert resolution is None
+
+
+class _FakeUsage:
+    def __init__(self, input_tokens, output_tokens, cache_creation_input_tokens, cache_read_input_tokens):
+        self.input_tokens = input_tokens
+        self.output_tokens = output_tokens
+        self.cache_creation_input_tokens = cache_creation_input_tokens
+        self.cache_read_input_tokens = cache_read_input_tokens
+
+
+class _FakeTextBlock:
+    type = "text"
+
+    def __init__(self, text):
+        self.text = text
+
+
+class _FakeAnthropicResponse:
+    def __init__(self, text, usage):
+        self.content = [_FakeTextBlock(text)]
+        self.usage = usage
+
+
+class _FakeAnthropicMessages:
+    def __init__(self, response):
+        self._response = response
+
+    def create(self, **kwargs):
+        return self._response
+
+
+class _FakeAnthropicSDKClient:
+    def __init__(self, response):
+        self.messages = _FakeAnthropicMessages(response)
+
+
+def test_anthropic_client_calls_on_usage_with_token_counts_and_context():
+    response = _FakeAnthropicResponse("[]", _FakeUsage(100, 20, 5, 3))
+    client = AnthropicLLMClient(api_key="fake-key")
+    client._client = _FakeAnthropicSDKClient(response)
+
+    calls = []
+    client.on_usage = lambda *args: calls.append(args)
+
+    client.create_message("system prompt", "user content", context="Milngavie")
+
+    assert len(calls) == 1
+    context, model, input_tokens, output_tokens, cache_creation, cache_read = calls[0]
+    assert context == "Milngavie"
+    assert model == client.model
+    assert (input_tokens, output_tokens, cache_creation, cache_read) == (100, 20, 5, 3)
+
+
+def test_anthropic_client_without_on_usage_does_not_error():
+    response = _FakeAnthropicResponse("[]", _FakeUsage(100, 20, 0, 0))
+    client = AnthropicLLMClient(api_key="fake-key")
+    client._client = _FakeAnthropicSDKClient(response)
+
+    result = client.create_message("system prompt", "user content")
+
+    assert result == "[]"

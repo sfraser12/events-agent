@@ -113,6 +113,11 @@ class Secrets(BaseModel):
     smtp_port: int = 587
     smtp_user: str = ""
     smtp_password: str = ""
+    # Where the admin stats/cost email goes — deliberately an operator-level
+    # setting, not tied to any one household's config, since it should never
+    # multiply the moment a second household exists. Falls back to smtp_user
+    # (the sending account) so it works without a fresh .env edit.
+    admin_email: str = ""
 
 
 def load_config(path: Path) -> Config:
@@ -134,4 +139,5 @@ def load_secrets(env_path: Path | None = None) -> Secrets:
         smtp_port=int(os.environ.get("SMTP_PORT", "587")),
         smtp_user=os.environ.get("SMTP_USER", ""),
         smtp_password=os.environ.get("SMTP_PASSWORD", ""),
+        admin_email=os.environ.get("ADMIN_EMAIL", ""),
     )

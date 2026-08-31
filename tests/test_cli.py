@@ -162,6 +162,39 @@ def test_harvest_aggregates_both_sources(wired_cli_two_sources):
     assert source_names == {"skiddle", "ticketmaster"}
 
 
+def test_harvest_loops_over_every_configured_household(wired_cli_two_sources, monkeypatch):
+    # Second household: "brother" gets real files on disk too, alongside
+    # "scott" (wired_cli already created that one). Confirms harvest no
+    # longer reads only Scott's config -- both households' own radius/home
+    # should each get a Skiddle + Ticketmaster pass, distinguishable by the
+    # per-household adapter name suffix.
+    households_dir = cli.HOUSEHOLDS_DIR
+    brother_dir = households_dir / "brother"
+    brother_dir.mkdir(parents=True)
+    (brother_dir / "config.yaml").write_text("placeholder — load_config is monkeypatched below")
+    (brother_dir / "taste-profile.md").write_text("placeholder")
+
+    def fake_load_config(path):
+        is_brother = "brother" in str(path)
+        return Config(
+            home=Home(latitude=55.9410, longitude=-4.3170, label="Milngavie"),
+            search=Search(radius_miles=50 if is_brother else 25, horizons=Horizons(near_days=7, month_days=31, long_days=270)),
+            constraints=Constraints(max_drive_minutes=60, price_ceiling=120),
+            scoring=Scoring(digest_threshold=60, alert_threshold=45),
+            delivery=Delivery(email_to="test@example.com"),
+        )
+
+    monkeypatch.setattr(cli, "load_config", fake_load_config)
+
+    exit_code = cli.cmd_harvest(argparse_namespace())
+
+    assert exit_code == 0
+    conn = get_connection(wired_cli_two_sources)
+    source_names = {row[0] for row in conn.execute("SELECT DISTINCT source_name FROM source_run").fetchall()}
+    conn.close()
+    assert source_names == {"skiddle_scott", "skiddle_brother", "ticketmaster_scott", "ticketmaster_brother"}
+
+
 def test_harvest_one_source_failing_does_not_block_the_other(wired_cli, monkeypatch, capsys):
     monkeypatch.setattr(cli, "TicketmasterAdapter", make_failing_adapter("ticketmaster"))
     monkeypatch.setattr(

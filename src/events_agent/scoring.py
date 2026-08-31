@@ -14,7 +14,7 @@ import json
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
 from pydantic import ValidationError
 
@@ -63,21 +63,33 @@ class LLMClient(Protocol):
     """The one method this module needs from an Anthropic client — lets
     tests substitute a fake without importing the real SDK. user_content is
     either a plain string, or a list of Anthropic content-block dicts when a
-    caller wants to mark part of it cacheable (see _score_batch)."""
+    caller wants to mark part of it cacheable (see _score_batch). context is
+    a free-text label (household name, or 'duplicate_adjudication') passed
+    through purely so a real client can attribute usage — see
+    AnthropicLLMClient's on_usage."""
 
-    def create_message(self, system: str, user_content: str | list[dict[str, Any]]) -> str: ...
+    def create_message(self, system: str, user_content: str | list[dict[str, Any]], context: str = "") -> str: ...
 
 
 class AnthropicLLMClient:
-    """Wraps anthropic.Anthropic to the narrow LLMClient shape above."""
+    """Wraps anthropic.Anthropic to the narrow LLMClient shape above.
 
-    def __init__(self, api_key: str, model: str = DEFAULT_MODEL):
+    on_usage (added 2026-08-31, for cost/scale monitoring): an optional
+    callback invoked after every real API call with
+    (context, model, input_tokens, output_tokens, cache_creation_input_tokens,
+    cache_read_input_tokens) — the caller decides what to do with it (cli.py
+    persists to the llm_usage table). None by default so tests/other callers
+    that don't care about usage tracking pay nothing for it.
+    """
+
+    def __init__(self, api_key: str, model: str = DEFAULT_MODEL, on_usage: Callable[..., None] | None = None):
         import anthropic
 
         self._client = anthropic.Anthropic(api_key=api_key)
         self.model = model
+        self.on_usage = on_usage
 
-    def create_message(self, system: str, user_content: str | list[dict[str, Any]]) -> str:
+    def create_message(self, system: str, user_content: str | list[dict[str, Any]], context: str = "") -> str:
         response = self._client.messages.create(
             model=self.model,
             max_tokens=MAX_TOKENS,
@@ -90,6 +102,16 @@ class AnthropicLLMClient:
             thinking={"type": "disabled"},
             messages=[{"role": "user", "content": user_content}],
         )
+        if self.on_usage is not None:
+            usage = response.usage
+            self.on_usage(
+                context,
+                self.model,
+                usage.input_tokens,
+                usage.output_tokens,
+                getattr(usage, "cache_creation_input_tokens", 0) or 0,
+                getattr(usage, "cache_read_input_tokens", 0) or 0,
+            )
         return "".join(block.text for block in response.content if block.type == "text")
 
 
@@ -149,7 +171,7 @@ def run_scoring_for_household(conn: sqlite3.Connection, client: LLMClient, house
     for batch_start in range(0, len(to_score), SCORE_BATCH_SIZE):
         batch_ids = to_score[batch_start : batch_start + SCORE_BATCH_SIZE]
         payload = [_build_candidate_payload(conn, household, event_id) for event_id in batch_ids]
-        results, error = _score_batch(client, taste_profile, payload)
+        results, error = _score_batch(client, taste_profile, payload, context=household["label"])
         scored_at = datetime.now(UTC).isoformat()
         if results is not None:
             results_by_id = {r.event_id: r for r in results}
@@ -289,7 +311,7 @@ def _get_event_for_scoring(conn: sqlite3.Connection, event_id: int) -> dict[str,
 
 
 def _score_batch(
-    client: LLMClient, taste_profile: str, payload: list[dict[str, Any]]
+    client: LLMClient, taste_profile: str, payload: list[dict[str, Any]], context: str = ""
 ) -> tuple[list[ScoreResult] | None, str | None]:
     # The taste profile is identical across every batch in one household's
     # run (up to ~50 calls for a first full pass) and across every run until
@@ -311,7 +333,7 @@ def _score_batch(
             "text": f"Events to score:\n\n{json.dumps(payload)}",
         },
     ]
-    return _call_with_retry(client, SCORE_SYSTEM_PROMPT, user_content, ScoreResult)
+    return _call_with_retry(client, SCORE_SYSTEM_PROMPT, user_content, ScoreResult, context)
 
 
 def _adjudicate_batch(
@@ -320,13 +342,13 @@ def _adjudicate_batch(
     # Nothing stable to cache here — no per-household content, and each
     # batch is a different set of pairs.
     user_content = json.dumps(payload)
-    return _call_with_retry(client, DUPLICATE_SYSTEM_PROMPT, user_content, DuplicateAdjudication)
+    return _call_with_retry(client, DUPLICATE_SYSTEM_PROMPT, user_content, DuplicateAdjudication, "duplicate_adjudication")
 
 
 def _call_with_retry(
-    client: LLMClient, system: str, user_content: str | list[dict[str, Any]], model_cls: type
+    client: LLMClient, system: str, user_content: str | list[dict[str, Any]], model_cls: type, context: str = ""
 ) -> tuple[list | None, str | None]:
-    raw_text = client.create_message(system, user_content)
+    raw_text = client.create_message(system, user_content, context)
     items, error = _parse_and_validate(raw_text, model_cls)
     if error is None:
         return items, None
@@ -341,7 +363,7 @@ def _call_with_retry(
         retry_content = [*user_content, {"type": "text", "text": retry_note}]
     else:
         retry_content = f"{user_content}\n\n{retry_note}"
-    raw_text = client.create_message(system, retry_content)
+    raw_text = client.create_message(system, retry_content, context)
     return _parse_and_validate(raw_text, model_cls)
 
 
