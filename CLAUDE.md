@@ -596,22 +596,24 @@ rather than picking any of these off ad hoc mid-build.
   "link not working?" fallback (a Google search for title + venue), so a
   dead link — from this cause or any other — always has an escape hatch
   rather than a dead end.
-- **`annual-anchors.yaml` checking — documented, never actually built.**
-  Discovered 2026-08-28: the "Configuration" section above and
-  `annual-anchors.example.yaml` describe a real feature (the agent checks
-  this file each run and, in the month before a `programme_announced`
-  value, adds a digest reminder) but `annual-anchors.yaml` itself was never
-  created and no code in `src/events_agent/` reads it — `grep -rn
-  "annual.anchor" src/` returns nothing. Not a bug (nothing is silently
-  failing), just documentation for a feature that was never implemented.
-  Prompted by trying to slot Scottish fire/Viking festivals (Up Helly Aa,
-  Beltane, Stonehaven Fireballs, Flambeaux — see `google_alerts_todo.csv`,
-  added 2026-08-28) in as anchors, since several have fixed, well-known
-  annual dates — a better fit for this mechanism than a Google Alert. To
-  actually build it: create `annual-anchors.yaml` from the example, add a
-  loader + the "within a month of `programme_announced`" check, and a
-  digest line for it. Fire/Viking festivals worth reconsidering as the
-  first real anchors once this exists.
+- **`annual-anchors.yaml` checking — done (2026-08-31).** Discovered
+  2026-08-28 as documented-but-never-built (the "Configuration" section
+  above and `annual-anchors.example.yaml` described the feature, but the
+  real file didn't exist and no code read it). Now implemented:
+  `annual_anchors.py` (`load_annual_anchors` + `due_reminders` — an anchor
+  is due through the single calendar month before its `programme_announced`
+  month, wrapping year boundaries correctly), wired into `cmd_digest`,
+  rendering a reminder banner above the horizon sections in Shortlist
+  (HTML and plain text) when something's due. `annual-anchors.yaml` itself
+  is gitignored, same as `config.yaml` — seeded from
+  `annual-anchors.example.yaml`'s four entries (Celtic Connections, Glasgow
+  Film Festival, Edinburgh Festival Fringe, Panto season). Scottish
+  fire/Viking festivals (Up Helly Aa, Beltane, Stonehaven Fireballs,
+  Flambeaux — see `google_alerts_todo.csv`) are still worth reconsidering
+  as anchors here instead of Google Alerts, since this mechanism now
+  actually exists — not done yet, a fixed calendar date isn't quite the
+  same shape as a "programme announced" reminder and would need a second
+  anchor type to fit properly.
 
 **Why:** avoids scope-creep mid-build — Phase 6 is the last phase with a
 fixed deliverable; everything here is open-ended tool evolution, not a
