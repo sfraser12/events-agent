@@ -44,6 +44,16 @@ DIGEST_EXIT=$?
 # it. Move it back here (and drop it from run_daily.sh) to return to a
 # weekly-only cadence.
 
+# DB housekeeping (added 2026-09-01): prune_stale_raw_json runs every
+# harvest (see run_daily.sh -> cmd_harvest), but nulling raw_json only frees
+# SQLite's *internal* pages -- the file on disk doesn't actually shrink
+# without VACUUM, which was otherwise never run automatically (confirmed:
+# nulling alone left events.db at 113MB until a one-time manual VACUUM took
+# it to 45MB). VACUUM rewrites the whole file under an exclusive lock, so
+# it belongs here (weekly, low-traffic Sunday evening slot), not on every
+# daily harvest. Failure here shouldn't fail the whole weekly run.
+"$BIN" vacuum >> "$LOG" 2>&1
+
 echo "===== Weekly run finished: $(date), digest exit: $DIGEST_EXIT =====" >> "$LOG"
 echo >> "$LOG"
 

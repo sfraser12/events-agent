@@ -424,3 +424,23 @@ def calendar_namespace(out: Path | None = None):
     import argparse
 
     return argparse.Namespace(out=out)
+
+
+def test_vacuum_runs_without_error_and_preserves_data(wired_cli, capsys):
+    cli.cmd_init(argparse_namespace())
+    cli.cmd_harvest(argparse_namespace())
+    capsys.readouterr()
+
+    conn = get_connection(wired_cli)
+    events_before = conn.execute("SELECT COUNT(*) FROM event").fetchone()[0]
+    conn.close()
+
+    exit_code = cli.cmd_vacuum(argparse_namespace())
+
+    out, _ = capsys.readouterr()
+    assert exit_code == 0
+    assert "Vacuumed events.db" in out
+    conn = get_connection(wired_cli)
+    events_after = conn.execute("SELECT COUNT(*) FROM event").fetchone()[0]
+    conn.close()
+    assert events_after == events_before

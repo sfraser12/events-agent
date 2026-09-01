@@ -498,6 +498,25 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 1
 
 
+def cmd_vacuum(args: argparse.Namespace) -> int:
+    """Compact events.db on disk. Necessary because SQLite reuses freed
+    pages internally (from prune_stale_raw_json etc.) but never shrinks the
+    file itself without this — confirmed 2026-09-01, nulling raw_json alone
+    left the file at 113MB until a manual VACUUM took it to 45MB. VACUUM
+    rewrites the whole file and needs an exclusive lock, so this runs
+    weekly (see run_weekly.sh), not on every harvest."""
+    before = DEFAULT_DB_PATH.stat().st_size if DEFAULT_DB_PATH.exists() else 0
+    conn = get_connection(DEFAULT_DB_PATH)
+    try:
+        conn.execute("VACUUM")
+    finally:
+        conn.close()
+    after = DEFAULT_DB_PATH.stat().st_size if DEFAULT_DB_PATH.exists() else 0
+
+    print(f"Vacuumed events.db: {before / 1_000_000:.1f}MB -> {after / 1_000_000:.1f}MB.")
+    return 0
+
+
 def cmd_fortnight(args: argparse.Namespace) -> int:
     secrets = load_secrets()
     conn = get_connection(DEFAULT_DB_PATH)
@@ -626,6 +645,9 @@ def build_parser() -> argparse.ArgumentParser:
         "status", help="Email an admin stats/cost report (API calls, LLM spend, catalog size) — never sent to a household."
     )
     status_parser.set_defaults(func=cmd_status)
+
+    vacuum_parser = subparsers.add_parser("vacuum", help="Compact events.db on disk (reclaims space freed by prune_stale_raw_json).")
+    vacuum_parser.set_defaults(func=cmd_vacuum)
 
     fortnight_parser = subparsers.add_parser(
         "fortnight", help="Email near-term events (next 14 days) that scored below the digest bar."

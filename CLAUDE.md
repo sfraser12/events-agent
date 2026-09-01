@@ -173,6 +173,18 @@ compact the file (SQLite doesn't shrink on disk after `UPDATE` on its own).
 counts unchanged and no data loss (verified) — the entire saving came from
 a field nothing in the codebase ever used.
 
+**Third fix, so this stays regular rather than one-off**: (1) the write-time
+trim and (2) `prune_stale_raw_json` were already automatic from the moment
+they landed — the trim runs on every Ticketmaster fetch unconditionally,
+and the prune runs at the end of every `cmd_harvest`, which `run_daily.sh`
+already calls daily. But nulling `raw_json` only frees SQLite's *internal*
+pages; the file on disk doesn't actually shrink without `VACUUM`, which
+nothing was scheduling — the 113MB→45MB drop above only happened because it
+was run by hand. Added `events-agent vacuum` (`cmd_vacuum` in `cli.py`) and
+wired it into `run_weekly.sh`, right after `digest` — weekly, not daily,
+since `VACUUM` rewrites the whole file under an exclusive lock and this
+database isn't write-heavy enough to need it more often.
+
 ---
 
 ## Data model
