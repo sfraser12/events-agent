@@ -122,6 +122,28 @@ def test_parse_event_maps_real_ticketmaster_fields():
     assert event.url.startswith("https://www.ticketmaster.co.uk/")
 
 
+def test_parse_event_strips_embedded_and_images_from_stored_raw():
+    # _embedded (venue detail already extracted into event.venue_name etc)
+    # and images (CDN URLs at every crop size, never displayed anywhere)
+    # were ~70% of every stored raw_json blob's bytes -- confirmed live
+    # 2026-09-01 they account for ~89% of the whole database's disk size.
+    # Dropped at write time; everything actually parsed stays. The saved
+    # fixture already omits "images" (kept lean for the test file), so add
+    # one back to prove it's actually stripped rather than just absent.
+    with (FIXTURES / "ticketmaster_search_window0_page0.json").open() as f:
+        raw = json.load(f)["_embedded"]["events"][0]
+    raw["images"] = [{"url": "https://example.com/some-cdn-image.jpg", "width": 1024, "height": 576}]
+    assert "_embedded" in raw and "images" in raw  # sanity: the input really has them
+
+    adapter = make_adapter(session=FakeSession({}))
+    event = adapter._parse_event(raw)
+
+    assert "_embedded" not in event.raw
+    assert "images" not in event.raw
+    assert event.raw["id"] == raw["id"]  # everything else survives
+    assert event.raw["name"] == raw["name"]
+
+
 def test_parse_event_comedy_genre_maps_to_comedy_not_theatre():
     with (FIXTURES / "ticketmaster_search_variety.json").open() as f:
         events = json.load(f)["_embedded"]["events"]

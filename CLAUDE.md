@@ -137,6 +137,42 @@ Added after the user said he'd travel to Argyll & Bute, Skye, or "elsewhere in S
 
 **Known one-time cost**: the first wide-radius harvest pulled in ~5,600 new event rows; the constraint filter (with `far_min_latitude`) keeps the actual LLM-scoring hit to a bounded ~318 for that first run. Subsequent runs settle back near baseline — the `last_seen`-only-advances-on-real-change fix (see [[project_cost_sensitivity]]) means already-scored/already-excluded events don't get rescored for free.
 
+### DB housekeeping (added 2026-09-01)
+
+Prompted by "are we deleting old events to minimize storage" — the honest
+answer at the time was no, and `events.db` had reached 113MB after only 11
+days of harvesting. Investigated before building anything: `event`/`venue`/
+`household_event_state` rows themselves are tiny and never pruned (deleting
+them would lose fingerprint-dedup and change-detection history for
+essentially no storage benefit — not worth it). The actual weight is
+`event_source.raw_json`, the full raw API response stored per source per
+event — confirmed via `grep -rn "raw_json" src/` that nothing reads it back
+programmatically, it exists purely as a debugging trail — and it measured
+at **~89% of the whole database's disk size**, almost entirely Ticketmaster's
+own `_embedded` (a full nested venue-detail object, already extracted into
+`event`/`venue` at parse time) and `images` (a dozen-plus CDN URLs at every
+crop size, never displayed anywhere). Two fixes, not one:
+
+1. **Write time** — `sources/ticketmaster.py`'s `_parse_event` now drops
+   `_embedded` and `images` before storing `raw`, for every future upsert.
+2. **Ongoing prune** — `db.prune_stale_raw_json()`, run at the end of every
+   `cmd_harvest` alongside `mark_past_events`/`mark_delisted_events`, nulls
+   `raw_json` (never the row itself) for events that have been `past` or
+   `cancelled` for more than `RAW_JSON_RETENTION_DAYS` (30). Deliberately
+   *not* a single `COALESCE(event_date, ...)` check: a `cancelled` event can
+   carry a future `event_date` (delisted before its date ever arrived), so
+   it uses `event_date` for `past` events but `last_confirmed_at` for
+   `cancelled` ones — otherwise a show cancelled six months ago but
+   originally booked for next year would never age out.
+
+Applied once, retroactively, against the live database on 2026-09-01: a
+one-time backfill stripped `_embedded`/`images` from all 9,139 existing
+Ticketmaster rows (not just future ones), followed by `VACUUM` to actually
+compact the file (SQLite doesn't shrink on disk after `UPDATE` on its own).
+**113MB → 45MB**, a 60% reduction, with `event`/`venue`/`event_source` row
+counts unchanged and no data loss (verified) — the entire saving came from
+a field nothing in the codebase ever used.
+
 ---
 
 ## Data model
@@ -256,7 +292,7 @@ CREATE TABLE event_source (
     source_name     TEXT NOT NULL,
     source_event_id TEXT NOT NULL,
     source_url      TEXT,
-    raw_json        TEXT,
+    raw_json        TEXT,             -- debugging only, never read back programmatically; see "DB housekeeping" below
     PRIMARY KEY (source_name, source_event_id)
 );
 

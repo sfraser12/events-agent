@@ -189,7 +189,15 @@ class TicketmasterAdapter:
             doors_open=None,
             url=raw.get("url") or None,
             blurb=raw.get("pleaseNote") or raw.get("info") or None,
-            raw=raw,
+            # Stored for debugging, never read back programmatically (see
+            # db.py's event_source.raw_json) -- but Ticketmaster's own
+            # _embedded (full nested venue detail, already extracted above)
+            # and images (a dozen-plus CDN URLs at every crop size, never
+            # displayed anywhere) together were ~70% of every stored blob's
+            # bytes and ~89% of the whole database's disk size, confirmed
+            # live 2026-09-01 (113MB DB, 100MB of it raw_json). Drop both
+            # before storing; everything actually used stays.
+            raw={k: v for k, v in raw.items() if k not in ("_embedded", "images")},
         )
 
 

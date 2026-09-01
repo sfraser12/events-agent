@@ -12,6 +12,7 @@ from typing import Any
 from events_agent.annual_anchors import due_reminders, load_annual_anchors
 from events_agent.config import DEFAULT_DB_PATH, HOUSEHOLDS_DIR, REPO_ROOT, load_config, load_secrets
 from events_agent.db import (
+    RAW_JSON_RETENTION_DAYS,
     finish_source_run,
     get_connection,
     init_db,
@@ -19,6 +20,7 @@ from events_agent.db import (
     mark_delisted_events,
     mark_past_events,
     mark_surfaced,
+    prune_stale_raw_json,
     record_llm_usage,
     set_verdict,
     start_source_run,
@@ -265,6 +267,9 @@ def cmd_harvest(args: argparse.Namespace) -> int:
         )
         delisted_count = mark_delisted_events(conn, datetime.now(UTC).date()) if catalog_ok else 0
         conn.commit()
+
+        pruned_count = prune_stale_raw_json(conn, datetime.now(UTC).date())
+        conn.commit()
     finally:
         conn.close()
 
@@ -279,6 +284,8 @@ def cmd_harvest(args: argparse.Namespace) -> int:
         print(f"{past_count} event(s) marked past.")
     if delisted_count:
         print(f"{delisted_count} event(s) marked cancelled — no longer confirmed by any source (likely sold out/pulled).")
+    if pruned_count:
+        print(f"{pruned_count} stale raw_json blob(s) cleared (past/cancelled events older than {RAW_JSON_RETENTION_DAYS} days).")
 
     if all(error for _, _, _, error in summaries):
         return 1

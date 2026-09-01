@@ -5,12 +5,14 @@ import pytest
 
 from events_agent.db import (
     DELIST_AFTER_DAYS,
+    RAW_JSON_RETENTION_DAYS,
     get_connection,
     get_household_as_dict,
     init_db,
     list_households_as_dicts,
     mark_delisted_events,
     mark_past_events,
+    prune_stale_raw_json,
     upsert_household,
     upsert_raw_event,
     upsert_venue,
@@ -426,6 +428,87 @@ def test_mark_delisted_events_leaves_already_past_events_to_mark_past_events(con
     assert marked == 0
     status = conn.execute("SELECT status FROM event WHERE id = ?", (event_id,)).fetchone()[0]
     assert status == "on_sale"  # untouched -- mark_past_events' job, not this function's
+
+
+def _raw_json_for(conn, event_id):
+    return conn.execute(
+        "SELECT raw_json FROM event_source WHERE event_id = ?", (event_id,)
+    ).fetchone()[0]
+
+
+def test_prune_stale_raw_json_clears_old_past_events(conn):
+    old_date = datetime(2026, 8, 1, 19, 0, tzinfo=UTC)  # well over RAW_JSON_RETENTION_DAYS before "today"
+    event_id, _ = upsert_raw_event(conn, make_raw_event(event_date=old_date, status="past"))
+
+    pruned = prune_stale_raw_json(conn, today=date(2026, 9, 15))
+
+    assert pruned == 1
+    assert _raw_json_for(conn, event_id) is None
+
+
+def test_prune_stale_raw_json_keeps_recently_past_events(conn):
+    recent_date = datetime(2026, 9, 10, 19, 0, tzinfo=UTC)
+    event_id, _ = upsert_raw_event(conn, make_raw_event(event_date=recent_date, status="past"))
+
+    pruned = prune_stale_raw_json(conn, today=date(2026, 9, 15))
+
+    assert pruned == 0
+    assert _raw_json_for(conn, event_id) is not None
+
+
+def test_prune_stale_raw_json_ignores_events_that_are_still_active(conn):
+    old_date = datetime(2026, 8, 1, 19, 0, tzinfo=UTC)
+    event_id, _ = upsert_raw_event(conn, make_raw_event(event_date=old_date, status="on_sale"))
+
+    pruned = prune_stale_raw_json(conn, today=date(2026, 9, 15))
+
+    assert pruned == 0
+    assert _raw_json_for(conn, event_id) is not None
+
+
+def test_prune_stale_raw_json_uses_last_confirmed_at_for_cancelled_events_with_a_future_date(conn):
+    # A show cancelled six months ago but originally booked for next year
+    # must still be pruned -- event_date alone would say "not stale yet",
+    # which is wrong once it's cancelled.
+    future_date = datetime(2027, 6, 1, 19, 0, tzinfo=UTC)
+    event_id, _ = upsert_raw_event(conn, make_raw_event(event_date=future_date, status="cancelled"))
+    conn.execute(
+        "UPDATE event SET last_confirmed_at = ? WHERE id = ?",
+        ((date(2026, 9, 15) - timedelta(days=RAW_JSON_RETENTION_DAYS + 1)).isoformat(), event_id),
+    )
+
+    pruned = prune_stale_raw_json(conn, today=date(2026, 9, 15))
+
+    assert pruned == 1
+    assert _raw_json_for(conn, event_id) is None
+
+
+def test_prune_stale_raw_json_keeps_recently_cancelled_events_with_a_future_date(conn):
+    future_date = datetime(2027, 6, 1, 19, 0, tzinfo=UTC)
+    event_id, _ = upsert_raw_event(conn, make_raw_event(event_date=future_date, status="cancelled"))
+    conn.execute(
+        "UPDATE event SET last_confirmed_at = ? WHERE id = ?",
+        (date(2026, 9, 14).isoformat(), event_id),
+    )
+
+    pruned = prune_stale_raw_json(conn, today=date(2026, 9, 15))
+
+    assert pruned == 0
+    assert _raw_json_for(conn, event_id) is not None
+
+
+def test_prune_stale_raw_json_only_clears_the_blob_not_the_event_row(conn):
+    old_date = datetime(2026, 8, 1, 19, 0, tzinfo=UTC)
+    event_id, _ = upsert_raw_event(conn, make_raw_event(event_date=old_date, status="past"))
+
+    prune_stale_raw_json(conn, today=date(2026, 9, 15))
+
+    row = conn.execute("SELECT title FROM event WHERE id = ?", (event_id,)).fetchone()
+    assert row is not None
+    source_row = conn.execute(
+        "SELECT source_event_id FROM event_source WHERE event_id = ?", (event_id,)
+    ).fetchone()
+    assert source_row is not None
 
 
 def test_upsert_household_seeds_a_new_row(conn, tmp_path):

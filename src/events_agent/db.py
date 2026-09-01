@@ -587,6 +587,52 @@ def mark_delisted_events(conn: sqlite3.Connection, today: date, now: str | None 
     return marked
 
 
+RAW_JSON_RETENTION_DAYS = 30  # generous debugging window after an event goes past/cancelled
+
+
+def prune_stale_raw_json(conn: sqlite3.Connection, today: date) -> int:
+    """Null out event_source.raw_json for events that have been past or
+    cancelled for more than RAW_JSON_RETENTION_DAYS.
+
+    raw_json is stored for debugging only -- confirmed nothing in the
+    codebase reads it back programmatically (grep -rn "raw_json" src/ turns
+    up only the write path in this file) -- and it dominates the database's
+    disk footprint: measured live 2026-09-01 at ~89% of a 113MB file, almost
+    entirely Ticketmaster's own _embedded/images payload (now trimmed at
+    write time too, see sources/ticketmaster.py). Once an event is genuinely
+    in the past, or was cancelled a while ago, there's nothing left to debug
+    it against, so there's no reason to keep paying to store it. Only the
+    blob is cleared, never the event/venue/event_source rows themselves --
+    those stay tiny and are what fingerprint dedup and change history
+    depend on.
+
+    "A while ago" means different things for the two statuses, deliberately
+    not just COALESCE(event_date, ...): a 'past' event's event_date is
+    always the right signal (it's already elapsed, by definition). But a
+    'cancelled' event can still carry a *future* event_date (delisted
+    before its date ever arrived) -- using that would mean a show cancelled
+    six months ago never gets pruned just because it was originally booked
+    for next year. last_confirmed_at (last time any source still actively
+    listed it) is the right "how long has this actually been irrelevant"
+    signal there instead.
+    """
+    cutoff = (today - timedelta(days=RAW_JSON_RETENTION_DAYS)).isoformat()
+    cur = conn.execute(
+        """
+        UPDATE event_source
+        SET raw_json = NULL
+        WHERE raw_json IS NOT NULL
+          AND event_id IN (
+              SELECT id FROM event
+              WHERE (status = 'past' AND event_date < ?)
+                 OR (status = 'cancelled' AND last_confirmed_at < ?)
+          )
+        """,
+        (cutoff, cutoff),
+    )
+    return cur.rowcount
+
+
 def upsert_household(
     conn: sqlite3.Connection,
     household_id: int,
