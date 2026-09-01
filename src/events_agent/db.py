@@ -170,6 +170,21 @@ CREATE TABLE IF NOT EXISTS llm_usage (
     cache_read_input_tokens     INTEGER NOT NULL DEFAULT 0,
     created_at                  TEXT NOT NULL
 );
+
+-- One row per email actually sent — added 2026-09-01 so "how many emails
+-- are going out" is a real number, not a guess, once there's more than one
+-- household. household_label is NULL for the admin stats email itself
+-- (never household-scoped). email_type is 'shortlist' | 'understudy' |
+-- 'last_call' | 'admin_stats' — the internal names from CLAUDE.md
+-- "Marketing names", not the Curtain Up display names.
+CREATE TABLE IF NOT EXISTS email_log (
+    id              INTEGER PRIMARY KEY,
+    household_label TEXT,
+    email_type      TEXT NOT NULL,
+    recipient       TEXT NOT NULL,
+    item_count      INTEGER,
+    sent_at         TEXT NOT NULL
+);
 """
 
 
@@ -826,6 +841,20 @@ def record_llm_usage(
         ) VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
         (context, model, input_tokens, output_tokens, cache_creation_input_tokens, cache_read_input_tokens, created_at),
+    )
+
+
+def record_email_sent(
+    conn: sqlite3.Connection,
+    household_label: str | None,
+    email_type: str,
+    recipient: str,
+    item_count: int | None,
+    sent_at: str,
+) -> None:
+    conn.execute(
+        "INSERT INTO email_log (household_label, email_type, recipient, item_count, sent_at) VALUES (?, ?, ?, ?, ?)",
+        (household_label, email_type, recipient, item_count, sent_at),
     )
 
 

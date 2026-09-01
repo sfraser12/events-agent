@@ -71,6 +71,7 @@ class PeriodTotals:
     source_calls_ok: int
     source_calls_failed: int
     source_rows_fetched: int
+    emails_sent: int = 0
 
 
 @dataclass
@@ -84,10 +85,13 @@ class StatusReport:
     total_estimated_cost_usd: float = 0.0
     any_unpriced_model: bool = False
     event_count: int = 0
+    events_by_status: list[tuple[str, int]] = field(default_factory=list)
     venue_count: int = 0
     household_count: int = 0
+    total_household_slots: int = 1
     scored_count: int = 0
     db_size_bytes: int = 0
+    emails_by_type: list[tuple[str, int]] = field(default_factory=list)
 
 
 def _estimate_cost_usd(
@@ -127,6 +131,7 @@ def _compute_period_totals(conn: sqlite3.Connection, label: str, cutoff_iso: str
             GROUP BY model
             """
         ).fetchall()
+        emails_sent = conn.execute("SELECT COUNT(*) FROM email_log").fetchone()[0]
     else:
         src_row = conn.execute(
             """
@@ -147,6 +152,9 @@ def _compute_period_totals(conn: sqlite3.Connection, label: str, cutoff_iso: str
             """,
             (cutoff_iso,),
         ).fetchall()
+        emails_sent = conn.execute(
+            "SELECT COUNT(*) FROM email_log WHERE sent_at >= ?", (cutoff_iso,)
+        ).fetchone()[0]
 
     ok, failed, rows_fetched = (src_row[0] or 0, src_row[1] or 0, src_row[2] or 0)
 
@@ -161,11 +169,15 @@ def _compute_period_totals(conn: sqlite3.Connection, label: str, cutoff_iso: str
         else:
             total_cost += cost
 
-    return PeriodTotals(label, total_calls, total_cost, any_unpriced, ok, failed, rows_fetched)
+    return PeriodTotals(label, total_calls, total_cost, any_unpriced, ok, failed, rows_fetched, emails_sent)
 
 
 def build_status_report(
-    conn: sqlite3.Connection, db_path: Path, lookback_days: int = 7, now: datetime | None = None
+    conn: sqlite3.Connection,
+    db_path: Path,
+    lookback_days: int = 7,
+    now: datetime | None = None,
+    total_household_slots: int = 1,
 ) -> StatusReport:
     now = now or datetime.now(UTC)
     cutoff = (now - timedelta(days=lookback_days)).isoformat()
@@ -224,12 +236,24 @@ def build_status_report(
     ).fetchall()
 
     event_count = conn.execute("SELECT COUNT(*) FROM event").fetchone()[0]
+    status_rows = conn.execute(
+        "SELECT COALESCE(status, 'unknown'), COUNT(*) FROM event GROUP BY status ORDER BY COUNT(*) DESC"
+    ).fetchall()
     venue_count = conn.execute("SELECT COUNT(*) FROM venue").fetchone()[0]
     household_count = conn.execute("SELECT COUNT(*) FROM household").fetchone()[0]
     scored_count = conn.execute(
         "SELECT COUNT(*) FROM household_event_state WHERE score IS NOT NULL"
     ).fetchone()[0]
     db_size_bytes = db_path.stat().st_size if db_path.exists() else 0
+
+    email_type_rows = conn.execute(
+        """
+        SELECT email_type, COUNT(*) FROM email_log
+        WHERE sent_at >= ?
+        GROUP BY email_type ORDER BY COUNT(*) DESC
+        """,
+        (cutoff,),
+    ).fetchall()
 
     return StatusReport(
         lookback_days=lookback_days,
@@ -241,6 +265,9 @@ def build_status_report(
         total_estimated_cost_usd=total_cost,
         any_unpriced_model=any_unpriced,
         event_count=event_count,
+        events_by_status=list(status_rows),
+        total_household_slots=total_household_slots,
+        emails_by_type=list(email_type_rows),
         venue_count=venue_count,
         household_count=household_count,
         scored_count=scored_count,
@@ -308,6 +335,7 @@ def _period_totals_rows_html(p: PeriodTotals) -> str:
             "Source API calls",
             f"{p.source_calls_ok} ok / {p.source_calls_failed} failed &middot; {p.source_rows_fetched:,} rows",
         )
+        + _stat_row_html("Emails sent", f"{p.emails_sent:,}")
     )
     return heading + rows
 
@@ -342,14 +370,19 @@ def build_status_html(report: StatusReport) -> str:
 
     context_rows = "".join(_stat_row_html(context, f"{calls} call{'s' if calls != 1 else ''}") for context, calls in report.usage_by_context)
 
+    status_text = " / ".join(f"{count:,} {status}" for status, count in report.events_by_status)
     catalog_rows = "".join(
         [
-            _stat_row_html("Events in catalog", f"{report.event_count:,}"),
+            _stat_row_html("Events in catalog", f"{report.event_count:,} ({status_text})" if status_text else f"{report.event_count:,}"),
             _stat_row_html("Venues", f"{report.venue_count:,}"),
-            _stat_row_html("Households configured", str(report.household_count)),
+            _stat_row_html("Households configured", f"{report.household_count} of {report.total_household_slots} defined slot{'s' if report.total_household_slots != 1 else ''}"),
             _stat_row_html("Household-event rows scored", f"{report.scored_count:,}"),
             _stat_row_html("Database file size", _bytes_to_human(report.db_size_bytes)),
         ]
+    )
+
+    email_type_rows = "".join(
+        _stat_row_html(email_type, f"{count} sent") for email_type, count in report.emails_by_type
     )
 
     sections = (
@@ -357,6 +390,7 @@ def build_status_html(report: StatusReport) -> str:
         + _section_html("Source API calls (last 7 days)", source_rows or empty_row("No source runs in this window."))
         + _section_html(f"LLM usage — {cost_note}", model_rows)
         + _section_html("LLM calls by household/context (last 7 days)", context_rows)
+        + _section_html("Emails sent by type (last 7 days)", email_type_rows)
         + _section_html("Catalog snapshot (all-time)", catalog_rows)
     )
 
@@ -382,7 +416,7 @@ def build_status_plain(report: StatusReport) -> str:
         cost = f"~${p.llm_cost_usd:.2f}" + (" (some models unpriced)" if p.llm_any_unpriced else "")
         lines.append(f"- {p.label}: LLM spend {cost} across {p.llm_calls} calls; "
                      f"source API calls {p.source_calls_ok} ok / {p.source_calls_failed} failed, "
-                     f"{p.source_rows_fetched} rows fetched")
+                     f"{p.source_rows_fetched} rows fetched; {p.emails_sent} emails sent")
 
     lines += ["", "SOURCE API CALLS (last 7 days)"]
     if report.sources:
@@ -412,12 +446,20 @@ def build_status_plain(report: StatusReport) -> str:
     else:
         lines.append("- (none)")
 
+    lines += ["", "EMAILS SENT BY TYPE (last 7 days)"]
+    if report.emails_by_type:
+        for email_type, count in report.emails_by_type:
+            lines.append(f"- {email_type}: {count}")
+    else:
+        lines.append("- (none)")
+
+    status_text = " / ".join(f"{count} {status}" for status, count in report.events_by_status)
     lines += [
         "",
         "CATALOG SNAPSHOT (all-time)",
-        f"- events: {report.event_count}",
+        f"- events: {report.event_count}" + (f" ({status_text})" if status_text else ""),
         f"- venues: {report.venue_count}",
-        f"- households configured: {report.household_count}",
+        f"- households configured: {report.household_count} of {report.total_household_slots} defined slots",
         f"- household-event rows scored: {report.scored_count}",
         f"- database file size: {_bytes_to_human(report.db_size_bytes)}",
     ]

@@ -20,11 +20,11 @@ def make_report(**overrides) -> StatusReport:
         generated_at=datetime(2026, 8, 31, 14, 0, tzinfo=UTC),
         periods=[
             PeriodTotals("This week", llm_calls=6, llm_cost_usd=0.18, llm_any_unpriced=False,
-                          source_calls_ok=61, source_calls_failed=0, source_rows_fetched=99097),
+                          source_calls_ok=61, source_calls_failed=0, source_rows_fetched=99097, emails_sent=2),
             PeriodTotals("This month", llm_calls=6, llm_cost_usd=0.18, llm_any_unpriced=False,
-                          source_calls_ok=61, source_calls_failed=0, source_rows_fetched=99097),
+                          source_calls_ok=61, source_calls_failed=0, source_rows_fetched=99097, emails_sent=2),
             PeriodTotals("All-time", llm_calls=6, llm_cost_usd=0.18, llm_any_unpriced=False,
-                          source_calls_ok=61, source_calls_failed=0, source_rows_fetched=99097),
+                          source_calls_ok=61, source_calls_failed=0, source_rows_fetched=99097, emails_sent=2),
         ],
         sources=[SourceStat("skiddle", ok_runs=5, failed_runs=0, rows_fetched=1234)],
         usage_by_context=[("Milngavie", 5)],
@@ -37,6 +37,9 @@ def make_report(**overrides) -> StatusReport:
         total_estimated_cost_usd=0.18,
         any_unpriced_model=False,
         event_count=7602,
+        events_by_status=[("on_sale", 6000), ("past", 1000), ("cancelled", 602)],
+        total_household_slots=2,
+        emails_by_type=[("shortlist", 1), ("last_call", 1)],
         venue_count=598,
         household_count=1,
         scored_count=3247,
@@ -166,3 +169,35 @@ def test_period_windows_correctly_include_and_exclude_rows_by_age(conn, tmp_path
     assert by_label["This week"].source_calls_ok == 1
     assert by_label["This month"].source_calls_ok == 2
     assert by_label["All-time"].source_calls_ok == 3
+
+
+def test_html_renders_emails_sent_and_household_slots():
+    html_out = build_status_html(make_report())
+    assert "Emails sent" in html_out
+    assert "1 of 2 defined slots" in html_out
+    assert "shortlist" in html_out
+    assert "6,000 on_sale" in html_out or "6000 on_sale" in html_out
+
+
+def test_plain_renders_emails_sent_and_household_slots():
+    plain = build_status_plain(make_report())
+    assert "emails sent" in plain
+    assert "households configured: 1 of 2 defined slots" in plain
+    assert "shortlist: 1" in plain
+
+
+def test_email_totals_reflect_real_email_log_rows(conn, tmp_path):
+    from events_agent.db import record_email_sent
+
+    now = datetime(2026, 9, 1, 12, 0, tzinfo=UTC)
+    record_email_sent(conn, "Milngavie", "shortlist", "scott@example.com", 480, (now - timedelta(days=1)).isoformat())
+    record_email_sent(conn, "Milngavie", "last_call", "scott@example.com", 3, (now - timedelta(days=1)).isoformat())
+    record_email_sent(conn, None, "admin_stats", "admin@example.com", None, (now - timedelta(days=60)).isoformat())
+    conn.commit()
+
+    report = build_status_report(conn, tmp_path / "test.db", lookback_days=7, now=now)
+    by_label = {p.label: p for p in report.periods}
+
+    assert by_label["This week"].emails_sent == 2  # the 60-day-old admin_stats row is outside this window
+    assert by_label["All-time"].emails_sent == 3
+    assert dict(report.emails_by_type) == {"shortlist": 1, "last_call": 1}  # last-7-days breakdown only

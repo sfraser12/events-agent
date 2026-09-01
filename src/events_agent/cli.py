@@ -21,6 +21,7 @@ from events_agent.db import (
     mark_past_events,
     mark_surfaced,
     prune_stale_raw_json,
+    record_email_sent,
     record_llm_usage,
     set_verdict,
     start_source_run,
@@ -363,6 +364,9 @@ def cmd_alert(args: argparse.Namespace) -> int:
             )
             if sent:
                 all_change_ids.update(item.change_id for item in items)
+                record_email_sent(
+                    conn, household["label"], "last_call", household["email_to"], len(items), now.isoformat()
+                )
                 print(f"  (alert emailed to {household['email_to']})")
             else:
                 print(f"  (alert email NOT sent — see error above; not marking notified, will retry next run)")
@@ -443,7 +447,9 @@ def cmd_digest(args: argparse.Namespace) -> int:
             )
             if sent:
                 event_ids = [event.event_id for events in horizons.values() for event in events]
-                mark_surfaced(conn, household["id"], event_ids, datetime.now(UTC).isoformat())
+                now_iso = datetime.now(UTC).isoformat()
+                mark_surfaced(conn, household["id"], event_ids, now_iso)
+                record_email_sent(conn, household["label"], "shortlist", household["email_to"], total, now_iso)
                 conn.commit()
                 print(f"{household['label']}: digest sent to {household['email_to']} ({total} events).")
             else:
@@ -461,23 +467,28 @@ def cmd_status(args: argparse.Namespace) -> int:
     admin_email = secrets.admin_email or secrets.smtp_user
     conn = get_connection(DEFAULT_DB_PATH)
     try:
-        report = build_status_report(conn, DEFAULT_DB_PATH, lookback_days=7)
+        report = build_status_report(
+            conn, DEFAULT_DB_PATH, lookback_days=7, total_household_slots=len(HOUSEHOLD_IDS)
+        )
+        html_body = build_status_html(report)
+        plain_body = build_status_plain(report)
+        sent = send_email(
+            smtp_host=secrets.smtp_host,
+            smtp_port=secrets.smtp_port,
+            smtp_user=secrets.smtp_user,
+            smtp_password=secrets.smtp_password,
+            from_email=secrets.smtp_user,
+            to_email=admin_email,
+            subject=f"Curtain Up – Admin Stats – ~${report.total_estimated_cost_usd:.2f} LLM spend, last 7 days",
+            html_body=html_body,
+            plain_body=plain_body,
+        )
+        if sent:
+            record_email_sent(conn, None, "admin_stats", admin_email, report.event_count, datetime.now(UTC).isoformat())
+            conn.commit()
     finally:
         conn.close()
 
-    html_body = build_status_html(report)
-    plain_body = build_status_plain(report)
-    sent = send_email(
-        smtp_host=secrets.smtp_host,
-        smtp_port=secrets.smtp_port,
-        smtp_user=secrets.smtp_user,
-        smtp_password=secrets.smtp_password,
-        from_email=secrets.smtp_user,
-        to_email=admin_email,
-        subject=f"Curtain Up – Admin Stats – ~${report.total_estimated_cost_usd:.2f} LLM spend, last 7 days",
-        html_body=html_body,
-        plain_body=plain_body,
-    )
     print(plain_body)
     print()
     if sent:
@@ -519,7 +530,9 @@ def cmd_fortnight(args: argparse.Namespace) -> int:
             )
             if sent:
                 event_ids = [e.event_id for e in events]
-                mark_surfaced(conn, household["id"], event_ids, datetime.now(UTC).isoformat())
+                now_iso = datetime.now(UTC).isoformat()
+                mark_surfaced(conn, household["id"], event_ids, now_iso)
+                record_email_sent(conn, household["label"], "understudy", household["email_to"], len(events), now_iso)
                 conn.commit()
                 print(f"{household['label']}: fortnight check sent to {household['email_to']} ({len(events)} events).")
             else:
