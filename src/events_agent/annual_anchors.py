@@ -21,9 +21,18 @@ _MONTH_NUMBERS = {
 
 class AnnualAnchor(BaseModel):
     name: str
-    typical_month: str
-    programme_announced: str
+    typical_month: str | None = None
+    programme_announced: str | None = None
+    # Alternative to typical_month/programme_announced, for a fixture with a
+    # genuine fixed recurring date (Hogmanay fire festivals, Up Helly Aa)
+    # rather than a "programme announced" lead time — "MM-DD".
+    fixed_date: str | None = None
+    remind_days_before: int = 21
     watch_url: str = ""
+
+    # Populated by due_reminders() for a fixed_date anchor, not read from
+    # YAML — the concrete date of the next occurrence, for display.
+    next_occurrence: date | None = None
 
 
 def load_annual_anchors(path: Path) -> list[AnnualAnchor]:
@@ -38,15 +47,36 @@ def load_annual_anchors(path: Path) -> list[AnnualAnchor]:
 
 
 def due_reminders(anchors: list[AnnualAnchor], today: date) -> list[AnnualAnchor]:
-    """An anchor is due in the single calendar month immediately before its
-    programme_announced month — e.g. programme_announced: october fires
-    reminders through all of September, so there's still time to go looking
-    before the announcement actually lands. Unrecognised month names are
-    skipped rather than raising, consistent with "missing/bad data never
-    excludes" elsewhere — a typo in a hand-edited YAML file shouldn't break
-    the whole digest send."""
+    """Two anchor shapes, checked separately:
+
+    - programme_announced (Celtic Connections, Fringe, panto, ...): due in
+      the single calendar month immediately before that month — e.g.
+      programme_announced: october fires reminders through all of
+      September, so there's still time to go looking before the
+      announcement actually lands.
+    - fixed_date (Hogmanay fire festivals, Up Helly Aa, ...): due for the
+      remind_days_before window immediately before the next occurrence of
+      that MM-DD — these are free public fixtures with a real date, not an
+      on-sale window to watch for, so the reminder is "this is coming up"
+      rather than "go check for an announcement."
+
+    Unrecognised month names / malformed fixed_date values are skipped
+    rather than raising, consistent with "missing/bad data never excludes"
+    elsewhere — a typo in a hand-edited YAML file shouldn't break the whole
+    digest send."""
     due = []
     for anchor in anchors:
+        if anchor.fixed_date:
+            occurrence = _next_occurrence(anchor.fixed_date, today)
+            if occurrence is None:
+                continue
+            days_until = (occurrence - today).days
+            if 0 <= days_until <= anchor.remind_days_before:
+                due.append(anchor.model_copy(update={"next_occurrence": occurrence}))
+            continue
+
+        if not anchor.programme_announced:
+            continue
         announced_month = _MONTH_NUMBERS.get(anchor.programme_announced.strip().lower())
         if announced_month is None:
             continue
@@ -54,3 +84,15 @@ def due_reminders(anchors: list[AnnualAnchor], today: date) -> list[AnnualAnchor
         if today.month == reminder_month:
             due.append(anchor)
     return due
+
+
+def _next_occurrence(fixed_date: str, today: date) -> date | None:
+    try:
+        month_str, day_str = fixed_date.strip().split("-")
+        month, day = int(month_str), int(day_str)
+        occurrence = date(today.year, month, day)
+    except (ValueError, TypeError):
+        return None
+    if occurrence < today:
+        occurrence = date(today.year + 1, month, day)
+    return occurrence

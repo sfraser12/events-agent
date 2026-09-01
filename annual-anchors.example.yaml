@@ -1,5 +1,11 @@
 # Recurring fixtures worth watching for a programme announcement.
 # Copy to annual-anchors.yaml and edit. Hand-maintained, no fetcher.
+#
+# Two shapes: typical_month/programme_announced for a fixture whose date
+# floats and whose programme is announced ahead of time (most entries
+# below); fixed_date ("MM-DD") + remind_days_before for one with a genuine
+# fixed recurring date and no announcement to watch for (the fire/Viking
+# festivals at the bottom).
 - name: Celtic Connections
   typical_month: january
   programme_announced: october
@@ -34,3 +40,23 @@
   typical_month: june
   programme_announced: april
   watch_url: "https://westfest.uk/"
+
+- name: Up Helly Aa
+  fixed_date: "01-26"  # last Tuesday of January - shifts year to year, update by hand each January
+  remind_days_before: 21
+  watch_url: "https://www.uphellyaa.org/"
+
+- name: Beltane Fire Festival
+  fixed_date: "04-30"
+  remind_days_before: 21
+  watch_url: "https://beltane.org/"
+
+- name: Stonehaven Fireballs
+  fixed_date: "12-31"
+  remind_days_before: 21
+  watch_url: ""
+
+- name: Flambeaux Comrie
+  fixed_date: "12-31"
+  remind_days_before: 21
+  watch_url: ""

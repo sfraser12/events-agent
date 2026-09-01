@@ -216,15 +216,23 @@ def _reminder_row_html(anchor: AnnualAnchor) -> str:
         if anchor.watch_url
         else ""
     )
+    message = _reminder_text_html(anchor)
     return f"""\
     <tr>
       <td style="padding:14px 32px; border-bottom:1px solid {BORDER}; background:{WARN_BG};">
         <span style="background:{WARN_BG}; color:{WARN}; font-size:11px; font-weight:700; \
 text-transform:uppercase; letter-spacing:0.04em;">Annual anchor</span>
-        <div style="font-size:14px; color:{INK}; margin-top:4px;">{html.escape(anchor.name)}'s programme is usually \
-announced this month — worth a look{link}.</div>
+        <div style="font-size:14px; color:{INK}; margin-top:4px;">{message}{link}.</div>
       </td>
     </tr>"""
+
+
+def _reminder_text_html(anchor: AnnualAnchor) -> str:
+    name = html.escape(anchor.name)
+    if anchor.fixed_date and anchor.next_occurrence:
+        when = anchor.next_occurrence.strftime("%a %-d %b")
+        return f"{name} is coming up {when} – worth planning for"
+    return f"{name}'s programme is usually announced this month – worth a look"
 
 
 def _horizon_section_html(horizon: str, events: list[DigestEvent]) -> str:
@@ -308,8 +316,12 @@ def build_digest_plain(
         "",
     ]
     for anchor in reminders or []:
-        watch = f" — {anchor.watch_url}" if anchor.watch_url else ""
-        lines.append(f"ANNUAL ANCHOR: {anchor.name}'s programme is usually announced this month{watch}")
+        watch = f" - {anchor.watch_url}" if anchor.watch_url else ""
+        if anchor.fixed_date and anchor.next_occurrence:
+            when = anchor.next_occurrence.strftime("%a %-d %b")
+            lines.append(f"ANNUAL ANCHOR: {anchor.name} is coming up {when}{watch}")
+        else:
+            lines.append(f"ANNUAL ANCHOR: {anchor.name}'s programme is usually announced this month{watch}")
     if reminders:
         lines.append("")
     any_events = False
