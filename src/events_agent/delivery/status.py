@@ -46,6 +46,23 @@ class SourceStat:
 
 
 @dataclass
+class GoogleAlertStat:
+    """Per-feed content yield — added 2026-09-01 after a manual check found
+    13 live feeds running cleanly for 4-6 days had produced a grand total
+    of one row, and that row wasn't even a real event (a "best hotels"
+    listicle that happened to mention a venue by name). The fetch/parse
+    mechanism isn't the question here (source_run already shows that's
+    healthy) — whether these specific alerts are actually finding anything
+    is. total_events counts real rows in event_source, not raw source_run
+    fetch attempts, which are cheap and don't mean content was found."""
+
+    name: str
+    days_running: int
+    total_events: int
+    last_event_days_ago: int | None  # None if it has never produced anything
+
+
+@dataclass
 class ModelUsageStat:
     model: str
     calls: int
@@ -92,6 +109,7 @@ class StatusReport:
     scored_count: int = 0
     db_size_bytes: int = 0
     emails_by_type: list[tuple[str, int]] = field(default_factory=list)
+    google_alerts: list[GoogleAlertStat] = field(default_factory=list)
 
 
 def _estimate_cost_usd(
@@ -255,6 +273,8 @@ def build_status_report(
         (cutoff,),
     ).fetchall()
 
+    google_alerts = _compute_google_alert_stats(conn, now)
+
     return StatusReport(
         lookback_days=lookback_days,
         generated_at=now,
@@ -272,7 +292,53 @@ def build_status_report(
         household_count=household_count,
         scored_count=scored_count,
         db_size_bytes=db_size_bytes,
+        google_alerts=google_alerts,
     )
+
+
+def _compute_google_alert_stats(conn: sqlite3.Connection, now: datetime) -> list[GoogleAlertStat]:
+    first_run_rows = conn.execute(
+        """
+        SELECT source_name, MIN(started_at)
+        FROM source_run
+        WHERE source_name LIKE 'google_alerts%'
+        GROUP BY source_name
+        ORDER BY source_name
+        """
+    ).fetchall()
+    if not first_run_rows:
+        return []
+
+    last_event_rows = dict(
+        conn.execute(
+            """
+            SELECT es.source_name, MAX(e.first_seen)
+            FROM event_source es
+            JOIN event e ON e.id = es.event_id
+            WHERE es.source_name LIKE 'google_alerts%'
+            GROUP BY es.source_name
+            """
+        ).fetchall()
+    )
+    event_count_rows = dict(
+        conn.execute(
+            """
+            SELECT source_name, COUNT(*)
+            FROM event_source
+            WHERE source_name LIKE 'google_alerts%'
+            GROUP BY source_name
+            """
+        ).fetchall()
+    )
+
+    stats = []
+    for name, first_run in first_run_rows:
+        days_running = (now - datetime.fromisoformat(first_run)).days
+        total_events = event_count_rows.get(name, 0)
+        last_event = last_event_rows.get(name)
+        last_event_days_ago = (now - datetime.fromisoformat(last_event)).days if last_event else None
+        stats.append(GoogleAlertStat(name, days_running, total_events, last_event_days_ago))
+    return stats
 
 
 def _stat_row_html(label: str, value: str) -> str:
@@ -312,6 +378,15 @@ letter-spacing:0.06em; color:{ADMIN}; border-bottom:2px solid {ADMIN}; padding-b
         </table>
       </td>
     </tr>"""
+
+
+def _google_alert_value_text(a: GoogleAlertStat) -> str:
+    if a.total_events == 0:
+        return f"0 events ever &middot; running {a.days_running}d"
+    return (
+        f"{a.total_events} event{'s' if a.total_events != 1 else ''} ever &middot; "
+        f"running {a.days_running}d &middot; last {a.last_event_days_ago}d ago"
+    )
 
 
 def _bytes_to_human(n: int) -> str:
@@ -385,12 +460,21 @@ def build_status_html(report: StatusReport) -> str:
         _stat_row_html(email_type, f"{count} sent") for email_type, count in report.emails_by_type
     )
 
+    google_alert_rows = "".join(
+        _stat_row_html(a.name.removeprefix("google_alerts_"), _google_alert_value_text(a))
+        for a in sorted(report.google_alerts, key=lambda a: (a.total_events, -a.days_running))
+    )
+
     sections = (
         _section_html("Totals — this week / this month / all-time", totals_rows)
         + _section_html("Source API calls (last 7 days)", source_rows or empty_row("No source runs in this window."))
         + _section_html(f"LLM usage — {cost_note}", model_rows)
         + _section_html("LLM calls by household/context (last 7 days)", context_rows)
         + _section_html("Emails sent by type (last 7 days)", email_type_rows)
+        + _section_html(
+            "Google Alerts content yield (all-time, weakest first)",
+            google_alert_rows or empty_row("No Google Alerts feeds configured."),
+        )
         + _section_html("Catalog snapshot (all-time)", catalog_rows)
     )
 
@@ -450,6 +534,20 @@ def build_status_plain(report: StatusReport) -> str:
     if report.emails_by_type:
         for email_type, count in report.emails_by_type:
             lines.append(f"- {email_type}: {count}")
+    else:
+        lines.append("- (none)")
+
+    lines += ["", "GOOGLE ALERTS CONTENT YIELD (all-time, weakest first)"]
+    if report.google_alerts:
+        for a in sorted(report.google_alerts, key=lambda a: (a.total_events, -a.days_running)):
+            name = a.name.removeprefix("google_alerts_")
+            if a.total_events == 0:
+                lines.append(f"- {name}: 0 events ever, running {a.days_running}d")
+            else:
+                lines.append(
+                    f"- {name}: {a.total_events} event(s) ever, running {a.days_running}d, "
+                    f"last {a.last_event_days_ago}d ago"
+                )
     else:
         lines.append("- (none)")
 

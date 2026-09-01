@@ -2,8 +2,9 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from events_agent.db import get_connection, init_db
+from events_agent.db import get_connection, init_db, upsert_raw_event
 from events_agent.delivery.status import (
+    GoogleAlertStat,
     ModelUsageStat,
     PeriodTotals,
     SourceStat,
@@ -12,6 +13,7 @@ from events_agent.delivery.status import (
     build_status_plain,
     build_status_report,
 )
+from events_agent.models import RawEvent
 
 
 def make_report(**overrides) -> StatusReport:
@@ -40,6 +42,10 @@ def make_report(**overrides) -> StatusReport:
         events_by_status=[("on_sale", 6000), ("past", 1000), ("cancelled", 602)],
         total_household_slots=2,
         emails_by_type=[("shortlist", 1), ("last_call", 1)],
+        google_alerts=[
+            GoogleAlertStat("google_alerts_cameron_house", days_running=6, total_events=1, last_event_days_ago=3),
+            GoogleAlertStat("google_alerts_crieff_hydro", days_running=6, total_events=0, last_event_days_ago=None),
+        ],
         venue_count=598,
         household_count=1,
         scored_count=3247,
@@ -201,3 +207,57 @@ def test_email_totals_reflect_real_email_log_rows(conn, tmp_path):
     assert by_label["This week"].emails_sent == 2  # the 60-day-old admin_stats row is outside this window
     assert by_label["All-time"].emails_sent == 3
     assert dict(report.emails_by_type) == {"shortlist": 1, "last_call": 1}  # last-7-days breakdown only
+
+
+def test_html_renders_google_alert_yield_dead_and_live_feeds():
+    html_out = build_status_html(make_report())
+    assert "cameron_house" in html_out
+    assert "1 event ever" in html_out
+    assert "crieff_hydro" in html_out
+    assert "0 events ever" in html_out
+    assert "&amp;middot;" not in html_out  # same double-escaping regression as _stat_row_html generally
+
+
+def test_plain_renders_google_alert_yield_dead_and_live_feeds():
+    plain = build_status_plain(make_report())
+    assert "cameron_house: 1 event(s) ever, running 6d, last 3d ago" in plain
+    assert "crieff_hydro: 0 events ever, running 6d" in plain
+
+
+def test_google_alert_stats_computed_from_real_source_run_and_event_source_rows(conn, tmp_path):
+    now = datetime(2026, 9, 1, 12, 0, tzinfo=UTC)
+    first_run = (now - timedelta(days=6)).isoformat()
+    conn.execute(
+        "INSERT INTO source_run (source_name, started_at, status, rows_fetched) VALUES (?, ?, 'ok', 0)",
+        ("google_alerts_dead_feed", first_run),
+    )
+    conn.execute(
+        "INSERT INTO source_run (source_name, started_at, status, rows_fetched) VALUES (?, ?, 'ok', 1)",
+        ("google_alerts_live_feed", first_run),
+    )
+    conn.commit()
+
+    event_id, _ = upsert_raw_event(
+        conn,
+        RawEvent(
+            source_name="google_alerts_live_feed", source_event_id="1",
+            title="Spa Deal", category=None, venue_name="Various — Wowcher Spa Deals",
+            status="announced", event_date=None,
+        ),
+    )
+    # first_seen is set to the real wall-clock time by upsert_raw_event, not
+    # controllable at insert time -- pin it explicitly so this test doesn't
+    # depend on what time of day it happens to run.
+    conn.execute(
+        "UPDATE event SET first_seen = ? WHERE id = ?", ((now - timedelta(days=2)).isoformat(), event_id)
+    )
+    conn.commit()
+
+    report = build_status_report(conn, tmp_path / "test.db", lookback_days=7, now=now)
+    by_name = {a.name: a for a in report.google_alerts}
+
+    assert by_name["google_alerts_dead_feed"].total_events == 0
+    assert by_name["google_alerts_dead_feed"].last_event_days_ago is None
+    assert by_name["google_alerts_live_feed"].total_events == 1
+    assert by_name["google_alerts_live_feed"].last_event_days_ago == 2
+    assert by_name["google_alerts_live_feed"].days_running == 6
