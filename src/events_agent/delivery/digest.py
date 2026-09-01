@@ -273,7 +273,7 @@ font-weight:600;">new</span> &nbsp; '
 <span style="background:{ACCENT_BG}; color:{ACCENT}; padding:2px 8px; border-radius:10px; font-weight:600;">\
 score {event.score}</span> &nbsp;&middot;&nbsp; <code style="color:{MUTED};">id {event.event_id}</code></div>
             </td>
-{cta_cell(event.url, event.title, event.venue_name)}
+{cta_cell(event.url, event.title, event.venue_name, event.event_date)}
           </tr>
         </table>
       </td>

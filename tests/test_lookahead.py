@@ -87,6 +87,17 @@ def test_below_digest_threshold_within_window_is_included(conn, household):
     assert events[0].title == "Some Gig"
 
 
+def test_build_lookahead_html_includes_google_calendar_link(conn, household):
+    event_id, _ = upsert_raw_event(conn, make_raw_event())
+    score_event(conn, household["id"], event_id, 50)
+    conn.commit()
+
+    events = select_lookahead_events(conn, household)
+    html = build_lookahead_html(household, events)
+
+    assert "calendar.google.com/calendar/render" in html
+
+
 def test_resolved_duplicate_only_surfaces_the_canonical_side(conn, household):
     lower_id, _ = upsert_raw_event(conn, make_raw_event(source_event_id="1", title="Some Gig"))
     higher_id, _ = upsert_raw_event(

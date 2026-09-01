@@ -33,3 +33,28 @@ def test_cta_cell_includes_fallback_search_link_when_title_given():
 def test_cta_cell_fallback_search_link_works_without_venue():
     html_out = cta_cell("https://example.com/event", "Karine Polwart", None)
     assert "google.com/search?q=Karine+Polwart+tickets" in html_out
+
+
+def test_cta_cell_omits_calendar_link_when_no_event_date_given():
+    # alert.py doesn't have a real event date to build one from, and
+    # deliberately doesn't pass one -- confirm that degrades cleanly.
+    html_out = cta_cell("https://example.com/event", "Karine Polwart", "Oran Mor")
+    assert "calendar.google.com" not in html_out
+
+
+def test_cta_cell_includes_google_calendar_link_when_event_date_given():
+    html_out = cta_cell(
+        "https://example.com/event", "Karine Polwart", "Oran Mor", "2027-03-16T19:00:00+00:00"
+    )
+    assert "calendar.google.com/calendar/render?action=TEMPLATE" in html_out
+    assert "text=Karine+Polwart" in html_out
+    assert "dates=20270316T190000%2F20270316T220000" in html_out  # 3h default duration
+    assert "ctz=Europe%2FLondon" in html_out
+    assert "location=Oran+Mor" in html_out
+    assert "%2Fevent" in html_out  # booking url folded into details=
+
+
+def test_cta_cell_calendar_link_works_without_venue():
+    html_out = cta_cell("https://example.com/event", "Karine Polwart", None, "2027-03-16T19:00:00+00:00")
+    assert "calendar.google.com" in html_out
+    assert "location=" not in html_out

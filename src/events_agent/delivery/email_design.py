@@ -10,7 +10,8 @@ web and email.
 from __future__ import annotations
 
 import html
-from urllib.parse import quote_plus
+from datetime import datetime, timedelta
+from urllib.parse import quote_plus, urlencode
 
 BRAND = "Curtain Up"
 
@@ -78,7 +79,12 @@ def empty_row(message: str) -> str:
     return f'<tr><td style="padding:24px 32px 32px; font-size:14px; color:{MUTED}; font-family:{SANS};">{html.escape(message)}</td></tr>'
 
 
-def cta_cell(url: str | None, title: str | None = None, venue_name: str | None = None) -> str:
+def cta_cell(
+    url: str | None,
+    title: str | None = None,
+    venue_name: str | None = None,
+    event_date: str | None = None,
+) -> str:
     """The "Book" button, plus a small fallback search link underneath when
     a title is available -- booking links do go dead (sold out and pulled,
     or just a stale/misfiring page on the source's end; confirmed
@@ -86,15 +92,29 @@ def cta_cell(url: str | None, title: str | None = None, venue_name: str | None =
     of this fix), and a dead link with no way out is a bad surprise days or
     weeks after the email was sent. The search fallback works regardless of
     *why* the direct link failed, which a source-specific "try again" link
-    couldn't."""
+    couldn't.
+
+    event_date (added 2026-09-01, optional): when given, also adds a
+    zero-setup "+ Calendar" link -- a plain Google Calendar render URL
+    (calendar.google.com/calendar/render?action=TEMPLATE&...), not the
+    Calendar API, so it needs no OAuth and stays inside this project's
+    no-auth-flow-to-maintain constraint the same way the .ics export does.
+    Only wired up where a real event_date exists (digest/lookahead) -- the
+    urgent alert has no event date to build one from, and doesn't pass it."""
     if not url:
         return ""
     search_link = _search_fallback_link(title, venue_name) if title else ""
+    calendar_link = (
+        _google_calendar_link(title, event_date, venue_name, url)
+        if title and event_date
+        else ""
+    )
     return f"""\
         <td style="vertical-align:top; text-align:right; padding-left:12px; width:96px;">
           <a href="{html.escape(url)}" style="display:inline-block; background:{ACCENT}; color:#FFFFFF; \
 text-decoration:none; font-size:13px; font-weight:600; padding:8px 14px; border-radius:6px; white-space:nowrap;">\
 Book &rarr;</a>
+          {calendar_link}
           {search_link}
         </td>"""
 
@@ -105,3 +125,30 @@ def _search_fallback_link(title: str, venue_name: str | None) -> str:
     return f"""\
 <div style="margin-top:6px;"><a href="{search_url}" style="font-size:11px; color:{MUTED}; \
 text-decoration:underline;">link not working?</a></div>"""
+
+
+def _google_calendar_link(title: str, event_date: str, venue_name: str | None, url: str | None) -> str:
+    # No end time in the data model (event_date_end exists on `event` for
+    # runs/festivals, but isn't threaded through the digest/lookahead
+    # dataclasses) -- 3 hours is a reasonable placeholder for a gig/show/
+    # theatre performance, same spirit as the ICS export's own estimate.
+    # ctz=Europe/London rather than converting to UTC: the rest of this
+    # codebase already treats a stored event_date's wall-clock component as
+    # the displayable local time with no timezone math (see digest.py's
+    # _format_event_date) -- doing the same here keeps this consistent
+    # rather than introducing a second, different convention.
+    start = datetime.fromisoformat(event_date).replace(tzinfo=None)
+    end = start + timedelta(hours=3)
+    params = {
+        "action": "TEMPLATE",
+        "text": title,
+        "dates": f"{start.strftime('%Y%m%dT%H%M%S')}/{end.strftime('%Y%m%dT%H%M%S')}",
+        "ctz": "Europe/London",
+    }
+    if venue_name:
+        params["location"] = venue_name
+    if url:
+        params["details"] = f"Booking link: {url}"
+    calendar_url = "https://calendar.google.com/calendar/render?" + urlencode(params)
+    return f'<div style="margin-top:6px;"><a href="{calendar_url}" style="font-size:11px; color:{MUTED}; \
+text-decoration:underline;">+ calendar</a></div>'
