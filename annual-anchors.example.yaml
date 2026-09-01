@@ -19,3 +19,18 @@
   typical_month: december
   programme_announced: august
   watch_url: ""
+
+- name: Glasgow International Comedy Festival
+  typical_month: march
+  programme_announced: november
+  watch_url: "https://www.glasgowcomedyfestival.com/"
+
+- name: Merchant City Festival
+  typical_month: july
+  programme_announced: april
+  watch_url: "https://www.glasgowlife.org.uk/merchant-city-festival"
+
+- name: West End Festival (WestFest)
+  typical_month: june
+  programme_announced: april
+  watch_url: "https://westfest.uk/"
