@@ -568,6 +568,30 @@ for how the tool keeps evolving once the core pipeline is stable. Deliberately
 not started; revisit as a group once Phase 6 is done and running cleanly,
 rather than picking any of these off ad hoc mid-build.
 
+- **Scoring pipeline: no incremental commit, no batch parallelism — found
+  2026-09-03 onboarding Ross, needs fixing.** `cmd_score` opens one
+  connection and calls `conn.commit()` exactly once, after
+  `run_scoring()` has processed *every* household's *entire* candidate
+  list. `run_scoring_for_household` calls the LLM sequentially, one
+  40-event batch at a time, with real `llm_usage` inserts queued in that
+  same uncommitted transaction the whole way through. Two consequences,
+  both real: (1) a large first-time backlog (Ross's ~3,500 candidate
+  events) takes a genuinely long time — 20+ minutes and counting for one
+  household, no parallelism to speed it up; (2) if the run fails partway
+  for *any* reason — a network blip, another billing hiccup, anything —
+  every already-billed API call in that run is lost with zero data
+  persisted, because nothing commits until the very end. This isn't
+  hypothetical: it happened twice in one session (2026-09-03) — the first
+  attempt failed immediately with insufficient Anthropic credit (nothing
+  spent, nothing lost), but a second attempt ran for 22+ minutes and spent
+  ~$2.36 in real API calls before this was even noticed, and a failure at
+  that point would have thrown all of it away with nothing to show for
+  it. Fix direction (not built yet): commit after each household's
+  scoring completes at minimum (bounds the blast radius of a mid-run
+  failure to one household, not the whole run), and ideally after each
+  batch within a household too (bounds it further, to ~40 events' worth of
+  spend); batch parallelism is a separate, lower-priority improvement
+  since it's a speed problem, not a money-safety one.
 - **Source gaps surfaced while writing `taste-profile.md`.** Currently the
   top priority — see `google_alerts_todo.csv` (gitignored, local only) for
   the live, working queue of these. None of Skiddle/Ticketmaster/venue feeds
