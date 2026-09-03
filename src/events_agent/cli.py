@@ -481,8 +481,7 @@ when something's genuinely about to sell out or go on sale within 48 \
 hours. Nothing else — no spam, no noise, just what's actually worth \
 knowing about.
 
-Mark anything "no" and it won't come back. Mark it "interested" or \
-"booked" and it'll show up in your calendar export. Enjoy the show."""
+Enjoy the show."""
 
 
 def cmd_welcome(args: argparse.Namespace) -> int:
