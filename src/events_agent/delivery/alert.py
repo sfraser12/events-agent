@@ -30,6 +30,7 @@ class AlertItem:
     kind: str  # "low_availability" | "on_sale_soon"
     reason: str  # pre-formatted, terminal-friendly sentence
     on_sale_date: str | None = None  # raw ISO — only set when kind == "on_sale_soon"
+    event_date: str | None = None  # raw ISO — the actual gig/show date, for the "+ Calendar" link
 
 
 def find_alertable_changes(conn: sqlite3.Connection, now: datetime, household: dict[str, Any]) -> list[AlertItem]:
@@ -81,12 +82,29 @@ def find_alertable_changes(conn: sqlite3.Connection, now: datetime, household: d
             continue
         if field == "status":
             items.append(
-                AlertItem(change_id, event_id, title, venue_name, url, "low_availability", _low_availability_reason())
+                AlertItem(
+                    change_id,
+                    event_id,
+                    title,
+                    venue_name,
+                    url,
+                    "low_availability",
+                    _low_availability_reason(),
+                    event_date=event_date,
+                )
             )
         else:
             items.append(
                 AlertItem(
-                    change_id, event_id, title, venue_name, url, "on_sale_soon", _on_sale_reason(new_value), new_value
+                    change_id,
+                    event_id,
+                    title,
+                    venue_name,
+                    url,
+                    "on_sale_soon",
+                    _on_sale_reason(new_value),
+                    on_sale_date=new_value,
+                    event_date=event_date,
                 )
             )
     return items
@@ -164,7 +182,7 @@ text-transform:uppercase; letter-spacing:0.04em; padding:2px 8px; border-radius:
               <div style="font-size:12px; color:{MUTED};">{venue}</div>
               <div style="font-size:13px; color:{badge_color}; font-weight:600; margin-top:4px;">{detail}</div>
             </td>
-{cta_cell(item.url, item.title, item.venue_name)}
+{cta_cell(item.url, item.title, item.venue_name, item.event_date)}
           </tr>
         </table>
       </td>

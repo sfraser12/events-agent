@@ -172,6 +172,34 @@ def test_find_alertable_changes_sets_kind_and_on_sale_date(conn):
     assert items[0].on_sale_date is None
 
 
+def test_find_alertable_changes_carries_event_date_through(conn):
+    # Regression: the underlying query already selects event_date (it needs
+    # it for the blackout-dates constraint check), but it wasn't being
+    # threaded into AlertItem, so the Last Call email's "+ Calendar" link
+    # silently never appeared — fixed 2026-09-03.
+    show_date = datetime(2027, 3, 16, 19, 0, tzinfo=UTC)
+    upsert_raw_event(conn, make_raw_event(status="on_sale", event_date=show_date))
+    upsert_raw_event(conn, make_raw_event(status="low_availability", event_date=show_date))
+
+    items = find_alertable_changes(conn, datetime.now(UTC), make_household())
+
+    assert items[0].event_date is not None
+    assert items[0].event_date.startswith("2027-03-16")
+
+
+def test_build_alert_html_includes_google_calendar_link_when_event_date_present():
+    item = AlertItem(
+        change_id=1, event_id=1, title="Test Gig", venue_name="Test Venue",
+        url="https://example.com/gig", kind="low_availability", reason="selling fast - low availability",
+        event_date="2027-03-16T19:00:00+00:00",
+    )
+    now = datetime(2026, 8, 25, 12, 0, tzinfo=UTC)
+
+    out = build_alert_html({"label": "Milngavie"}, [item], now)
+
+    assert "calendar.google.com/calendar/render" in out
+
+
 def test_build_alert_html_shows_urgent_eyebrow_and_low_availability_badge():
     item = AlertItem(
         change_id=1, event_id=1, title="Test Gig", venue_name="Test Venue",

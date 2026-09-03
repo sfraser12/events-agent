@@ -99,8 +99,10 @@ def cta_cell(
     (calendar.google.com/calendar/render?action=TEMPLATE&...), not the
     Calendar API, so it needs no OAuth and stays inside this project's
     no-auth-flow-to-maintain constraint the same way the .ics export does.
-    Only wired up where a real event_date exists (digest/lookahead) -- the
-    urgent alert has no event date to build one from, and doesn't pass it."""
+    Wired up wherever a real event_date is available -- digest, lookahead,
+    and (fixed 2026-09-03) the urgent alert, which does have one (the
+    underlying query already needs it for the blackout-dates constraint
+    check) even though it wasn't being threaded through to this call."""
     if not url:
         return ""
     search_link = _search_fallback_link(title, venue_name) if title else ""
