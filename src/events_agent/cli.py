@@ -478,7 +478,11 @@ def cmd_status(args: argparse.Namespace) -> int:
     conn = get_connection(DEFAULT_DB_PATH)
     try:
         report = build_status_report(
-            conn, DEFAULT_DB_PATH, lookback_days=7, total_household_slots=len(HOUSEHOLD_IDS)
+            conn,
+            DEFAULT_DB_PATH,
+            lookback_days=7,
+            total_household_slots=len(HOUSEHOLD_IDS),
+            google_alerts_todo_path=REPO_ROOT / "google_alerts_todo.csv",
         )
         html_body = build_status_html(report)
         plain_body = build_status_plain(report)

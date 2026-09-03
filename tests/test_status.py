@@ -6,6 +6,7 @@ from events_agent.db import get_connection, init_db, upsert_raw_event
 from events_agent.delivery.status import (
     GoogleAlertStat,
     ModelUsageStat,
+    PendingAlertsStat,
     PeriodTotals,
     SourceStat,
     StatusReport,
@@ -261,3 +262,76 @@ def test_google_alert_stats_computed_from_real_source_run_and_event_source_rows(
     assert by_name["google_alerts_live_feed"].total_events == 1
     assert by_name["google_alerts_live_feed"].last_event_days_ago == 2
     assert by_name["google_alerts_live_feed"].days_running == 6
+
+
+def test_html_renders_pending_alerts_when_present():
+    report = make_report(pending_alerts=PendingAlertsStat(total=9, by_category=[("Ross - Whisky", 3), ("Ross - Talks", 2)]))
+
+    html_out = build_status_html(report)
+
+    assert "Coverage gaps queued" in html_out
+    assert "9 total" in html_out
+    assert "Ross - Whisky" in html_out
+    assert "3 pending" in html_out
+
+
+def test_plain_renders_pending_alerts_when_present():
+    report = make_report(pending_alerts=PendingAlertsStat(total=9, by_category=[("Ross - Whisky", 3), ("Ross - Talks", 2)]))
+
+    plain = build_status_plain(report)
+
+    assert "COVERAGE GAPS QUEUED" in plain
+    assert "9 total" in plain
+    assert "- Ross - Whisky: 3 pending" in plain
+
+
+def test_no_pending_alerts_section_when_none():
+    html_out = build_status_html(make_report(pending_alerts=None))
+    plain = build_status_plain(make_report(pending_alerts=None))
+
+    assert "Coverage gaps queued" not in html_out
+    assert "COVERAGE GAPS QUEUED" not in plain
+
+
+def test_pending_alerts_computed_from_real_csv(tmp_path):
+    csv_path = tmp_path / "google_alerts_todo.csv"
+    csv_path.write_text(
+        "category,search_term,type,venue_name,latitude,longitude,status,notes,feed_url\n"
+        "Whisky,whisky tasting,topic,,,,Config ready - create the alert,note,\n"
+        "Whisky,another whisky term,topic,,,,LIVE - wired into config.yaml,note,https://example.com\n"
+        "Talks,business talk,topic,,,,Ready -- use a descriptive label,note,\n"
+        "Fire,Up Helly Aa,topic,,,,MOVED to annual-anchors.yaml,note,\n"
+    )
+    conn = get_connection(tmp_path / "test.db")
+    init_db(tmp_path / "test.db")
+
+    report = build_status_report(conn, tmp_path / "test.db", google_alerts_todo_path=csv_path)
+
+    assert report.pending_alerts is not None
+    assert report.pending_alerts.total == 2  # LIVE and MOVED rows excluded
+    assert dict(report.pending_alerts.by_category) == {"Whisky": 1, "Talks": 1}
+
+
+def test_pending_alerts_missing_file_returns_none(tmp_path):
+    conn = get_connection(tmp_path / "test.db")
+    init_db(tmp_path / "test.db")
+
+    report = build_status_report(
+        conn, tmp_path / "test.db", google_alerts_todo_path=tmp_path / "does-not-exist.csv"
+    )
+
+    assert report.pending_alerts is None
+
+
+def test_pending_alerts_all_resolved_returns_none(tmp_path):
+    csv_path = tmp_path / "google_alerts_todo.csv"
+    csv_path.write_text(
+        "category,search_term,type,venue_name,latitude,longitude,status,notes,feed_url\n"
+        "Whisky,whisky tasting,topic,,,,LIVE - wired into config.yaml,note,https://example.com\n"
+    )
+    conn = get_connection(tmp_path / "test.db")
+    init_db(tmp_path / "test.db")
+
+    report = build_status_report(conn, tmp_path / "test.db", google_alerts_todo_path=csv_path)
+
+    assert report.pending_alerts is None

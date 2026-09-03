@@ -8,6 +8,7 @@ Sent to Secrets.admin_email (falls back to smtp_user), never to a household.
 
 from __future__ import annotations
 
+import csv
 import html
 import sqlite3
 from dataclasses import dataclass, field
@@ -63,6 +64,21 @@ class GoogleAlertStat:
 
 
 @dataclass
+class PendingAlertsStat:
+    """Rows in google_alerts_todo.csv still waiting to actually be created
+    at google.com/alerts — added 2026-09-03. This file is where a taste-
+    profile.md category with no natural source coverage (Ticketmaster/
+    Skiddle don't carry it, no clean feed exists) gets logged once found,
+    same pattern used throughout this project's Phase 6/7 research. The
+    queue only has value if someone looks at it again — this surfaces a
+    reminder in the one email that's already about "what needs attention"
+    rather than letting it sit as a file nobody revisits."""
+
+    total: int
+    by_category: list[tuple[str, int]]
+
+
+@dataclass
 class ModelUsageStat:
     model: str
     calls: int
@@ -110,6 +126,7 @@ class StatusReport:
     db_size_bytes: int = 0
     emails_by_type: list[tuple[str, int]] = field(default_factory=list)
     google_alerts: list[GoogleAlertStat] = field(default_factory=list)
+    pending_alerts: PendingAlertsStat | None = None
 
 
 def _estimate_cost_usd(
@@ -196,6 +213,7 @@ def build_status_report(
     lookback_days: int = 7,
     now: datetime | None = None,
     total_household_slots: int = 1,
+    google_alerts_todo_path: Path | None = None,
 ) -> StatusReport:
     now = now or datetime.now(UTC)
     cutoff = (now - timedelta(days=lookback_days)).isoformat()
@@ -274,6 +292,7 @@ def build_status_report(
     ).fetchall()
 
     google_alerts = _compute_google_alert_stats(conn, now)
+    pending_alerts = _compute_pending_alerts(google_alerts_todo_path)
 
     return StatusReport(
         lookback_days=lookback_days,
@@ -293,6 +312,7 @@ def build_status_report(
         scored_count=scored_count,
         db_size_bytes=db_size_bytes,
         google_alerts=google_alerts,
+        pending_alerts=pending_alerts,
     )
 
 
@@ -339,6 +359,35 @@ def _compute_google_alert_stats(conn: sqlite3.Connection, now: datetime) -> list
         last_event_days_ago = (now - datetime.fromisoformat(last_event)).days if last_event else None
         stats.append(GoogleAlertStat(name, days_running, total_events, last_event_days_ago))
     return stats
+
+
+_RESOLVED_ALERT_STATUS_PREFIXES = ("LIVE", "MOVED", "DECLINED", "Do NOT")
+
+
+def _compute_pending_alerts(csv_path: Path | None) -> PendingAlertsStat | None:
+    """A missing file is not an error — same "optional, hand-maintained,
+    no hard dependency" treatment as annual_anchors.load_annual_anchors.
+    Counts every row whose status isn't already LIVE/MOVED/DECLINED/"Do
+    NOT" — that includes "Lower priority" and "Suggested, confirm interest
+    first" rows deliberately, since those still need a human decision, just
+    not urgently; the point of this stat is "needs looked into", not just
+    "not yet built"."""
+    if csv_path is None or not csv_path.exists():
+        return None
+    by_category: dict[str, int] = {}
+    total = 0
+    with csv_path.open(newline="") as f:
+        for row in csv.DictReader(f):
+            status = row.get("status", "")
+            if status.startswith(_RESOLVED_ALERT_STATUS_PREFIXES):
+                continue
+            total += 1
+            category = row.get("category", "(uncategorised)")
+            by_category[category] = by_category.get(category, 0) + 1
+    if total == 0:
+        return None
+    ranked = sorted(by_category.items(), key=lambda kv: kv[1], reverse=True)
+    return PendingAlertsStat(total=total, by_category=ranked)
 
 
 def _stat_row_html(label: str, value: str) -> str:
@@ -465,6 +514,16 @@ def build_status_html(report: StatusReport) -> str:
         for a in sorted(report.google_alerts, key=lambda a: (a.total_events, -a.days_running))
     )
 
+    pending_section = ""
+    if report.pending_alerts is not None:
+        pending_rows = "".join(
+            _stat_row_html(category, f"{count} pending") for category, count in report.pending_alerts.by_category
+        )
+        pending_section = _section_html(
+            f"Coverage gaps queued, not yet built ({report.pending_alerts.total} total)",
+            pending_rows,
+        )
+
     sections = (
         _section_html("Totals — this week / this month / all-time", totals_rows)
         + _section_html("Source API calls (last 7 days)", source_rows or empty_row("No source runs in this window."))
@@ -475,6 +534,7 @@ def build_status_html(report: StatusReport) -> str:
             "Google Alerts content yield (all-time, weakest first)",
             google_alert_rows or empty_row("No Google Alerts feeds configured."),
         )
+        + pending_section
         + _section_html("Catalog snapshot (all-time)", catalog_rows)
     )
 
@@ -550,6 +610,11 @@ def build_status_plain(report: StatusReport) -> str:
                 )
     else:
         lines.append("- (none)")
+
+    if report.pending_alerts is not None:
+        lines += ["", f"COVERAGE GAPS QUEUED, NOT YET BUILT ({report.pending_alerts.total} total)"]
+        for category, count in report.pending_alerts.by_category:
+            lines.append(f"- {category}: {count} pending")
 
     status_text = " / ".join(f"{count} {status}" for status, count in report.events_by_status)
     lines += [
