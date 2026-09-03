@@ -16,6 +16,7 @@ from events_agent.db import (
     finish_source_run,
     get_connection,
     init_db,
+    last_email_sent_at,
     list_households_as_dicts,
     mark_delisted_events,
     mark_past_events,
@@ -51,6 +52,15 @@ HOUSEHOLD_IDS: dict[str, int] = {
     "brother": 2,
 }
 HOUSEHOLD_ID = HOUSEHOLD_IDS["scott"]  # CLI default for `verdict` when --household isn't passed
+
+# Understudy must never be a household's first email, and must never land
+# within 48h of their most recent Shortlist — added 2026-09-03 after
+# onboarding a second household, so a newly-scored backlog doesn't
+# immediately follow a welcome Shortlist with a second, unrelated email.
+# Applied uniformly (not just to new households): harmless for an
+# established one, since real Shortlist/Understudy sends are already days
+# apart on their normal weekly/fortnightly schedule.
+MIN_HOURS_BETWEEN_SHORTLIST_AND_UNDERSTUDY = 48
 
 
 def cmd_init(args: argparse.Namespace) -> int:
@@ -527,6 +537,18 @@ def cmd_fortnight(args: argparse.Namespace) -> int:
             return 1
 
         for household in households:
+            last_shortlist = last_email_sent_at(conn, household["label"], "shortlist")
+            if last_shortlist is None:
+                print(f"{household['label']}: skipping Understudy — no Shortlist has been sent to them yet.")
+                continue
+            hours_since_shortlist = (datetime.now(UTC) - datetime.fromisoformat(last_shortlist)).total_seconds() / 3600
+            if hours_since_shortlist < MIN_HOURS_BETWEEN_SHORTLIST_AND_UNDERSTUDY:
+                print(
+                    f"{household['label']}: skipping Understudy — only {hours_since_shortlist:.1f}h since their "
+                    f"last Shortlist (need {MIN_HOURS_BETWEEN_SHORTLIST_AND_UNDERSTUDY}h)."
+                )
+                continue
+
             events = select_lookahead_events(conn, household)
             if not events:
                 print(f"{household['label']}: nothing new for the fortnight check.")

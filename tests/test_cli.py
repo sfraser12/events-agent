@@ -1,14 +1,14 @@
 """events-agent harvest, end to end against a temp DB. Skiddle is faked from a fixture."""
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 
 from events_agent import cli
 from events_agent.config import Config, Constraints, Delivery, Home, Horizons, Scoring, Search, Secrets
-from events_agent.db import get_connection, init_db, upsert_household, upsert_raw_event
+from events_agent.db import get_connection, init_db, record_email_sent, upsert_household, upsert_raw_event
 from events_agent.models import RawEvent
 from events_agent.sources.skiddle import SkiddleAdapter
 from events_agent.sources.ticketmaster import TicketmasterAdapter
@@ -298,6 +298,55 @@ def test_fortnight_requires_a_household(wired_cli, capsys):
 
     assert exit_code == 1
     assert "No household configured" in capsys.readouterr().err
+
+
+def test_fortnight_skips_household_with_no_shortlist_sent_yet(wired_cli, capsys):
+    # Regression 2026-09-03: Understudy must never be a household's first
+    # email — a freshly onboarded household with a big newly-scored backlog
+    # shouldn't get Understudy before they've ever had a Shortlist.
+    cli.cmd_init(argparse_namespace())
+    capsys.readouterr()
+
+    exit_code = cli.cmd_fortnight(argparse_namespace())
+
+    assert exit_code == 0
+    assert "skipping Understudy — no Shortlist has been sent to them yet" in capsys.readouterr().out
+
+
+def test_fortnight_skips_household_within_48h_of_shortlist(wired_cli, capsys):
+    cli.cmd_init(argparse_namespace())
+    capsys.readouterr()
+    conn = get_connection(wired_cli)
+    recent = (datetime.now(UTC) - timedelta(hours=3)).isoformat()
+    record_email_sent(conn, "Milngavie", "shortlist", "test@example.com", 5, recent)
+    conn.commit()
+    conn.close()
+
+    exit_code = cli.cmd_fortnight(argparse_namespace())
+
+    out = capsys.readouterr().out
+    assert exit_code == 0
+    assert "skipping Understudy" in out
+    assert "need 48h" in out
+
+
+def test_fortnight_proceeds_when_shortlist_sent_over_48h_ago(wired_cli, capsys):
+    cli.cmd_init(argparse_namespace())
+    capsys.readouterr()
+    conn = get_connection(wired_cli)
+    old_enough = (datetime.now(UTC) - timedelta(hours=72)).isoformat()
+    record_email_sent(conn, "Milngavie", "shortlist", "test@example.com", 5, old_enough)
+    conn.commit()
+    conn.close()
+
+    exit_code = cli.cmd_fortnight(argparse_namespace())
+
+    out = capsys.readouterr().out
+    assert exit_code == 0
+    assert "skipping Understudy" not in out
+    # No lookahead-eligible events exist in this fixture DB, so it should
+    # reach the normal "nothing new" path rather than being gated at all.
+    assert "nothing new for the fortnight check" in out
 
 
 def test_score_fails_loudly_without_api_key(wired_cli, monkeypatch, capsys):

@@ -844,6 +844,17 @@ def record_llm_usage(
     )
 
 
+def last_email_sent_at(conn: sqlite3.Connection, household_label: str, email_type: str) -> str | None:
+    """Most recent sent_at for this household/email_type, or None if never
+    sent — used to gate Understudy on "has this household had a Shortlist
+    yet, and was it long enough ago" (see cmd_fortnight)."""
+    row = conn.execute(
+        "SELECT MAX(sent_at) FROM email_log WHERE household_label = ? AND email_type = ?",
+        (household_label, email_type),
+    ).fetchone()
+    return row[0] if row else None
+
+
 def record_email_sent(
     conn: sqlite3.Connection,
     household_label: str | None,
