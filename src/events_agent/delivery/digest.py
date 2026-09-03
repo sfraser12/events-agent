@@ -180,6 +180,7 @@ def build_digest_html(
     household: dict[str, Any],
     horizons: dict[str, list[DigestEvent]],
     reminders: list[AnnualAnchor] | None = None,
+    welcome_blurb: str | None = None,
 ) -> str:
     today_str = datetime.now(UTC).strftime("%A %d %B %Y")
     total = sum(len(events) for events in horizons.values())
@@ -191,8 +192,9 @@ def build_digest_html(
         f"{new_note} &middot; {today_str}"
     )
 
+    welcome_row = _welcome_banner_html(welcome_blurb) if welcome_blurb else ""
     reminder_rows = "".join(_reminder_row_html(a) for a in (reminders or []))
-    sections = reminder_rows + "".join(_horizon_section_html(h, horizons[h]) for h in HORIZONS if horizons[h])
+    sections = welcome_row + reminder_rows + "".join(_horizon_section_html(h, horizons[h]) for h in HORIZONS if horizons[h])
     if not sections:
         sections = empty_row("Nothing new this week.")
 
@@ -208,6 +210,25 @@ def build_digest_html(
         body_rows=sections,
         footer=footer,
     )
+
+
+def _welcome_banner_html(blurb: str) -> str:
+    """A one-off banner for a household's very first Shortlist (added
+    2026-09-03, see cmd_welcome) — built from whatever's already been
+    harvested, rather than waiting for their first real weekly cycle.
+    blurb is plain text (may contain simple line breaks); escaped here like
+    any other free-text field, never trusted as markup."""
+    paragraphs = "".join(
+        f'<div style="margin-top:6px;">{html.escape(p)}</div>' for p in blurb.strip().split("\n\n") if p.strip()
+    )
+    return f"""\
+    <tr>
+      <td style="padding:18px 32px; border-bottom:1px solid {BORDER}; background:{ACCENT_BG};">
+        <span style="background:{ACCENT_BG}; color:{ACCENT}; font-size:11px; font-weight:700; \
+text-transform:uppercase; letter-spacing:0.04em;">Welcome</span>
+        <div style="font-size:14px; color:{INK}; line-height:1.5;">{paragraphs}</div>
+      </td>
+    </tr>"""
 
 
 def _reminder_row_html(anchor: AnnualAnchor) -> str:
@@ -307,6 +328,7 @@ def build_digest_plain(
     household: dict[str, Any],
     horizons: dict[str, list[DigestEvent]],
     reminders: list[AnnualAnchor] | None = None,
+    welcome_blurb: str | None = None,
 ) -> str:
     new_count = sum(1 for events in horizons.values() for e in events if e.is_new)
     new_note = f" ({new_count} new since last time)" if new_count else ""
@@ -315,6 +337,9 @@ def build_digest_plain(
         "Handpicked for your taste",
         "",
     ]
+    if welcome_blurb:
+        lines.append(welcome_blurb.strip())
+        lines.append("")
     for anchor in reminders or []:
         watch = f" - {anchor.watch_url}" if anchor.watch_url else ""
         if anchor.fixed_date and anchor.next_occurrence:

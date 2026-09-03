@@ -349,6 +349,37 @@ def test_fortnight_proceeds_when_shortlist_sent_over_48h_ago(wired_cli, capsys):
     assert "nothing new for the fortnight check" in out
 
 
+def welcome_namespace(household: int):
+    import argparse
+
+    return argparse.Namespace(household=household)
+
+
+def test_welcome_rejects_unknown_household_id(wired_cli, capsys):
+    cli.cmd_init(argparse_namespace())
+    capsys.readouterr()
+
+    exit_code = cli.cmd_welcome(welcome_namespace(household=999))
+
+    out, err = capsys.readouterr()
+    assert exit_code == 1
+    assert "No household with id 999" in err
+
+
+def test_welcome_builds_digest_content_even_without_smtp_configured(wired_cli, capsys):
+    # wired_cli's Secrets have no SMTP creds, so the real send is skipped —
+    # this exercises that build_digest/build_digest_html/plain with a
+    # welcome_blurb don't blow up end-to-end, without needing a real send.
+    cli.cmd_init(argparse_namespace())
+    capsys.readouterr()
+
+    exit_code = cli.cmd_welcome(welcome_namespace(household=1))
+
+    out, err = capsys.readouterr()
+    assert exit_code == 1  # no SMTP configured in this fixture, so nothing actually sent
+    assert "Welcome Shortlist NOT sent" in err
+
+
 def test_score_fails_loudly_without_api_key(wired_cli, monkeypatch, capsys):
     monkeypatch.setattr(cli, "load_secrets", lambda: Secrets(skiddle_api_key="test-key", anthropic_api_key=""))
 

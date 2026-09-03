@@ -176,7 +176,11 @@ CREATE TABLE IF NOT EXISTS llm_usage (
 -- household. household_label is NULL for the admin stats email itself
 -- (never household-scoped). email_type is 'shortlist' | 'understudy' |
 -- 'last_call' | 'admin_stats' — the internal names from CLAUDE.md
--- "Marketing names", not the Curtain Up display names.
+-- "Marketing names", not the Curtain Up display names. A one-off welcome
+-- send for a newly onboarded household (cmd_welcome, added 2026-09-03) is
+-- also logged as 'shortlist', deliberately — it's the same email shape
+-- (with a welcome banner added) and must satisfy cmd_fortnight's "has this
+-- household ever had a Shortlist" gate the same way a real one would.
 CREATE TABLE IF NOT EXISTS email_log (
     id              INTEGER PRIMARY KEY,
     household_label TEXT,

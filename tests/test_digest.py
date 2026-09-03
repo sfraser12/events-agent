@@ -364,6 +364,26 @@ def test_no_reminders_means_no_reminder_text(household):
     assert "ANNUAL ANCHOR" not in plain_out
 
 
+def test_welcome_blurb_appears_in_html_and_plain(household):
+    empty_horizons = {"on sale soon": [], "this week": [], "this month": [], "announced for later": []}
+
+    html_out = build_digest_html(household, empty_horizons, welcome_blurb="Welcome aboard!\n\nSecond paragraph.")
+    plain_out = build_digest_plain(household, empty_horizons, welcome_blurb="Welcome aboard!\n\nSecond paragraph.")
+
+    assert "Welcome" in html_out
+    assert "Welcome aboard!" in html_out
+    assert "Second paragraph." in html_out
+    assert "Welcome aboard!" in plain_out
+
+
+def test_no_welcome_blurb_means_no_welcome_banner(household):
+    empty_horizons = {"on sale soon": [], "this week": [], "this month": [], "announced for later": []}
+
+    html_out = build_digest_html(household, empty_horizons)
+
+    assert ">Welcome<" not in html_out
+
+
 SKYE_LAT, SKYE_LON = 57.4126, -6.1953  # Portree, ~170 miles from Milngavie
 
 

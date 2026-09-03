@@ -469,6 +469,86 @@ def cmd_digest(args: argparse.Namespace) -> int:
     return 0
 
 
+WELCOME_BLURB = """\
+Welcome to Curtain Up. This is a one-off welcome Shortlist, built right now \
+from everything already gathered and freshly scored against your own taste \
+profile — a preview before your regular weekly cycle begins.
+
+From here you'll get three emails: Shortlist every Sunday evening, \
+handpicked against your taste; Understudy every other Wednesday, a wider \
+net of things that almost made the cut; and Last Call, a short alert only \
+when something's genuinely about to sell out or go on sale within 48 \
+hours. Nothing else — no spam, no noise, just what's actually worth \
+knowing about.
+
+Mark anything "no" and it won't come back. Mark it "interested" or \
+"booked" and it'll show up in your calendar export. Enjoy the show."""
+
+
+def cmd_welcome(args: argparse.Namespace) -> int:
+    """One-off welcome Shortlist for a newly onboarded household, built
+    from whatever's already been harvested rather than waiting for their
+    first real Sunday cycle -- the default onboarding step for a new
+    household from here on (added 2026-09-03, prompted by onboarding
+    household #2). Always also copies admin_email so whoever set the
+    household up can see what it looked like. Logged as a normal
+    'shortlist' email_log row (see db.py) so it correctly satisfies
+    cmd_fortnight's "has this household ever had a Shortlist" gate, the
+    same as a real one would."""
+    secrets = load_secrets()
+    conn = get_connection(DEFAULT_DB_PATH)
+    any_sent = False
+    try:
+        households_by_id = {h["id"]: h for h in list_households_as_dicts(conn)}
+        household = households_by_id.get(args.household)
+        if household is None:
+            print(
+                f"No household with id {args.household} — configured ids: {sorted(households_by_id)}.",
+                file=sys.stderr,
+            )
+            return 1
+
+        horizons = build_digest(conn, household)
+        total = sum(len(events) for events in horizons.values())
+        html_body = build_digest_html(household, horizons, welcome_blurb=WELCOME_BLURB)
+        plain_body = build_digest_plain(household, horizons, welcome_blurb=WELCOME_BLURB)
+        plural = "" if total == 1 else "s"
+        subject = f"Curtain Up – Welcome – {total} thing{plural} worth a look, picked for you"
+
+        recipients = [household["email_to"]]
+        admin_email = secrets.admin_email or secrets.smtp_user
+        if admin_email and admin_email != household["email_to"]:
+            recipients.append(admin_email)
+
+        now_iso = datetime.now(UTC).isoformat()
+        for recipient in recipients:
+            sent = send_email(
+                smtp_host=secrets.smtp_host,
+                smtp_port=secrets.smtp_port,
+                smtp_user=secrets.smtp_user,
+                smtp_password=secrets.smtp_password,
+                from_email=secrets.smtp_user,
+                to_email=recipient,
+                subject=subject,
+                html_body=html_body,
+                plain_body=plain_body,
+            )
+            if sent:
+                record_email_sent(conn, household["label"], "shortlist", recipient, total, now_iso)
+                any_sent = True
+                print(f"Welcome Shortlist sent to {recipient} ({total} events).")
+            else:
+                print(f"Welcome Shortlist NOT sent to {recipient} — see error above.", file=sys.stderr)
+
+        if any_sent:
+            event_ids = [event.event_id for events in horizons.values() for event in events]
+            mark_surfaced(conn, household["id"], event_ids, now_iso)
+            conn.commit()
+    finally:
+        conn.close()
+    return 0 if any_sent else 1
+
+
 def cmd_status(args: argparse.Namespace) -> int:
     """Admin-only stats/cost email — never sent to a household. Added
     2026-08-31 to actually answer "how is this scaling, what does it cost"
@@ -666,6 +746,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     digest_parser = subparsers.add_parser("digest", help="Email the weekly digest of scored events.")
     digest_parser.set_defaults(func=cmd_digest)
+
+    welcome_parser = subparsers.add_parser(
+        "welcome", help="One-off welcome Shortlist for a newly onboarded household, from already-harvested data."
+    )
+    welcome_parser.add_argument("--household", type=int, required=True, help="Household id, e.g. 2.")
+    welcome_parser.set_defaults(func=cmd_welcome)
 
     status_parser = subparsers.add_parser(
         "status", help="Email an admin stats/cost report (API calls, LLM spend, catalog size) — never sent to a household."
