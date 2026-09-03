@@ -691,7 +691,18 @@ rather than picking any of these off ad hoc mid-build.
   60 like Scott's, because his own scoring bands explicitly want the 50-69
   range to surface ("uncertainty bias... lean toward including"). Onboarded
   with `events-agent welcome --household 2` (see Stage 4 above) rather than
-  waiting for his first real Sunday cycle. His household starts with zero
+  waiting for his first real Sunday cycle. **Blocked 2026-09-03: the actual
+  send never happened.** `events-agent score` needed to run first (Ross had
+  zero household_event_state rows) and failed immediately on the Anthropic
+  API's very first call — "Your credit balance is too low." This morning's
+  06:40 scheduled run (Scott's household) completed fine, so the balance
+  emptied sometime between then and this attempt; cause unknown. Zero
+  llm_usage rows and zero household_event_state rows resulted (no partial
+  data). Next step once billing is topped up at console.anthropic.com:
+  `events-agent score` then `events-agent welcome --household 2` — both
+  commands and all supporting code are already built and tested, this is
+  purely waiting on the account, not further engineering. His household
+  starts with zero
   Google Alerts feeds of his own — none of Scott's are relevant to his
   taste. **Coverage gaps found and logged 2026-09-03** (see
   `google_alerts_todo.csv`, category prefix `Ross -`): confirmed via live
