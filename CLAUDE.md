@@ -568,6 +568,26 @@ for how the tool keeps evolving once the core pipeline is stable. Deliberately
 not started; revisit as a group once Phase 6 is done and running cleanly,
 rather than picking any of these off ad hoc mid-build.
 
+- **Design needed: manual event capture via screenshot — flagged
+  2026-09-04, not yet designed.** Covers ad-hoc discoveries that no
+  automated source will ever catch — a Facebook post, a poster, something
+  seen in passing — the exact gap Facebook Events research (Phase 7,
+  "essentially a dead end") already confirmed has no API-based fix. User's
+  ask: upload a screenshot in a Claude Code chat and have it turn into a
+  captured event with minimal, consistent effort each time — no writing a
+  fresh explanatory prompt per screenshot. Sits awkwardly against Guiding
+  Principle 1 ("fetching is deterministic; judging is AI, no LLM ever
+  fetches") since this channel is explicitly LLM-driven end to end — worth
+  treating as a distinct third category (manual human-submitted capture),
+  not a harvest adapter, and tagging its rows with a distinct source_name
+  (e.g. `manual_screenshot`) so provenance stays honest rather than
+  blending into automated-adapter data. Needs an actual insertion path
+  into the DB (a small CLI command a Claude Code session could call after
+  reading the image, e.g. `events-agent add-event`, or similar) and a
+  low-friction trigger on the Claude Code side (a slash-command/skill
+  rather than re-explaining the task in prose each time) so it stays
+  "easy" per the ask. Not designed or built yet.
+
 - **Design needed: self-service verdict-setting / calendar export for a
   household member who isn't the operator — flagged 2026-09-03, needs a
   real design before building anything.** Surfaced onboarding Ross: the
