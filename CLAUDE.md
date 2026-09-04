@@ -586,7 +586,21 @@ rather than picking any of these off ad hoc mid-build.
   reading the image, e.g. `events-agent add-event`, or similar) and a
   low-friction trigger on the Claude Code side (a slash-command/skill
   rather than re-explaining the task in prose each time) so it stays
-  "easy" per the ask. Not designed or built yet.
+  "easy" per the ask. Two constraints added 2026-09-04, both real design
+  requirements, not nice-to-haves: (1) **one event can span multiple
+  screenshots** (e.g. a flyer's front and back, or a Facebook post plus a
+  separate ticket-link screenshot) — the flow needs to accumulate several
+  images into one captured event rather than assuming a strict 1
+  screenshot = 1 event mapping, so whatever trigger mechanism is chosen
+  needs an explicit "done, process these together" step rather than
+  inserting on every single image; (2) **must work easily from a mobile
+  phone**, not just a desktop terminal session — a Claude Code CLI-only
+  flow doesn't satisfy this on its own. The user already relies on Claude
+  Code Remote Control day to day (see [[user_remote_access]] in memory),
+  which plausibly covers this — sending screenshots into an already-running
+  Claude Code session from a phone via Remote Control, rather than needing
+  a separate mobile-native surface — but that's an assumption to confirm,
+  not yet verified as the actual answer. Not designed or built yet.
 
 - **Design needed: self-service verdict-setting / calendar export for a
   household member who isn't the operator — flagged 2026-09-03, needs a
